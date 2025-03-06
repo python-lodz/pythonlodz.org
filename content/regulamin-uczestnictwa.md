@@ -1,8 +1,8 @@
 +++
 title = "Regulamin uczestnictwa w spotkaniach Python Łódź"
 description = ""
-tags = ["regulamin"]
-date = 2024-01-01
+tags = ["regulaminy"]
+date = 2025-01-01
 [ author ]
   name = "Grzegorz Kocjan"
 +++
