@@ -10,10 +10,10 @@
 # overridden by providing a weight value. The menu will then be
 # ordered by weight from lowest to highest.
 
-#[[main]]
-#  name = "Blog"
-#  pageRef = "posts"
-#  weight = 10
+[[main]]
+ name = "Spotkania"
+ pageRef = "spotkania"
+ weight = 10
 
 #[[main]]
 #  name = "Parent"
@@ -58,12 +58,18 @@
 # the copyright notice. Configure as per the main menu above.
 
 
-# [[footer]]
-#   name = "Tags"
-#   pageRef = "tags"
-#   weight = 10
+[[footer]]
+  name = "Regulamin uczestnictwa"
+  pageRef = "regulamin-uczestnictwa"
+  weight = 10
 
-# [[footer]]
-#   name = "Categories"
-#   pageRef = "categories"
-#   weight = 20
+[[footer]]
+  name = "Polityka Cookies"
+  pageRef = "polityka-cookies"
+  weight = 20
+
+[[footer]]
+  name = "Przetwarzanie danych osobowych prelegenta"
+  pageRef = "prelegenci-przetwarzanie-danych"
+  weight = 30
+  

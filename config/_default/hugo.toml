@@ -6,10 +6,10 @@ theme = "blowfish" # UNCOMMENT THIS LINE
 baseURL = "https://pythonlodz.org/"
 defaultContentLanguage = "pl"
 
-pluralizeListTitles = "true" # hugo function useful for non-english languages, find out more in  https://gohugo.io/getting-started/configuration/#pluralizelisttitles
+pluralizeListTitles = true # hugo function useful for non-english languages, find out more in  https://gohugo.io/getting-started/configuration/#pluralizelisttitles
 
 enableRobotsTXT = true
-paginate = 10
+pagination.pagerSize = 10
 summaryLength = 0
 
 buildDrafts = false
