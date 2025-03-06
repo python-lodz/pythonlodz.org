@@ -48,7 +48,7 @@ date = 2025-01-01
 
 ### VI. Częstotliwość, Zmiany i Odwołania Spotkań
 
-1. Organizator dokłada starań, aby Spotkania odbywały się regularnie – zazwyczaj raz w miesiącu – z wyłączeniem okresu wakacyjnego (lipiec i sierpień). Organizator zastrzega możliwość zorganizowania Spotkań w innym terminie.  
+1. Organizator dokłada starań, aby Spotkania odbywały się regularnie, zazwyczaj raz na dwa miesiące, w ostatnią środę. Organizator zastrzega możliwość zorganizowania Spotkań w innym terminie.  
 2. Organizator zastrzega sobie prawo do odwołania Spotkania lub zmiany jego formy (np. na Spotkanie online).  
 3. O zmianach wskazanych w ust. 2 powyżej Organizator poinformuje na stronie internetowej [https://pythonlodz.org/](https://pythonlodz.org/).
 
