@@ -1,0 +1,7 @@
+name: "Łukasz Langa"
+avatar: "images/avatars/lukasz-langa.png"
+bio: "Developer rezydent CPython. Aspirujący muzyk. Manager wydania Python 3.8 i 3.9. Współprowadzący podcast core.py. Twórca oryginalnej wersji Black."
+social: [
+  { link: "https://lukasz.langa.pl" },
+  { linkedin: "https://www.linkedin.com/in/llangal" }
+]

@@ -1,0 +1,5 @@
+global:
+  language: "PL"
+
+shortcode:
+  recent_articles: "Nasze spotkania"

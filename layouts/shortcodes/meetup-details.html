@@ -1,0 +1,72 @@
+{{ $youtubeLiteJS := resources.Get "lib/lite-youtube-embed/lite-yt-embed.js" | resources.Fingerprint "sha512" }}
+{{ $youtubeLiteCSS := resources.Get "lib/lite-youtube-embed/lite-yt-embed.css" }}
+<link rel="stylesheet" href="{{ $youtubeLiteCSS.RelPermalink }}" integrity="{{ $youtubeLiteCSS.Data.Integrity }}"/>
+<script src="{{ $youtubeLiteJS.RelPermalink }}" integrity="{{ $youtubeLiteJS.Data.Integrity }}"></script>
+
+<h2 id="prelekcje">Informacje</h2>
+<div class="header border-b pb-2">
+  <p class="text-gray-600"><strong>Data:</strong> {{ .Page.Params.date | time.Format ":date_full" }}</p>
+  <p class="text-gray-600"><strong>Godzina:</strong> {{ .Page.Params.time }}</p>
+  <p class="text-gray-600"><strong>Miejsce:</strong> {{ .Page.Params.place }}</p>
+  <p class="text-gray-600"><strong>Zapisy:</strong> <a href="{{ .Page.Params.meetup_link }}" target="_blank" >Meetup.com</a></p>
+</div>
+
+<h2 id="prelekcje">Prelekcje</h2>
+{{ range .Page.Params.talks }}
+  <div class="talk border-b last:border-none pb-3">
+    <h2 id="{{ anchorize .talk_title }}" class="text-xl font-semibold text-gray-700 relative group">
+      {{ .talk_title }} ({{ .language }})
+    </h2>
+    {{ $speaker := index site.Data.speakers .speaker_id }}
+    <div class="flex items-center space-x-3 mt-2">
+      {{ $speakerAvatar := resources.Get $speaker.avatar }}
+      <img src="{{ $speakerAvatar.Permalink }}" alt="{{ $speaker.name }}" class="w-24 h-24 rounded-full object-cover" >
+      <div>
+        <p class="text-sm text-gray-500">Prelegent: <strong>{{ $speaker.name }}</strong></p>
+
+          <div class="flex flex-wrap text-neutral-400 dark:text-neutral-500">
+            {{ range $links := $speaker.social }}  
+              {{ range $name, $url := $links }}
+                <a
+                  class="px-1 hover:text-primary-700 dark:hover:text-primary-400"
+                  href="{{ $url | safeURL }}"
+                  target="_blank"
+                  aria-label="{{ $name | title }}"
+                  rel="me noopener noreferrer"
+                  ><span class="inline-block align-text-bottom">{{ partial "icon.html" $name }}</span></a
+                >
+              {{ end }}
+            {{ end }}
+        </div>
+      </div>
+    </div>
+    {{ if .talk_description}}
+    {{ .talk_description | markdownify }}
+    {{ end }}
+
+    {{ if .youtube}}
+    {{ printf "{{< youtubeLite id=\"%s\" label=\"%s\" >}}" .youtube "Label" | markdownify }}
+    {{ end }}
+  </div>
+{{ end }}
+
+{{ if .Page.Params.live_stream }}
+  <h2 id="prelekcje">Live Stream</h2>
+  {{ printf "{{< youtubeLite id=\"%s\" label=\"%s\" >}}" .Page.Params.live_stream  "Label" | markdownify }}
+{{ end }}
+  
+{{ if .Page.Params.sponsors }}
+<h2 id="prelekcje">Sponsorzy</h2>
+  <div class="flex flex-col gap-4 mt-3">
+    {{ range .Page.Params.sponsors }}
+      {{ with index site.Data.sponsors . }}
+        <a href="{{ .website }}" target="_blank" rel="noopener" class="flex items-center user-scalable=no">
+          {{ $sponsorLogo := resources.Get .logo }}
+          <img src="{{ $sponsorLogo.Permalink }}" alt="{{ .name }}" class="h-16 w-auto max-w-[200px] pointer-events-none">
+        </a>
+      {{ end }}
+    {{ end }}
+  </div>
+{{ end }}
+  
+  

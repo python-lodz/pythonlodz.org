@@ -1,0 +1,7 @@
+name: "Daniel Różycki"
+avatar: "images/avatars/daniel-rozycki.jpeg"
+bio: "Daniel Różycki rozpoczął swoją karierę od budowania aplikacji do zarządzania tokenami ERC-20, koncentrując się na platformach ICO i technologii blockchain. Aktualnie pracuje jako Senior Python Developer w STX Next, gdzie kieruje rozwojem wysoko konfigurowalnej platformy AI Governance, która ma na celu usprawnienie procesów zarządzania i zwiększenie efektywności operacyjnej."
+social: [
+  { facebook: "https://www.facebook.com/altosterino" },
+  { linkedin: "https://www.linkedin.com/in/daniel-rozycki" }
+]
