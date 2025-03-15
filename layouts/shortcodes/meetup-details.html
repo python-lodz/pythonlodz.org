@@ -3,11 +3,16 @@
 <link rel="stylesheet" href="{{ $youtubeLiteCSS.RelPermalink }}" integrity="{{ $youtubeLiteCSS.Data.Integrity }}"/>
 <script src="{{ $youtubeLiteJS.RelPermalink }}" integrity="{{ $youtubeLiteJS.Data.Integrity }}"></script>
 
+{{ if eq (len .Page.Params.talks) 2 }}
+  {{- $hero := partial "infographic-image.html" . -}}
+  <meta property="og:image" content=" {{ $hero }}">
+
+{{ end }}
 <h2 id="prelekcje">Informacje</h2>
 <div class="header border-b pb-2">
   <p class="text-gray-600"><strong>Data:</strong> {{ .Page.Params.date | time.Format ":date_full" }}</p>
   <p class="text-gray-600"><strong>Godzina:</strong> {{ .Page.Params.time }}</p>
-  <p class="text-gray-600"><strong>Miejsce:</strong> {{ .Page.Params.place }}</p>
+  <p class="text-gray-600"><strong>Miejsce:</strong> {{ .Page.Params.place | markdownify }}</p>
   <p class="text-gray-600"><strong>Zapisy:</strong> <a href="{{ .Page.Params.meetup_link }}" target="_blank" >Meetup.com</a></p>
 </div>
 
