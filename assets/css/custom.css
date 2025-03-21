@@ -1,0 +1,9 @@
+/* limits Table of Content item length */
+nav#TableOfContents ul li a {
+    display: inline-block;
+    max-width: 20ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+  }

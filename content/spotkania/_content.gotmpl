@@ -1,0 +1,73 @@
+{{ range $meetup_number, $meetup := site.Data.meetups }}
+
+    {{ $time := .Site.Params.dateParse "2006-01-02" $meetup.date }}
+    
+    {{ $contentValue := printf `
+## Informacje
+
+**📅 data:** %s</br>
+**🕕 godzina:** %s</br>
+**📍 miejsce:** %s</br>` 
+        $meetup.date $meetup.time $meetup.place 
+    }}
+
+    {{ if $meetup.live_stream }}
+        {{ $liveLink := printf "{{< youtubeLite id=\"%s\" label=\"%s\" >}}" $meetup.live_stream "Label" }}
+        {{ $contentValue = printf "%s \n ## Live Stream \n %s" $contentValue $liveLink }}
+    {{ end }}
+
+    {{ $contentValue := printf "%s \n ## Prelekcje" $contentValue}}
+
+    {{ range $meetup.talks }}
+        {{ $cleanedTitle := replace (replace .talk_title "\n" " ") "\t" " " }}
+        {{ $cleanedTitle = replaceRE `\s+` " " $cleanedTitle }}
+        {{ $contentValue = printf "%s \n ### %s" $contentValue $cleanedTitle }}
+        {{ $contentValue = printf "%s \n %s" $contentValue (printf "{{< speaker speaker_id=\"%s\" >}}" .speaker_id) }}
+        {{ if .talk_description }}
+            {{ $contentValue = printf "%s \n %s" $contentValue .talk_description }}
+        {{ end }}
+    {{ end }}
+
+    {{ $contentValue = printf "%s \n ## Sponsorzy" $contentValue }}
+    {{ range $meetup.sponsors }}
+        {{ $contentValue = printf "%s \n %s </br>" $contentValue (printf "{{< article link=\"/sponsorzy/%s/\" >}}" .) }}
+    {{ end }}
+
+    {{/* Add page. */}}
+    {{ $content := dict "mediaType" "text/markdown" "value" $contentValue }}
+    {{ $params := dict "talks" $meetup.talks  }}
+
+    {{ $dates := dict "date" (time.AsTime $meetup.date) }}
+    {{ $page := dict
+        "content" $content
+        "dates" $dates
+        "time" $meetup.time
+        "place" $meetup.place
+        "params" $params
+        "path" $meetup_number
+        "title" $meetup.title
+    }}
+    {{ $.AddPage $page }}
+
+    {{/* Add featured image. */}}
+    {{ $info_graphic := ""}}
+    {{ if eq (len $meetup.talks) 1 }}
+        {{- $info_graphic = partial "infographic-image-solo.html" (dict "meetup" $meetup) -}}
+    {{ end }}
+    {{ if eq (len $meetup.talks) 2 }}
+        {{- $info_graphic = partial "infographic-image-duo.html" (dict "meetup" $meetup) -}}
+    {{ end }}
+
+    {{ $content := dict
+        "mediaType" $info_graphic.MediaType.Type
+        "value" $info_graphic
+    }}
+    {{ $resource := dict
+        "content" $content
+        "path" (printf "%s/featured.png" $meetup_number)
+    }}
+    {{ $.AddResource $resource }}
+
+    
+
+{{ end }}

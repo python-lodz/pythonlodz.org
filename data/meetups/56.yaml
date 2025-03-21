@@ -1,4 +1,3 @@
----
 title: "Meetup #56"
 date: 2025-01-29
 time: "18:00"
@@ -11,7 +10,4 @@ talks:
     talk_title: "Nowość w Pythonie 3.14 oraz PyScript"
     language: "pl"
     youtube: "9POijqwrHuw"
----
-
-{{< meetup-details >}}
 

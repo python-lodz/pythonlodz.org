@@ -1,11 +1,14 @@
 {{ $fontNormal := resources.Get "fonts/OpenSans-Medium.ttf" }}
 {{ $fontBold := resources.Get "fonts/OpenSans-Bold.ttf" }}
 
-{{ $bg := resources.Get "images/infographic_template.png" }}
+{{ $meetup := .meetup }}
+
+{{ $bg := resources.Get "images/infographic_template_duo.png" }}
 {{ $final := $bg }}
 
+
 {{ $imgWidth := $final.Width }}
-{{ $date := (printf "%sr. godz. %s" (.Page.Params.date | time.Format "Monday 02.01.2006"| strings.ToUpper) .Page.Params.time) }}
+{{ $date := (printf "%sr. godz. %s" ($meetup.date | time.Format "Monday 02.01.2006"| strings.ToUpper) $meetup.time) }}
 {{ $mainDateOptions := dict 
   "color" "#393f5f" 
   "size" 80 
@@ -19,13 +22,13 @@
 {{ $bottomDateOptions := dict 
   "color" "#393f5f" 
   "size" 32 
-  "x" 126.6
+  "x" 157
   "y" 1010.3
   "font" $fontNormal
 }}
 {{ $final = $final.Filter (images.Text $date $bottomDateOptions) }}
 
-{{ $talk1 := index .Page.Params.talks 0}}
+{{ $talk1 := index $meetup.talks 0}}
 
 {{ $speaker1 := index site.Data.speakers $talk1.speaker_id }}
 {{ $author1Options := dict 
@@ -56,7 +59,7 @@
 {{ $final := $final.Filter (images.Overlay $maskedSpeaker1 122 490) }}
 
 {{ $final := $final.Filter (images.Overlay $maskedSpeaker1 1537 585) }}
-{{ $talk2 := index .Page.Params.talks 1}}
+{{ $talk2 := index $meetup.talks 1}}
 
 {{ $speaker2 := index site.Data.speakers $talk2.speaker_id }}
 {{ $author1Options := dict 
@@ -79,8 +82,6 @@
   }}
 {{ $final = $final.Filter (images.Text $talk2.talk_title $title2Options) }}
 
-
-
 {{ $speaker2Img := resources.Get $speaker2.avatar }}
 {{ $speaker2 := $speaker2Img.Fill "240x240 center" }}
 
@@ -89,4 +90,4 @@
 {{ $final := $final.Filter (images.Overlay $maskedSpeaker2 1537 585) }}
 
 
-{{ return $final.RelPermalink }}
+{{ return $final }}
