@@ -10,8 +10,8 @@
 
 <h2 id="prelekcje">Informacje</h2>
 <div class="header border-b pb-2">
-  <p class="text-gray-600"><strong>Data:</strong> {{ .Page.Params.date | time.Format ":date_full" }}</p>
-  <p class="text-gray-600"><strong>Godzina:</strong> {{ .Page.Params.time }}</p>
+  <p class="text-gray-600"><strong>Data:</strong> {{ .Page.Params.meetup_date | time.Format ":date_full" }}</p>
+  <p class="text-gray-600"><strong>Godzina:</strong> {{ .Page.Params.meetup_time }}</p>
   <p class="text-gray-600"><strong>Miejsce:</strong> {{ .Page.Params.place | markdownify }}</p>
   <p class="text-gray-600"><strong>Zapisy:</strong> <a href="{{ .Page.Params.meetup_link }}" target="_blank" >Meetup.com</a></p>
 </div>

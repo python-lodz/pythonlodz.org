@@ -5,7 +5,7 @@
 {{ $final := $bg }}
 
 {{ $imgWidth := $final.Width }}
-{{ $date := (printf "%sr. godz. %s" (.Page.Params.date | time.Format "Monday 02.01.2006"| strings.ToUpper) .Page.Params.time) }}
+{{ $date := (printf "%sr. godz. %s" (.Page.Params.meetup_date | time.Format "Monday 02.01.2006"| strings.ToUpper) .Page.Params.meetup_time) }}
 {{ $mainDateOptions := dict 
   "color" "#393f5f" 
   "size" 80 
