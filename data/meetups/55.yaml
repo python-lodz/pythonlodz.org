@@ -1,4 +1,3 @@
----
 title: "Meetup #55"
 date: 2024-11-27
 time: "18:00"
@@ -18,8 +17,3 @@ talks:
     talk_description: "W tej prezentacji omówimy różnice między standardowym loggerem a Loguru, pokażemy, jak efektywnie wykorzystać ustrukturyzowane logi w projekcie oraz podkreślimy znaczenie logów w procesie tworzenia oprogramowania dla zapewnienia wysokiej jakości i niezawodności aplikacji."
     language: "pl"
     youtube: "xA6o40uxuso"
-
----
-
-{{< meetup-details >}}
-
