@@ -13,11 +13,12 @@
 [[main]]
  name = "Spotkania"
  pageRef = "spotkania"
- weight = 10
+ weight = 20
 
-#[[main]]
-#  name = "Parent"
-#  weight = 20
+[[main]]
+ name = "Sponsorzy"
+ pageRef = "sponsorzy"
+ weight = 10
 
 #[[main]]
 #  name = "example sub-menu 1"
