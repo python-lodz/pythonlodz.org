@@ -1,0 +1,34 @@
+{{ range site.Data.sponsors }}
+
+    {{ $contentValue := printf "\n\n![%s](%s)\n\n## Opis\n\n%s" .name .logo .description }}
+    {{ $pageName := .name }}
+
+    {{/* Add page. */}}
+    {{ $content := dict "mediaType" "text/markdown" "value" $contentValue }}
+    {{ $params := dict "weight" .weight }}
+    {{ $page := dict
+        "content" $content
+        "date" "2025-01-01"
+        "kind" "page"
+        "params" $params
+        "path" $pageName
+        "title" .name
+    }}
+    {{ $.AddPage $page }}
+
+    {{/* Add featured image. */}}
+    {{ with resources.Get .featured }}
+        {{ $content := dict
+           "mediaType" .MediaType.Type
+            "value" .
+        }}
+        {{ $resource := dict
+            "content" $content
+            "path" (printf "%s/featured.png" $pageName)
+        }}
+        {{ $.AddResource $resource }}
+    {{ else }}
+        {{ warnf "Logo not found for sponsor: %s" .name }}
+    {{ end }}
+
+{{ end }}
