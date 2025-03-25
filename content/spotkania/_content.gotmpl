@@ -7,10 +7,17 @@
 
 **📅 data:** %s</br>
 **🕕 godzina:** %s</br>
-**📍 miejsce:** %s</br>
-➡️ [**LINK DO ZAPISÓW**](%s) ⬅️`
-        $meetup.date $meetup.time $meetup.place $meetup.meetup_link
+**📍 miejsce:** %s</br>`
+        $meetup.date $meetup.time $meetup.place
     }}
+
+    {{ if $meetup.meetup_link }}
+        {{ $contentValue = printf "%s \n ➡️ [**LINK DO ZAPISÓW**](%s) ⬅️" $contentValue $meetup.meetup_link }}
+    {{ end }}
+
+    {{ if $meetup.feedback_link }}
+        {{ $contentValue = printf "%s </br></br> 📝 [**ANKIETA** - oceń spotkanie oraz prezentacje](%s)" $contentValue $meetup.feedback_link }}
+    {{ end }}
 
     {{ if $meetup.live_stream }}
         {{ $liveLink := printf "{{< youtubeLite id=\"%s\" label=\"%s\" >}}" $meetup.live_stream "Label" }}
