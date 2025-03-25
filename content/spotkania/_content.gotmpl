@@ -34,6 +34,10 @@
         {{ if .talk_description }}
             {{ $contentValue = printf "%s \n %s" $contentValue .talk_description }}
         {{ end }}
+        {{ if .youtube }}
+            {{ $liveLink := printf "{{< youtubeLite id=\"%s\" label=\"%s\" >}}" .youtube "Label" }}
+            {{ $contentValue = printf "%s \n #### Nagranie \n %s" $contentValue $liveLink }}
+        {{ end }}
     {{ end }}
 
     {{ $contentValue = printf "%s \n ## Sponsorzy" $contentValue }}
