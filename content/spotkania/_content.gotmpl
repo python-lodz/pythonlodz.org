@@ -56,6 +56,15 @@ Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z p
         {{ $contentValue = printf "%s \n %s </br>" $contentValue (printf "{{< article link=\"/sponsorzy/%s/\" >}}" .) }}
     {{ end }}
 
+    {{ $photos := resources.Match (printf "images/meetups/%s/*" $meetup_number) }}
+    {{ if gt (len $photos) 0 }}
+        {{ $contentValue = printf "%s \n ## Zdjęcia\n{{< gallery >}}" $contentValue}}
+        {{ range $photos }}
+             {{ $contentValue = printf "%s \n <img src=\"%s\" class=\"grid-w33\" />" $contentValue .RelPermalink }}
+        {{ end }}
+        {{ $contentValue = printf "%s \n {{< /gallery >}}" $contentValue}}
+    {{ end }}
+
     {{/* Add page. */}}
     {{ $content := dict "mediaType" "text/markdown" "value" $contentValue }}
     {{ $params := dict "talks" $meetup.talks  }}
