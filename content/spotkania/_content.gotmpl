@@ -26,6 +26,17 @@
 
     {{ $contentValue := printf "%s \n ## Prelekcje" $contentValue}}
 
+    {{ if not $meetup.talks }}
+
+        {{ $contentValue = printf `%s
+Już wkrótce ogłosimy oficjalną agendę naszego najnowszego spotkania Python Łódź. Bądźcie czujni, bo szykujemy naprawdę interesujące prezentacje.
+
+Niezależnie od tematu, każde spotkanie to świetna okazja, by poszerzyć swoją wiedzę, poznać nowych ludzi i razem budować silną społeczność miłośników Pythona.
+
+Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z pełną informacją o wydarzeniu.` $contentValue}}
+
+    {{ end }}
+
     {{ range $meetup.talks }}
         {{ $cleanedTitle := replace (replace .talk_title "\n" " ") "\t" " " }}
         {{ $cleanedTitle = replaceRE `\s+` " " $cleanedTitle }}
@@ -63,10 +74,9 @@
 
     {{/* Add featured image. */}}
     {{ $info_graphic := ""}}
-    {{ if eq (len $meetup.talks) 1 }}
+    {{ if or (not $meetup.talks) (eq (len $meetup.talks) 1) }}
         {{- $info_graphic = partial "infographic-image-solo.html" (dict "meetup" $meetup) -}}
-    {{ end }}
-    {{ if eq (len $meetup.talks) 2 }}
+    {{ else if eq (len $meetup.talks) 2 }}
         {{- $info_graphic = partial "infographic-image-duo.html" (dict "meetup" $meetup) -}}
     {{ end }}
 
@@ -79,7 +89,4 @@
         "path" (printf "%s/featured.png" $meetup_number)
     }}
     {{ $.AddResource $resource }}
-
-    
-
 {{ end }}
