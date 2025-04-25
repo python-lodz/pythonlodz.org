@@ -9,10 +9,10 @@ featured: true
 
 talks:
   - speaker_id: "michal-moroz"
-    talk_title: |
+    talk_title: |-
       Czego o product developmencie uczy 5 lat 
       rozwoju własnej aplikacji do journalingu
-    talk_description: |
+    talk_description: |-
       Rozwijam produkt, którego sam jestem klientem i product ownerem. I na pierwszy rzut oka, to powinno dawać mi natychmiastowy feedback. W końcu nie ma narzutów komunikacyjnych, czekania aż ktoś zaakceptuje jakiś pomysł. A jednak, często idee walidują się miesiącami. Dlaczego tak jest?
 
       Modeluję dziedzinę, w której stabilny model przekłada się bezpośrednio na mój dobrostan. Precyzyjnie zdefiniowana domena – przełożona na komendy i zapytania – powinna przełożyć się na rzadko zmieniający się kod, w którym wszystko jest jasno opisane. To dlaczego niektóre funkcje okazały się zbędne po dwóch użyciach, a inne przechodziły już kilka przemian?

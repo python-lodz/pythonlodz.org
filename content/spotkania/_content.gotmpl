@@ -1,14 +1,23 @@
 {{ range $meetup_number, $meetup := site.Data.meetups }}
 
     {{ $time := .Site.Params.dateParse "2006-01-02" $meetup.date }}
-    
+
+    {{ $info_graphic := ""}}
+    {{ if or (not $meetup.talks) (eq (len $meetup.talks) 1) }}
+        {{- $info_graphic = partial "infographic-image-solo.html" (dict "meetup" $meetup) -}}
+    {{ else if eq (len $meetup.talks) 2 }}
+        {{- $info_graphic = partial "infographic-image-duo.html" (dict "meetup" $meetup) -}}
+    {{ end }}
+
     {{ $contentValue := printf `
+<img src="%s" alt="Infographic" />
+
 ## Informacje
 
 **📅 data:** %s</br>
 **🕕 godzina:** %s</br>
 **📍 miejsce:** %s</br>`
-        $meetup.date $meetup.time $meetup.place
+        $info_graphic.Permalink $meetup.date $meetup.time $meetup.place
     }}
 
     {{ if $meetup.meetup_link }}
@@ -43,7 +52,11 @@ Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z p
         {{ $contentValue = printf "%s \n ### %s" $contentValue $cleanedTitle }}
         {{ $contentValue = printf "%s \n %s" $contentValue (printf "{{< speaker speaker_id=\"%s\" >}}" .speaker_id) }}
         {{ if .talk_description }}
-            {{ $contentValue = printf "%s \n %s" $contentValue .talk_description }}
+            {{ with .talk_description }}
+                {{/* turn every LF into “two-spaces LF” which Markdown ⇒ <br> */}}
+                {{ $desc := replace . "\n" "  \n" }}
+                {{ $contentValue = printf "%s\n%s" $contentValue $desc }}
+            {{ end }}
         {{ end }}
         {{ if .youtube }}
             {{ $liveLink := printf "{{< youtubeLite id=\"%s\" label=\"%s\" >}}" .youtube "Label" }}
@@ -82,12 +95,6 @@ Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z p
     {{ $.AddPage $page }}
 
     {{/* Add featured image. */}}
-    {{ $info_graphic := ""}}
-    {{ if or (not $meetup.talks) (eq (len $meetup.talks) 1) }}
-        {{- $info_graphic = partial "infographic-image-solo.html" (dict "meetup" $meetup) -}}
-    {{ else if eq (len $meetup.talks) 2 }}
-        {{- $info_graphic = partial "infographic-image-duo.html" (dict "meetup" $meetup) -}}
-    {{ end }}
 
     {{ $content := dict
         "mediaType" $info_graphic.MediaType.Type

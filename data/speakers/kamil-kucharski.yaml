@@ -1,7 +1,6 @@
 name: "Kamil Kucharski"
 avatar: "images/avatars/kamil-kucharski.png"
 bio: "Programista Pythona nastawiony na rozwiązywanie problemów, z talentem do przekładania złożonych wymagań biznesowych na eleganckie i wydajne architektury chmurowe AWS. Specializuję się w budowaniu bezpiecznych, odpornych i skalowanych systemów w chmurach. Uwielbiam debugować problemy związane z wydajnością programów oraz zarządzania pamięcią."
-social: [
-  { facebook: "https://github.com/kaniak274" },
-  { linkedin: "https://www.linkedin.com/in/kucharski-kamil" }
-]
+social:
+  - linkedin: https://www.linkedin.com/in/kucharski-kamil/
+  - github: https://github.com/kaniak274

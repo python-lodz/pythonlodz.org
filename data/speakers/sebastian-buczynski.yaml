@@ -1,8 +1,7 @@
 name: "Sebastian Buczyński"
 avatar: "images/avatars/sebastian-buczynski.png"
-bio: "W branży od 12 lat z doświadczeniami lidera technicznego i architekta. Trener/konsultant w Bottega IT Minds, specjalizacja - Python. Architekt w firmie Sauce Labs. Zafascynowany zwinnym wytwarzaniem oprogramowania bez kompromisów w kwestii jakości."
-social: [
-  { facebook: "https://www.facebook.com/sebastian.buczynski.tsn" },
-  { linkedin: "https://www.linkedin.com/in/sebastianbuczynski" },
-]
-
+bio: "W branży od ponad dekady lat z doświadczeniami lidera technicznego i architekta. Trener/konsultant w Bottega IT Minds, specjalizacja - Python. Architekt w firmie Sauce Labs. Zafascynowany zwinnym wytwarzaniem oprogramowania bez kompromisów w kwestii jakości."
+social:
+  - linkedin: https://www.linkedin.com/in/sebastianbuczynski/
+  - youtube: https://www.youtube.com/@pythoneerguru
+  - link: https://breadcrumbscollector.tech/
