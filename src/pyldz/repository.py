@@ -1,14 +1,17 @@
 """Google Sheets repository for fetching meetup data."""
 
-from typing import List, Dict, Any, Optional
+import logging
+from typing import Any, Dict, List, Optional
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from .config import GoogleSheetsConfig
-from .models import Meetup, Speaker, Talk, MeetupSheetRow, TalkSheetRow
+from pyldz.config import GoogleSheetsConfig
+from pyldz.models import Meetup, MeetupSheetRow, Speaker, Talk, TalkSheetRow
+
+log = logging.getLogger(__name__)
 
 
 class GoogleSheetsRepository:
@@ -54,7 +57,9 @@ class GoogleSheetsRepository:
         """Fetch data from a specific sheet."""
         try:
             credentials = self._get_credentials()
-            sheets = build("sheets", "v4", credentials=credentials, cache_discovery=False)
+            sheets = build(
+                "sheets", "v4", credentials=credentials, cache_discovery=False
+            )
 
             range_name = f"{sheet_name}!A1:ZZ"
 
@@ -64,7 +69,7 @@ class GoogleSheetsRepository:
                 .get(
                     spreadsheetId=self.config.sheet_id,
                     range=range_name,
-                    majorDimension="ROWS"
+                    majorDimension="ROWS",
                 )
                 .execute()
             )
@@ -72,13 +77,13 @@ class GoogleSheetsRepository:
             return result.get("values", [])
 
         except Exception as e:
-            print(f"Error fetching data from sheet '{sheet_name}': {e}")
+            log.error("Error fetching data from sheet '%s': %s", sheet_name, e)
             return []
 
     def fetch_meetups_data(self) -> List[Dict[str, Any]]:
         """Fetch meetups data from the meetups sheet."""
         rows = self._fetch_sheet_data(self.config.meetups_sheet_name)
-        
+
         if not rows:
             return []
 
@@ -88,7 +93,7 @@ class GoogleSheetsRepository:
 
         for row in rows[1:]:
             # Pad row to match header length
-            padded_row = row + [''] * (len(header) - len(row))
+            padded_row = row + [""] * (len(header) - len(row))
             meetup_dict = dict(zip(header, padded_row))
             meetups_data.append(meetup_dict)
 
@@ -97,7 +102,7 @@ class GoogleSheetsRepository:
     def fetch_talks_data(self) -> List[Dict[str, Any]]:
         """Fetch talks data from the main sheet."""
         rows = self._fetch_sheet_data(self.config.talks_sheet_name)
-        
+
         if not rows:
             return []
 
@@ -107,34 +112,38 @@ class GoogleSheetsRepository:
 
         for row in rows[1:]:
             # Pad row to match header length
-            padded_row = row + [''] * (len(header) - len(row))
+            padded_row = row + [""] * (len(header) - len(row))
             talk_dict = dict(zip(header, padded_row))
-            
+
             # Only include rows with meetup number
             if talk_dict.get("Meetup"):
                 talks_data.append(talk_dict)
 
         return talks_data
 
-    def get_enabled_meetups(self, meetups_data: List[Dict[str, Any]]) -> List[MeetupSheetRow]:
+    def get_enabled_meetups(
+        self, meetups_data: List[Dict[str, Any]]
+    ) -> List[MeetupSheetRow]:
         """Filter and parse enabled meetups."""
         enabled_meetups = []
-        
+
         for meetup_data in meetups_data:
             try:
                 meetup_row = MeetupSheetRow.model_validate(meetup_data)
                 if meetup_row.enabled:
                     enabled_meetups.append(meetup_row)
             except Exception as e:
-                print(f"Error parsing meetup data: {e}")
+                log.error("Error parsing meetup data: %s", e)
                 continue
 
         return enabled_meetups
 
-    def get_talks_for_meetup(self, meetup_id: str, talks_data: List[Dict[str, Any]]) -> List[Talk]:
+    def get_talks_for_meetup(
+        self, meetup_id: str, talks_data: List[Dict[str, Any]]
+    ) -> List[Talk]:
         """Get talks for a specific meetup."""
         talks = []
-        
+
         for talk_data in talks_data:
             if talk_data.get("Meetup") == meetup_id:
                 try:
@@ -142,29 +151,33 @@ class GoogleSheetsRepository:
                     talk = talk_row.to_talk()
                     talks.append(talk)
                 except Exception as e:
-                    print(f"Error parsing talk data for meetup {meetup_id}: {e}")
+                    log.error("Error parsing talk data for meetup %s: %s", meetup_id, e)
                     continue
 
         return talks
 
-    def get_speakers_for_meetup(self, meetup_id: str, talks_data: List[Dict[str, Any]]) -> List[Speaker]:
+    def get_speakers_for_meetup(
+        self, meetup_id: str, talks_data: List[Dict[str, Any]]
+    ) -> List[Speaker]:
         """Get speakers for a specific meetup."""
         speakers = []
         seen_speaker_ids = set()
-        
+
         for talk_data in talks_data:
             if talk_data.get("Meetup") == meetup_id:
                 try:
                     talk_row = TalkSheetRow.model_validate(talk_data)
-                    
+
                     # Avoid duplicate speakers
                     if talk_row.speaker_id not in seen_speaker_ids:
                         speaker = talk_row.to_speaker()
                         speakers.append(speaker)
                         seen_speaker_ids.add(talk_row.speaker_id)
-                        
+
                 except Exception as e:
-                    print(f"Error parsing speaker data for meetup {meetup_id}: {e}")
+                    log.error(
+                        "Error parsing speaker data for meetup %s: %s", meetup_id, e
+                    )
                     continue
 
         return speakers
@@ -173,22 +186,22 @@ class GoogleSheetsRepository:
         """Get a specific meetup by ID (only if enabled)."""
         meetups_data = self.fetch_meetups_data()
         talks_data = self.fetch_talks_data()
-        
+
         enabled_meetups = self.get_enabled_meetups(meetups_data)
-        
+
         # Find the specific meetup
         meetup_row = None
         for meetup in enabled_meetups:
             if meetup.meetup_id == meetup_id:
                 meetup_row = meetup
                 break
-        
+
         if not meetup_row:
             return None
-        
+
         # Get talks for this meetup
         talks = self.get_talks_for_meetup(meetup_id, talks_data)
-        
+
         # Convert to Meetup entity
         return meetup_row.to_meetup(talks)
 
@@ -196,42 +209,42 @@ class GoogleSheetsRepository:
         """Get all enabled meetups with their talks."""
         meetups_data = self.fetch_meetups_data()
         talks_data = self.fetch_talks_data()
-        
+
         enabled_meetups = self.get_enabled_meetups(meetups_data)
-        
+
         meetups = []
         for meetup_row in enabled_meetups:
             talks = self.get_talks_for_meetup(meetup_row.meetup_id, talks_data)
             meetup = meetup_row.to_meetup(talks)
             meetups.append(meetup)
-        
+
         return meetups
 
     def get_all_speakers(self) -> List[Speaker]:
         """Get all unique speakers from enabled meetups."""
         talks_data = self.fetch_talks_data()
         meetups_data = self.fetch_meetups_data()
-        
+
         enabled_meetups = self.get_enabled_meetups(meetups_data)
         enabled_meetup_ids = {meetup.meetup_id for meetup in enabled_meetups}
-        
+
         speakers = []
         seen_speaker_ids = set()
-        
+
         for talk_data in talks_data:
             meetup_id = talk_data.get("Meetup")
             if meetup_id in enabled_meetup_ids:
                 try:
                     talk_row = TalkSheetRow.model_validate(talk_data)
-                    
+
                     # Avoid duplicate speakers
                     if talk_row.speaker_id not in seen_speaker_ids:
                         speaker = talk_row.to_speaker()
                         speakers.append(speaker)
                         seen_speaker_ids.add(talk_row.speaker_id)
-                        
+
                 except Exception as e:
-                    print(f"Error parsing speaker data: {e}")
+                    log.error("Error parsing speaker data: %s", e)
                     continue
-        
+
         return speakers

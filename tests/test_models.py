@@ -1,19 +1,18 @@
 """Tests for Pydantic models."""
 
 import datetime as dt
-from typing import Dict, Any
 
 import pytest
 from pydantic import ValidationError
 
 from pyldz.models import (
     Language,
+    Meetup,
+    MeetupSheetRow,
     MeetupStatus,
     SocialLink,
     Speaker,
     Talk,
-    Meetup,
-    MeetupSheetRow,
     TalkSheetRow,
 )
 
@@ -57,11 +56,7 @@ class TestSpeaker:
 
     def test_create_speaker_minimal(self):
         """Test creating speaker with minimal data."""
-        speaker = Speaker(
-            id="john-doe",
-            name="John Doe",
-            bio="A Python developer"
-        )
+        speaker = Speaker(id="john-doe", name="John Doe", bio="A Python developer")
         assert speaker.id == "john-doe"
         assert speaker.name == "John Doe"
         assert speaker.bio == "A Python developer"
@@ -72,14 +67,14 @@ class TestSpeaker:
         """Test creating speaker with full data."""
         social_links = [
             SocialLink(platform="linkedin", url="https://linkedin.com/in/johndoe"),
-            SocialLink(platform="github", url="https://github.com/johndoe")
+            SocialLink(platform="github", url="https://github.com/johndoe"),
         ]
         speaker = Speaker(
             id="john-doe",
             name="John Doe",
             bio="A Python developer",
             avatar_path="/path/to/avatar.jpg",
-            social_links=social_links
+            social_links=social_links,
         )
         assert speaker.avatar_path == "/path/to/avatar.jpg"
         assert len(speaker.social_links) == 2
@@ -90,10 +85,7 @@ class TestTalk:
 
     def test_create_talk_minimal(self):
         """Test creating talk with minimal data."""
-        talk = Talk(
-            speaker_id="john-doe",
-            title="Introduction to Python"
-        )
+        talk = Talk(speaker_id="john-doe", title="Introduction to Python")
         assert talk.speaker_id == "john-doe"
         assert talk.title == "Introduction to Python"
         assert talk.description is None
@@ -109,7 +101,7 @@ class TestTalk:
             description="Podstawy programowania w Pythonie",
             title_en="Introduction to Python",
             language=Language.ENGLISH,
-            youtube_id="abc123"
+            youtube_id="abc123",
         )
         assert talk.title_en == "Introduction to Python"
         assert talk.language == Language.ENGLISH
@@ -126,7 +118,7 @@ class TestMeetup:
             title="Meetup #42",
             date=dt.date(2024, 6, 27),
             time="18:00",
-            location="Test Venue"
+            location="Test Venue",
         )
         assert meetup.number == "42"
         assert meetup.title == "Meetup #42"
@@ -154,7 +146,7 @@ class TestMeetup:
             feedback_url="https://forms.gle/123",
             livestream_id="youtube123",
             tags=["python", "meetup"],
-            featured=True
+            featured=True,
         )
         assert len(meetup.talks) == 1
         assert len(meetup.sponsors) == 2
@@ -170,7 +162,7 @@ class TestMeetup:
             date=dt.date(2024, 6, 27),
             time="18:00",
             location="Test Venue",
-            talks=[talk]
+            talks=[talk],
         )
         assert meetup.has_talks is True
         assert meetup.talk_count == 1
@@ -180,7 +172,7 @@ class TestMeetup:
             title="Meetup #43",
             date=dt.date(2024, 6, 27),
             time="18:00",
-            location="Test Venue"
+            location="Test Venue",
         )
         assert empty_meetup.has_talks is False
         assert empty_meetup.talk_count == 0
@@ -203,9 +195,9 @@ class TestMeetupSheetRow:
             "LIVESTREAM_ID": "youtube123",
             "SPONSORS": "sponsor1,sponsor2",
             "TAGS": "python,meetup",
-            "FEATURED": "TRUE"
+            "FEATURED": "TRUE",
         }
-        
+
         row = MeetupSheetRow.model_validate(data)
         assert row.meetup_id == "42"
         assert row.title == "Meetup #42"
@@ -225,9 +217,9 @@ class TestMeetupSheetRow:
             "DATE": "2024-07-27",
             "TIME": "18:00",
             "LOCATION": "Test Venue",
-            "ENABLED": "FALSE"
+            "ENABLED": "FALSE",
         }
-        
+
         row = MeetupSheetRow.model_validate(data)
         assert row.enabled is False
 
@@ -239,24 +231,24 @@ class TestMeetupSheetRow:
             "DATE": "2024-06-27",
             "TIME": "18:00",
             "LOCATION": "Test Venue",
-            "ENABLED": "TRUE"
+            "ENABLED": "TRUE",
         }
-        
+
         disabled_data = {
             "MEETUP_ID": "43",
             "TITLE": "Meetup #43",
             "DATE": "2024-07-27",
             "TIME": "18:00",
             "LOCATION": "Test Venue",
-            "ENABLED": "FALSE"
+            "ENABLED": "FALSE",
         }
-        
+
         enabled_row = MeetupSheetRow.model_validate(enabled_data)
         disabled_row = MeetupSheetRow.model_validate(disabled_data)
-        
+
         all_rows = [enabled_row, disabled_row]
         enabled_only = [row for row in all_rows if row.enabled]
-        
+
         assert len(enabled_only) == 1
         assert enabled_only[0].meetup_id == "42"
 
@@ -276,9 +268,9 @@ class TestTalkSheetRow:
             "Opis prezentacji": "Learn Python basics",
             "Język prezentacji": "en",
             "Link do LinkedIn": "https://linkedin.com/in/johndoe",
-            "Link do GitHub": "https://github.com/johndoe"
+            "Link do GitHub": "https://github.com/johndoe",
         }
-        
+
         row = TalkSheetRow.model_validate(data)
         assert row.meetup == "42"
         assert row.first_name == "John"
@@ -297,9 +289,9 @@ class TestTalkSheetRow:
             "Meetup": "42",
             "Imię": "John",
             "Nazwisko": "Doe",
-            "Tytuł prezentacji": "Introduction to Python"
+            "Tytuł prezentacji": "Introduction to Python",
         }
-        
+
         row = TalkSheetRow.model_validate(data)
         assert row.meetup == "42"
         assert row.first_name == "John"
@@ -313,8 +305,8 @@ class TestTalkSheetRow:
         data = {
             "Imię": "John",
             "Nazwisko": "Doe",
-            "Tytuł prezentacji": "Introduction to Python"
+            "Tytuł prezentacji": "Introduction to Python",
         }
-        
+
         with pytest.raises(ValidationError):
             TalkSheetRow.model_validate(data)
