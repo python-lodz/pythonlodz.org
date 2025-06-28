@@ -50,7 +50,7 @@ Repository = "https://github.com/pythonlodz/pythonlodz.org"
 Issues = "https://github.com/pythonlodz/pythonlodz.org/issues"
 
 [tool.pytest.ini_options]
-testpaths = ["src/tests"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -130,3 +130,9 @@ ignore_missing_imports = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyldz"]
+
+[tool.uv.workspace]
+members = [
+    "example_uv/example",
+    "example_uv/example-pyldz",
+]
