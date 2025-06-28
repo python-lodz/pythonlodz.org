@@ -1,4 +1,6 @@
-import datetime as dt
+from __future__ import annotations
+
+import datetime
 from enum import Enum
 from typing import List, Optional
 
@@ -48,7 +50,7 @@ class Talk(BaseModel):
 class Meetup(BaseModel):
     number: str
     title: str
-    date: dt.date
+    date: datetime.date
     time: str
     location: str
     talks: List[Talk] = Field(default_factory=list)
@@ -92,7 +94,7 @@ class Meetup(BaseModel):
 class MeetupSheetRow(BaseModel):
     meetup_id: str = Field(alias="MEETUP_ID")
     title: str = Field(alias="TITLE")
-    date: dt.date = Field(alias="DATE")
+    date: datetime.date = Field(alias="DATE")
     time: str = Field(alias="TIME")
     location: str = Field(alias="LOCATION")
     enabled: bool = Field(alias="ENABLED")
@@ -119,12 +121,12 @@ class MeetupSheetRow(BaseModel):
 
     @field_validator("date", mode="before")
     @classmethod
-    def convert_string_to_date(cls, v) -> dt.date:
+    def convert_string_to_date(cls, v) -> datetime.date:
         if isinstance(v, str):
-            return dt.datetime.strptime(v, "%Y-%m-%d").date()
+            return datetime.datetime.strptime(v, "%Y-%m-%d").date()
         return v
 
-    def to_meetup(self, talks: List[Talk] = None) -> Meetup:
+    def to_meetup(self, talks: Optional[List[Talk]] = None) -> Meetup:
         return Meetup(
             number=self.meetup_id,
             title=self.title,

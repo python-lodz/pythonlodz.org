@@ -1,6 +1,6 @@
 """Integration tests for the complete Google Sheets data flow."""
 
-import datetime as dt
+from datetime import date
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -185,7 +185,7 @@ class TestGoogleSheetsIntegration:
         assert meetup is not None
         assert meetup.number == "58"
         assert meetup.title == "Meetup #58"
-        assert meetup.date == dt.date(2025, 5, 28)
+        assert meetup.date == date(2025, 5, 28)
         assert meetup.time == "18:00"
         assert meetup.location == "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska"
         assert meetup.featured is True

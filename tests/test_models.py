@@ -1,6 +1,6 @@
 """Tests for Pydantic models."""
 
-import datetime as dt
+from datetime import date
 
 import pytest
 from pydantic import ValidationError
@@ -116,13 +116,13 @@ class TestMeetup:
         meetup = Meetup(
             number="42",
             title="Meetup #42",
-            date=dt.date(2024, 6, 27),
+            date=date(2024, 6, 27),
             time="18:00",
             location="Test Venue",
         )
         assert meetup.number == "42"
         assert meetup.title == "Meetup #42"
-        assert meetup.date == dt.date(2024, 6, 27)
+        assert meetup.date == date(2024, 6, 27)
         assert meetup.time == "18:00"
         assert meetup.location == "Test Venue"
         assert meetup.talks == []
@@ -136,7 +136,7 @@ class TestMeetup:
         meetup = Meetup(
             number="42",
             title="Meetup #42",
-            date=dt.date(2024, 6, 27),
+            date=date(2024, 6, 27),
             time="18:00",
             location="Test Venue",
             talks=[talk],
@@ -159,7 +159,7 @@ class TestMeetup:
         meetup = Meetup(
             number="42",
             title="Meetup #42",
-            date=dt.date(2024, 6, 27),
+            date=date(2024, 6, 27),
             time="18:00",
             location="Test Venue",
             talks=[talk],
@@ -170,7 +170,7 @@ class TestMeetup:
         empty_meetup = Meetup(
             number="43",
             title="Meetup #43",
-            date=dt.date(2024, 6, 27),
+            date=date(2024, 6, 27),
             time="18:00",
             location="Test Venue",
         )
@@ -201,7 +201,7 @@ class TestMeetupSheetRow:
         row = MeetupSheetRow.model_validate(data)
         assert row.meetup_id == "42"
         assert row.title == "Meetup #42"
-        assert row.date == dt.date(2024, 6, 27)
+        assert row.date == date(2024, 6, 27)
         assert row.time == "18:00"
         assert row.location == "Test Venue"
         assert row.enabled is True
