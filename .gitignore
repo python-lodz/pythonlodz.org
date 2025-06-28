@@ -1,8 +1,8 @@
 # Generated files by hugo
-/public/
-/resources/_gen/
-/assets/jsconfig.json
-hugo_stats.json
+/page/public/
+/page/resources/_gen/
+/page/assets/jsconfig.json
+/pagehugo_stats.json
 
 # Executable may be added to repository
 hugo.exe
@@ -10,8 +10,30 @@ hugo.darwin
 hugo.linux
 
 # Temporary lock file while building
-/.hugo_build.lock
+/page/.hugo_build.lock
 
 # Secret for google api
 .client_secret.json
 .client_secret.token.json
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
