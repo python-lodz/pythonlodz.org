@@ -58,9 +58,6 @@ addopts = [
     "-v",
     "--tb=short",
     "--strict-markers",
-    "--cov=src/pyldz",
-    "--cov-report=term-missing",
-    "--cov-report=html",
 ]
 markers = [
     "unit: Unit tests",
