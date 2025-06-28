@@ -1,5 +1,3 @@
-"""Logging configuration with rich formatting."""
-
 import logging
 from typing import Optional
 
