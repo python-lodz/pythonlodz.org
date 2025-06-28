@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -44,7 +44,7 @@ class GoogleSheetsRepository:
         self.config.token_cache_path.write_text(credentials.to_json())
         return credentials
 
-    def _fetch_sheet_data(self, sheet_name: str) -> List[List[str]]:
+    def _fetch_sheet_data(self, sheet_name: str) -> list[list[str]]:
         try:
             credentials = self._get_credentials()
             sheets = build(
@@ -70,7 +70,7 @@ class GoogleSheetsRepository:
             log.error("Error fetching data from sheet '%s': %s", sheet_name, e)
             return []
 
-    def fetch_meetups_data(self) -> List[Dict[str, Any]]:
+    def fetch_meetups_data(self) -> list[dict[str, Any]]:
         rows = self._fetch_sheet_data(self.config.meetups_sheet_name)
 
         if not rows:
@@ -86,7 +86,7 @@ class GoogleSheetsRepository:
 
         return meetups_data
 
-    def fetch_talks_data(self) -> List[Dict[str, Any]]:
+    def fetch_talks_data(self) -> list[dict[str, Any]]:
         rows = self._fetch_sheet_data(self.config.talks_sheet_name)
 
         if not rows:
@@ -105,8 +105,8 @@ class GoogleSheetsRepository:
         return talks_data
 
     def get_enabled_meetups(
-        self, meetups_data: List[Dict[str, Any]]
-    ) -> List[MeetupSheetRow]:
+        self, meetups_data: list[dict[str, Any]]
+    ) -> list[MeetupSheetRow]:
         enabled_meetups = []
 
         for meetup_data in meetups_data:
@@ -121,8 +121,8 @@ class GoogleSheetsRepository:
         return enabled_meetups
 
     def get_talks_for_meetup(
-        self, meetup_id: str, talks_data: List[Dict[str, Any]]
-    ) -> List[Talk]:
+        self, meetup_id: str, talks_data: list[dict[str, Any]]
+    ) -> list[Talk]:
         talks = []
 
         for talk_data in talks_data:
@@ -138,8 +138,8 @@ class GoogleSheetsRepository:
         return talks
 
     def get_speakers_for_meetup(
-        self, meetup_id: str, talks_data: List[Dict[str, Any]]
-    ) -> List[Speaker]:
+        self, meetup_id: str, talks_data: list[dict[str, Any]]
+    ) -> list[Speaker]:
         speakers = []
         seen_speaker_ids = set()
 
@@ -161,7 +161,7 @@ class GoogleSheetsRepository:
 
         return speakers
 
-    def get_meetup_by_id(self, meetup_id: str) -> Optional[Meetup]:
+    def get_meetup_by_id(self, meetup_id: str) -> Meetup | None:
         meetups_data = self.fetch_meetups_data()
         talks_data = self.fetch_talks_data()
 
@@ -180,7 +180,7 @@ class GoogleSheetsRepository:
 
         return meetup_row.to_meetup(talks)
 
-    def get_all_enabled_meetups(self) -> List[Meetup]:
+    def get_all_enabled_meetups(self) -> list[Meetup]:
         meetups_data = self.fetch_meetups_data()
         talks_data = self.fetch_talks_data()
 
@@ -194,7 +194,7 @@ class GoogleSheetsRepository:
 
         return meetups
 
-    def get_all_speakers(self) -> List[Speaker]:
+    def get_all_speakers(self) -> list[Speaker]:
         talks_data = self.fetch_talks_data()
         meetups_data = self.fetch_meetups_data()
 
