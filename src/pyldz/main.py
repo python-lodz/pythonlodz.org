@@ -2,11 +2,10 @@
 
 import logging
 import sys
-from pathlib import Path
 
-from .config import AppConfig
-from .logging_config import setup_default_logging
-from .repository import GoogleSheetsRepository
+from pyldz.config import AppConfig
+from pyldz.logging_config import setup_default_logging
+from pyldz.repository import GoogleSheetsRepository
 
 log = logging.getLogger(__name__)
 

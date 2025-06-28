@@ -1,6 +1,6 @@
 """Tests for Google Sheets repository."""
 
-import datetime as dt
+from datetime import date
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -295,7 +295,7 @@ class TestGoogleSheetsRepository:
         assert meetup is not None
         assert meetup.number == "42"
         assert meetup.title == "Meetup #42"
-        assert meetup.date == dt.date(2024, 6, 27)
+        assert meetup.date == date(2024, 6, 27)
         assert meetup.time == "18:00"
         assert meetup.location == "Test Venue"
         assert meetup.featured is True
