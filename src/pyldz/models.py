@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import AnyHttpUrl, BaseModel, Field, computed_field, field_validator
 
 
 class Language(str, Enum):
@@ -19,21 +19,14 @@ class MeetupStatus(str, Enum):
 
 class SocialLink(BaseModel):
     platform: str
-    url: str
-
-    @field_validator("url")
-    @classmethod
-    def ensure_url_has_protocol(cls, v: str) -> str:
-        if not v.startswith(("http://", "https://")):
-            raise ValueError("URL must start with http:// or https://")
-        return v
+    url: AnyHttpUrl
 
 
 class Speaker(BaseModel):
     id: str
     name: str
     bio: str
-    avatar_path: str | None = None
+    avatar_path: AnyHttpUrl | None = None
     social_links: list[SocialLink] = Field(default_factory=list)
 
 
@@ -55,8 +48,8 @@ class Meetup(BaseModel):
     talks: list[Talk] = Field(default_factory=list)
     sponsors: list[str] = Field(default_factory=list)
     status: MeetupStatus = MeetupStatus.DRAFT
-    meetup_url: str | None = None
-    feedback_url: str | None = None
+    meetup_url: AnyHttpUrl | None = None
+    feedback_url: AnyHttpUrl | None = None
     livestream_id: str | None = None
     tags: list[str] = Field(default_factory=list)
     featured: bool = False
@@ -97,8 +90,8 @@ class MeetupSheetRow(BaseModel):
     time: str = Field(alias="TIME")
     location: str = Field(alias="LOCATION")
     enabled: bool = Field(alias="ENABLED")
-    meetup_url: str | None = Field(default=None, alias="MEETUP_URL")
-    feedback_url: str | None = Field(default=None, alias="FEEDBACK_URL")
+    meetup_url: AnyHttpUrl | None = Field(default=None, alias="MEETUP_URL")
+    feedback_url: AnyHttpUrl | None = Field(default=None, alias="FEEDBACK_URL")
     livestream_id: str | None = Field(default=None, alias="LIVESTREAM_ID")
     sponsors: list[str] = Field(default_factory=list, alias="SPONSORS")
     tags: list[str] = Field(default_factory=list, alias="TAGS")
@@ -117,6 +110,13 @@ class MeetupSheetRow(BaseModel):
         if isinstance(v, str) and v.strip():
             return [item.strip() for item in v.split(",") if item.strip()]
         return []
+
+    @field_validator("meetup_url", "feedback_url", mode="before")
+    @classmethod
+    def convert_empty_string_to_none(cls, v) -> str | None:
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
 
     @field_validator("date", mode="before")
     @classmethod
@@ -148,15 +148,15 @@ class TalkSheetRow(BaseModel):
     first_name: str = Field(alias="Imię")
     last_name: str = Field(alias="Nazwisko")
     bio: str = Field(default="", alias="BIO")
-    photo_url: str | None = Field(default=None, alias="Zdjęcie")
+    photo_url: AnyHttpUrl | None = Field(default=None, alias="Zdjęcie")
     talk_title: str = Field(alias="Tytuł prezentacji")
     talk_description: str | None = Field(default=None, alias="Opis prezentacji")
     talk_title_en: str | None = Field(default=None, alias="Tytuł prezentacji EN")
     language: str = Field(default="pl", alias="Język prezentacji")
-    linkedin_url: str | None = Field(default=None, alias="Link do LinkedIn")
-    github_url: str | None = Field(default=None, alias="Link do GitHub")
-    twitter_url: str | None = Field(default=None, alias="Link do Twitter")
-    website_url: str | None = Field(default=None, alias="Link do strony")
+    linkedin_url: AnyHttpUrl | None = Field(default=None, alias="Link do LinkedIn")
+    github_url: AnyHttpUrl | None = Field(default=None, alias="Link do GitHub")
+    twitter_url: AnyHttpUrl | None = Field(default=None, alias="Link do Twitter")
+    website_url: AnyHttpUrl | None = Field(default=None, alias="Link do strony")
 
     @field_validator("bio", "talk_description", mode="before")
     @classmethod
@@ -203,6 +203,20 @@ class TalkSheetRow(BaseModel):
             bio=self.bio,
             social_links=self._build_social_links(),
         )
+
+    @field_validator(
+        "photo_url",
+        "linkedin_url",
+        "github_url",
+        "twitter_url",
+        "website_url",
+        mode="before",
+    )
+    @classmethod
+    def convert_empty_url_to_none(cls, v) -> str | None:
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
 
     def _build_social_links(self) -> list[SocialLink]:
         social_links = []
