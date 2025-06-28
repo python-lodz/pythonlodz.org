@@ -4,7 +4,7 @@ import datetime as dt
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 
 class Language(str, Enum):
@@ -87,7 +87,7 @@ class Meetup(BaseModel):
         """Return formatted date in Polish."""
         polish_days = {
             0: "PONIEDZIAŁEK",
-            1: "WTOREK", 
+            1: "WTOREK",
             2: "ŚRODA",
             3: "CZWARTEK",
             4: "PIĄTEK",
@@ -201,9 +201,10 @@ class TalkSheetRow(BaseModel):
     @property
     def speaker_id(self) -> str:
         """Generate speaker ID from name."""
-        from unidecode import unidecode
         import re
-        
+
+        from unidecode import unidecode
+
         name = self.full_name.lower()
         name = unidecode(name)
         name = re.sub(r'[^a-z0-9\s-]', '', name)
@@ -213,7 +214,7 @@ class TalkSheetRow(BaseModel):
     def to_speaker(self) -> Speaker:
         """Convert to Speaker entity."""
         social_links = []
-        
+
         if self.linkedin_url:
             social_links.append(SocialLink(platform="linkedin", url=self.linkedin_url))
         if self.github_url:

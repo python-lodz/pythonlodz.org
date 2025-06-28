@@ -2,13 +2,11 @@
 
 import datetime as dt
 from pathlib import Path
-from typing import Dict, List, Any
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from pyldz.config import GoogleSheetsConfig
-from pyldz.models import Meetup, Speaker, Talk, Language, MeetupStatus
 from pyldz.repository import GoogleSheetsRepository
 
 
@@ -23,7 +21,7 @@ class TestGoogleSheetsRepository:
             credentials_path=Path("test_credentials.json"),
             token_cache_path=Path("test_token.json"),
             meetups_sheet_name="meetups",
-            talks_sheet_name="Sheet1"
+            talks_sheet_name="Sheet1",
         )
 
     @pytest.fixture
@@ -36,22 +34,61 @@ class TestGoogleSheetsRepository:
         """Mock data from meetups sheet."""
         return [
             [
-                "MEETUP_ID", "TITLE", "DATE", "TIME", "LOCATION", "ENABLED",
-                "MEETUP_URL", "FEEDBACK_URL", "LIVESTREAM_ID", "SPONSORS", "TAGS", "FEATURED"
+                "MEETUP_ID",
+                "TITLE",
+                "DATE",
+                "TIME",
+                "LOCATION",
+                "ENABLED",
+                "MEETUP_URL",
+                "FEEDBACK_URL",
+                "LIVESTREAM_ID",
+                "SPONSORS",
+                "TAGS",
+                "FEATURED",
             ],
             [
-                "42", "Meetup #42", "2024-06-27", "18:00", "Test Venue", "TRUE",
-                "https://meetup.com/event/123", "https://forms.gle/123", "youtube123",
-                "sponsor1,sponsor2", "python,meetup", "TRUE"
+                "42",
+                "Meetup #42",
+                "2024-06-27",
+                "18:00",
+                "Test Venue",
+                "TRUE",
+                "https://meetup.com/event/123",
+                "https://forms.gle/123",
+                "youtube123",
+                "sponsor1,sponsor2",
+                "python,meetup",
+                "TRUE",
             ],
             [
-                "43", "Meetup #43", "2024-07-27", "18:00", "Test Venue 2", "FALSE",
-                "", "", "", "", "", "FALSE"
+                "43",
+                "Meetup #43",
+                "2024-07-27",
+                "18:00",
+                "Test Venue 2",
+                "FALSE",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "FALSE",
             ],
             [
-                "44", "Meetup #44", "2024-08-27", "18:00", "Test Venue 3", "TRUE",
-                "", "", "", "", "", "FALSE"
-            ]
+                "44",
+                "Meetup #44",
+                "2024-08-27",
+                "18:00",
+                "Test Venue 3",
+                "TRUE",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "FALSE",
+            ],
         ]
 
     @pytest.fixture
@@ -59,24 +96,53 @@ class TestGoogleSheetsRepository:
         """Mock data from talks/main sheet."""
         return [
             [
-                "Meetup", "Imię", "Nazwisko", "BIO", "Zdjęcie", "Tytuł prezentacji",
-                "Opis prezentacji", "Język prezentacji", "Link do LinkedIn", "Link do GitHub"
+                "Meetup",
+                "Imię",
+                "Nazwisko",
+                "BIO",
+                "Zdjęcie",
+                "Tytuł prezentacji",
+                "Opis prezentacji",
+                "Język prezentacji",
+                "Link do LinkedIn",
+                "Link do GitHub",
             ],
             [
-                "42", "John", "Doe", "A Python developer", "https://example.com/photo1.jpg",
-                "Introduction to Python", "Learn Python basics", "en",
-                "https://linkedin.com/in/johndoe", "https://github.com/johndoe"
+                "42",
+                "John",
+                "Doe",
+                "A Python developer",
+                "https://example.com/photo1.jpg",
+                "Introduction to Python",
+                "Learn Python basics",
+                "en",
+                "https://linkedin.com/in/johndoe",
+                "https://github.com/johndoe",
             ],
             [
-                "42", "Jane", "Smith", "Data scientist", "https://example.com/photo2.jpg",
-                "Data Science with Python", "Advanced data analysis", "pl",
-                "https://linkedin.com/in/janesmith", ""
+                "42",
+                "Jane",
+                "Smith",
+                "Data scientist",
+                "https://example.com/photo2.jpg",
+                "Data Science with Python",
+                "Advanced data analysis",
+                "pl",
+                "https://linkedin.com/in/janesmith",
+                "",
             ],
             [
-                "44", "Bob", "Wilson", "DevOps engineer", "",
-                "Python in DevOps", "Automation with Python", "pl",
-                "", "https://github.com/bobwilson"
-            ]
+                "44",
+                "Bob",
+                "Wilson",
+                "DevOps engineer",
+                "",
+                "Python in DevOps",
+                "Automation with Python",
+                "pl",
+                "",
+                "https://github.com/bobwilson",
+            ],
         ]
 
     def test_repository_initialization(self, config):
@@ -88,14 +154,16 @@ class TestGoogleSheetsRepository:
             "https://www.googleapis.com/auth/drive.readonly",
         )
 
-    @patch('pyldz.repository.build')
-    @patch('pyldz.repository.GoogleSheetsRepository._get_credentials')
-    def test_fetch_meetups_data(self, mock_get_creds, mock_build, repository, mock_meetups_data):
+    @patch("pyldz.repository.build")
+    @patch("pyldz.repository.GoogleSheetsRepository._get_credentials")
+    def test_fetch_meetups_data(
+        self, mock_get_creds, mock_build, repository, mock_meetups_data
+    ):
         """Test fetching meetups data from sheet."""
         # Setup mocks
         mock_sheets = Mock()
         mock_build.return_value = mock_sheets
-        
+
         mock_sheets.spreadsheets().get().execute.return_value = {
             "sheets": [{"properties": {"title": "meetups"}}]
         }
@@ -113,14 +181,16 @@ class TestGoogleSheetsRepository:
         assert meetups_data[1]["MEETUP_ID"] == "43"
         assert meetups_data[1]["ENABLED"] == "FALSE"
 
-    @patch('pyldz.repository.build')
-    @patch('pyldz.repository.GoogleSheetsRepository._get_credentials')
-    def test_fetch_talks_data(self, mock_get_creds, mock_build, repository, mock_talks_data):
+    @patch("pyldz.repository.build")
+    @patch("pyldz.repository.GoogleSheetsRepository._get_credentials")
+    def test_fetch_talks_data(
+        self, mock_get_creds, mock_build, repository, mock_talks_data
+    ):
         """Test fetching talks data from sheet."""
         # Setup mocks
         mock_sheets = Mock()
         mock_build.return_value = mock_sheets
-        
+
         mock_sheets.spreadsheets().get().execute.return_value = {
             "sheets": [{"properties": {"title": "Sheet1"}}]
         }
@@ -170,10 +240,10 @@ class TestGoogleSheetsRepository:
         assert len(talks_42) == 2
         assert talks_42[0].speaker_id == "john-doe"
         assert talks_42[1].speaker_id == "jane-smith"
-        
+
         assert len(talks_44) == 1
         assert talks_44[0].speaker_id == "bob-wilson"
-        
+
         assert len(talks_99) == 0
 
     def test_get_speakers_for_meetup(self, repository, mock_talks_data):
@@ -193,15 +263,21 @@ class TestGoogleSheetsRepository:
         assert speakers_42[0].name == "John Doe"
         assert speakers_42[1].id == "jane-smith"
         assert speakers_42[1].name == "Jane Smith"
-        
+
         assert len(speakers_44) == 1
         assert speakers_44[0].id == "bob-wilson"
         assert speakers_44[0].name == "Bob Wilson"
 
-    @patch('pyldz.repository.GoogleSheetsRepository.fetch_meetups_data')
-    @patch('pyldz.repository.GoogleSheetsRepository.fetch_talks_data')
-    def test_get_meetup_by_id(self, mock_fetch_talks, mock_fetch_meetups, repository, 
-                              mock_meetups_data, mock_talks_data):
+    @patch("pyldz.repository.GoogleSheetsRepository.fetch_meetups_data")
+    @patch("pyldz.repository.GoogleSheetsRepository.fetch_talks_data")
+    def test_get_meetup_by_id(
+        self,
+        mock_fetch_talks,
+        mock_fetch_meetups,
+        repository,
+        mock_meetups_data,
+        mock_talks_data,
+    ):
         """Test getting specific meetup by ID."""
         # Setup mocks
         header_meetups = mock_meetups_data[0]
@@ -228,10 +304,16 @@ class TestGoogleSheetsRepository:
         assert "sponsor1" in meetup.sponsors
         assert "sponsor2" in meetup.sponsors
 
-    @patch('pyldz.repository.GoogleSheetsRepository.fetch_meetups_data')
-    @patch('pyldz.repository.GoogleSheetsRepository.fetch_talks_data')
-    def test_get_meetup_by_id_disabled(self, mock_fetch_talks, mock_fetch_meetups, repository,
-                                       mock_meetups_data, mock_talks_data):
+    @patch("pyldz.repository.GoogleSheetsRepository.fetch_meetups_data")
+    @patch("pyldz.repository.GoogleSheetsRepository.fetch_talks_data")
+    def test_get_meetup_by_id_disabled(
+        self,
+        mock_fetch_talks,
+        mock_fetch_meetups,
+        repository,
+        mock_meetups_data,
+        mock_talks_data,
+    ):
         """Test getting disabled meetup returns None."""
         # Setup mocks
         header_meetups = mock_meetups_data[0]
@@ -248,10 +330,16 @@ class TestGoogleSheetsRepository:
         # Should return None for disabled meetup
         assert meetup is None
 
-    @patch('pyldz.repository.GoogleSheetsRepository.fetch_meetups_data')
-    @patch('pyldz.repository.GoogleSheetsRepository.fetch_talks_data')
-    def test_get_all_enabled_meetups(self, mock_fetch_talks, mock_fetch_meetups, repository,
-                                     mock_meetups_data, mock_talks_data):
+    @patch("pyldz.repository.GoogleSheetsRepository.fetch_meetups_data")
+    @patch("pyldz.repository.GoogleSheetsRepository.fetch_talks_data")
+    def test_get_all_enabled_meetups(
+        self,
+        mock_fetch_talks,
+        mock_fetch_meetups,
+        repository,
+        mock_meetups_data,
+        mock_talks_data,
+    ):
         """Test getting all enabled meetups."""
         # Setup mocks
         header_meetups = mock_meetups_data[0]
