@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, Field, computed_field, field_validator
 
@@ -34,17 +33,17 @@ class Speaker(BaseModel):
     id: str
     name: str
     bio: str
-    avatar_path: Optional[str] = None
-    social_links: List[SocialLink] = Field(default_factory=list)
+    avatar_path: str | None = None
+    social_links: list[SocialLink] = Field(default_factory=list)
 
 
 class Talk(BaseModel):
     speaker_id: str
     title: str
-    description: Optional[str] = None
-    title_en: Optional[str] = None
+    description: str | None = None
+    title_en: str | None = None
     language: Language = Language.POLISH
-    youtube_id: Optional[str] = None
+    youtube_id: str | None = None
 
 
 class Meetup(BaseModel):
@@ -53,13 +52,13 @@ class Meetup(BaseModel):
     date: datetime.date
     time: str
     location: str
-    talks: List[Talk] = Field(default_factory=list)
-    sponsors: List[str] = Field(default_factory=list)
+    talks: list[Talk] = Field(default_factory=list)
+    sponsors: list[str] = Field(default_factory=list)
     status: MeetupStatus = MeetupStatus.DRAFT
-    meetup_url: Optional[str] = None
-    feedback_url: Optional[str] = None
-    livestream_id: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
+    meetup_url: str | None = None
+    feedback_url: str | None = None
+    livestream_id: str | None = None
+    tags: list[str] = Field(default_factory=list)
     featured: bool = False
 
     @computed_field
@@ -98,11 +97,11 @@ class MeetupSheetRow(BaseModel):
     time: str = Field(alias="TIME")
     location: str = Field(alias="LOCATION")
     enabled: bool = Field(alias="ENABLED")
-    meetup_url: Optional[str] = Field(default=None, alias="MEETUP_URL")
-    feedback_url: Optional[str] = Field(default=None, alias="FEEDBACK_URL")
-    livestream_id: Optional[str] = Field(default=None, alias="LIVESTREAM_ID")
-    sponsors: List[str] = Field(default_factory=list, alias="SPONSORS")
-    tags: List[str] = Field(default_factory=list, alias="TAGS")
+    meetup_url: str | None = Field(default=None, alias="MEETUP_URL")
+    feedback_url: str | None = Field(default=None, alias="FEEDBACK_URL")
+    livestream_id: str | None = Field(default=None, alias="LIVESTREAM_ID")
+    sponsors: list[str] = Field(default_factory=list, alias="SPONSORS")
+    tags: list[str] = Field(default_factory=list, alias="TAGS")
     featured: bool = Field(default=False, alias="FEATURED")
 
     @field_validator("enabled", "featured", mode="before")
@@ -114,7 +113,7 @@ class MeetupSheetRow(BaseModel):
 
     @field_validator("sponsors", "tags", mode="before")
     @classmethod
-    def split_comma_separated_values(cls, v) -> List[str]:
+    def split_comma_separated_values(cls, v) -> list[str]:
         if isinstance(v, str) and v.strip():
             return [item.strip() for item in v.split(",") if item.strip()]
         return []
@@ -126,7 +125,7 @@ class MeetupSheetRow(BaseModel):
             return datetime.datetime.strptime(v, "%Y-%m-%d").date()
         return v
 
-    def to_meetup(self, talks: Optional[List[Talk]] = None) -> Meetup:
+    def to_meetup(self, talks: list[Talk] | None = None) -> Meetup:
         return Meetup(
             number=self.meetup_id,
             title=self.title,
@@ -149,15 +148,15 @@ class TalkSheetRow(BaseModel):
     first_name: str = Field(alias="Imię")
     last_name: str = Field(alias="Nazwisko")
     bio: str = Field(default="", alias="BIO")
-    photo_url: Optional[str] = Field(default=None, alias="Zdjęcie")
+    photo_url: str | None = Field(default=None, alias="Zdjęcie")
     talk_title: str = Field(alias="Tytuł prezentacji")
-    talk_description: Optional[str] = Field(default=None, alias="Opis prezentacji")
-    talk_title_en: Optional[str] = Field(default=None, alias="Tytuł prezentacji EN")
+    talk_description: str | None = Field(default=None, alias="Opis prezentacji")
+    talk_title_en: str | None = Field(default=None, alias="Tytuł prezentacji EN")
     language: str = Field(default="pl", alias="Język prezentacji")
-    linkedin_url: Optional[str] = Field(default=None, alias="Link do LinkedIn")
-    github_url: Optional[str] = Field(default=None, alias="Link do GitHub")
-    twitter_url: Optional[str] = Field(default=None, alias="Link do Twitter")
-    website_url: Optional[str] = Field(default=None, alias="Link do strony")
+    linkedin_url: str | None = Field(default=None, alias="Link do LinkedIn")
+    github_url: str | None = Field(default=None, alias="Link do GitHub")
+    twitter_url: str | None = Field(default=None, alias="Link do Twitter")
+    website_url: str | None = Field(default=None, alias="Link do strony")
 
     @field_validator("bio", "talk_description", mode="before")
     @classmethod
@@ -205,7 +204,7 @@ class TalkSheetRow(BaseModel):
             social_links=self._build_social_links(),
         )
 
-    def _build_social_links(self) -> List[SocialLink]:
+    def _build_social_links(self) -> list[SocialLink]:
         social_links = []
 
         if self.linkedin_url:
