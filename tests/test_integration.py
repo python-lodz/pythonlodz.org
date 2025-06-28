@@ -190,8 +190,10 @@ def test_complete_data_flow_single_meetup(
     assert meetup.location == "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska"
     assert meetup.featured is True
     assert meetup.status == MeetupStatus.PUBLISHED
-    assert meetup.meetup_url == "https://www.meetup.com/python-lodz/events/306971418/"
-    assert meetup.feedback_url == "https://forms.gle/237YJFHy6G1jw9999"
+    assert (
+        str(meetup.meetup_url) == "https://www.meetup.com/python-lodz/events/306971418/"
+    )
+    assert str(meetup.feedback_url) == "https://forms.gle/237YJFHy6G1jw9999"
     assert meetup.livestream_id == "b1rlgmlVHQo"
     assert "indiebi" in meetup.sponsors
     assert "sunscrapers" in meetup.sponsors
