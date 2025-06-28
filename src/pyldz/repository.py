@@ -1,5 +1,3 @@
-"""Google Sheets repository for fetching meetup data."""
-
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -15,10 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class GoogleSheetsRepository:
-    """Repository for fetching data from Google Sheets."""
-
     def __init__(self, config: GoogleSheetsConfig):
-        """Initialize repository with configuration."""
         self.config = config
         self.scopes = (
             "https://www.googleapis.com/auth/spreadsheets.readonly",
@@ -26,7 +21,6 @@ class GoogleSheetsRepository:
         )
 
     def _get_credentials(self) -> Credentials:
-        """Get Google API credentials."""
         if not self.config.credentials_path.exists():
             raise FileNotFoundError(
                 f"Credentials file not found: {self.config.credentials_path}"
@@ -34,7 +28,6 @@ class GoogleSheetsRepository:
 
         credentials = None
 
-        # Load existing token
         if self.config.token_cache_path.exists():
             credentials = Credentials.from_authorized_user_file(
                 str(self.config.token_cache_path), self.scopes
@@ -42,19 +35,16 @@ class GoogleSheetsRepository:
             if credentials and credentials.expired and credentials.refresh_token:
                 credentials.refresh(Request())
 
-        # Get new credentials if needed
         if credentials is None or not credentials.valid:
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(self.config.credentials_path), self.scopes
             )
             credentials = flow.run_local_server(port=0)
 
-        # Save token
         self.config.token_cache_path.write_text(credentials.to_json())
         return credentials
 
     def _fetch_sheet_data(self, sheet_name: str) -> List[List[str]]:
-        """Fetch data from a specific sheet."""
         try:
             credentials = self._get_credentials()
             sheets = build(
@@ -81,18 +71,15 @@ class GoogleSheetsRepository:
             return []
 
     def fetch_meetups_data(self) -> List[Dict[str, Any]]:
-        """Fetch meetups data from the meetups sheet."""
         rows = self._fetch_sheet_data(self.config.meetups_sheet_name)
 
         if not rows:
             return []
 
-        # Convert to list of dictionaries
         header = rows[0]
         meetups_data = []
 
         for row in rows[1:]:
-            # Pad row to match header length
             padded_row = row + [""] * (len(header) - len(row))
             meetup_dict = dict(zip(header, padded_row))
             meetups_data.append(meetup_dict)
@@ -100,22 +87,18 @@ class GoogleSheetsRepository:
         return meetups_data
 
     def fetch_talks_data(self) -> List[Dict[str, Any]]:
-        """Fetch talks data from the main sheet."""
         rows = self._fetch_sheet_data(self.config.talks_sheet_name)
 
         if not rows:
             return []
 
-        # Convert to list of dictionaries
         header = rows[0]
         talks_data = []
 
         for row in rows[1:]:
-            # Pad row to match header length
             padded_row = row + [""] * (len(header) - len(row))
             talk_dict = dict(zip(header, padded_row))
 
-            # Only include rows with meetup number
             if talk_dict.get("Meetup"):
                 talks_data.append(talk_dict)
 
@@ -124,7 +107,6 @@ class GoogleSheetsRepository:
     def get_enabled_meetups(
         self, meetups_data: List[Dict[str, Any]]
     ) -> List[MeetupSheetRow]:
-        """Filter and parse enabled meetups."""
         enabled_meetups = []
 
         for meetup_data in meetups_data:
@@ -141,7 +123,6 @@ class GoogleSheetsRepository:
     def get_talks_for_meetup(
         self, meetup_id: str, talks_data: List[Dict[str, Any]]
     ) -> List[Talk]:
-        """Get talks for a specific meetup."""
         talks = []
 
         for talk_data in talks_data:
@@ -159,7 +140,6 @@ class GoogleSheetsRepository:
     def get_speakers_for_meetup(
         self, meetup_id: str, talks_data: List[Dict[str, Any]]
     ) -> List[Speaker]:
-        """Get speakers for a specific meetup."""
         speakers = []
         seen_speaker_ids = set()
 
@@ -168,7 +148,6 @@ class GoogleSheetsRepository:
                 try:
                     talk_row = TalkSheetRow.model_validate(talk_data)
 
-                    # Avoid duplicate speakers
                     if talk_row.speaker_id not in seen_speaker_ids:
                         speaker = talk_row.to_speaker()
                         speakers.append(speaker)
@@ -183,13 +162,11 @@ class GoogleSheetsRepository:
         return speakers
 
     def get_meetup_by_id(self, meetup_id: str) -> Optional[Meetup]:
-        """Get a specific meetup by ID (only if enabled)."""
         meetups_data = self.fetch_meetups_data()
         talks_data = self.fetch_talks_data()
 
         enabled_meetups = self.get_enabled_meetups(meetups_data)
 
-        # Find the specific meetup
         meetup_row = None
         for meetup in enabled_meetups:
             if meetup.meetup_id == meetup_id:
@@ -199,14 +176,11 @@ class GoogleSheetsRepository:
         if not meetup_row:
             return None
 
-        # Get talks for this meetup
         talks = self.get_talks_for_meetup(meetup_id, talks_data)
 
-        # Convert to Meetup entity
         return meetup_row.to_meetup(talks)
 
     def get_all_enabled_meetups(self) -> List[Meetup]:
-        """Get all enabled meetups with their talks."""
         meetups_data = self.fetch_meetups_data()
         talks_data = self.fetch_talks_data()
 
@@ -221,7 +195,6 @@ class GoogleSheetsRepository:
         return meetups
 
     def get_all_speakers(self) -> List[Speaker]:
-        """Get all unique speakers from enabled meetups."""
         talks_data = self.fetch_talks_data()
         meetups_data = self.fetch_meetups_data()
 
@@ -237,7 +210,6 @@ class GoogleSheetsRepository:
                 try:
                     talk_row = TalkSheetRow.model_validate(talk_data)
 
-                    # Avoid duplicate speakers
                     if talk_row.speaker_id not in seen_speaker_ids:
                         speaker = talk_row.to_speaker()
                         speakers.append(speaker)

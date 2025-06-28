@@ -1,5 +1,3 @@
-"""Pydantic models for Python Łódź Hugo Generator v2."""
-
 import datetime as dt
 from enum import Enum
 from typing import List, Optional
@@ -8,34 +6,29 @@ from pydantic import BaseModel, Field, computed_field, field_validator
 
 
 class Language(str, Enum):
-    """Supported languages for talks."""
     POLISH = "pl"
     ENGLISH = "en"
 
 
 class MeetupStatus(str, Enum):
-    """Meetup status."""
     DRAFT = "draft"
     PUBLISHED = "published"
     CANCELLED = "cancelled"
 
 
 class SocialLink(BaseModel):
-    """Social media link."""
     platform: str
     url: str
 
-    @field_validator('url')
+    @field_validator("url")
     @classmethod
-    def validate_url(cls, v: str) -> str:
-        """Validate URL format."""
-        if not v.startswith(('http://', 'https://')):
-            raise ValueError('URL must start with http:// or https://')
+    def ensure_url_has_protocol(cls, v: str) -> str:
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("URL must start with http:// or https://")
         return v
 
 
 class Speaker(BaseModel):
-    """Speaker entity."""
     id: str
     name: str
     bio: str
@@ -44,7 +37,6 @@ class Speaker(BaseModel):
 
 
 class Talk(BaseModel):
-    """Talk entity."""
     speaker_id: str
     title: str
     description: Optional[str] = None
@@ -54,7 +46,6 @@ class Talk(BaseModel):
 
 
 class Meetup(BaseModel):
-    """Meetup entity."""
     number: str
     title: str
     date: dt.date
@@ -72,19 +63,19 @@ class Meetup(BaseModel):
     @computed_field
     @property
     def has_talks(self) -> bool:
-        """Check if meetup has any talks."""
         return len(self.talks) > 0
 
     @computed_field
     @property
     def talk_count(self) -> int:
-        """Return number of talks."""
         return len(self.talks)
 
     @computed_field
     @property
     def formatted_date_polish(self) -> str:
-        """Return formatted date in Polish."""
+        return self._format_date_with_polish_day_name()
+
+    def _format_date_with_polish_day_name(self) -> str:
         polish_days = {
             0: "PONIEDZIAŁEK",
             1: "WTOREK",
@@ -92,14 +83,13 @@ class Meetup(BaseModel):
             3: "CZWARTEK",
             4: "PIĄTEK",
             5: "SOBOTA",
-            6: "NIEDZIELA"
+            6: "NIEDZIELA",
         }
         day_name = polish_days[self.date.weekday()]
         return f"{day_name} {self.date.strftime('%d.%m.%Y')}r. godz. {self.time}"
 
 
 class MeetupSheetRow(BaseModel):
-    """Model for parsing meetup data from the 'meetups' sheet tab."""
     meetup_id: str = Field(alias="MEETUP_ID")
     title: str = Field(alias="TITLE")
     date: dt.date = Field(alias="DATE")
@@ -113,32 +103,28 @@ class MeetupSheetRow(BaseModel):
     tags: List[str] = Field(default_factory=list, alias="TAGS")
     featured: bool = Field(default=False, alias="FEATURED")
 
-    @field_validator('enabled', 'featured', mode='before')
+    @field_validator("enabled", "featured", mode="before")
     @classmethod
-    def parse_boolean(cls, v) -> bool:
-        """Parse boolean values from sheet (TRUE/FALSE strings)."""
+    def convert_sheet_boolean_strings(cls, v) -> bool:
         if isinstance(v, str):
             return v.upper() == "TRUE"
         return bool(v)
 
-    @field_validator('sponsors', 'tags', mode='before')
+    @field_validator("sponsors", "tags", mode="before")
     @classmethod
-    def parse_comma_separated(cls, v) -> List[str]:
-        """Parse comma-separated values from sheet."""
+    def split_comma_separated_values(cls, v) -> List[str]:
         if isinstance(v, str) and v.strip():
-            return [item.strip() for item in v.split(',') if item.strip()]
+            return [item.strip() for item in v.split(",") if item.strip()]
         return []
 
-    @field_validator('date', mode='before')
+    @field_validator("date", mode="before")
     @classmethod
-    def parse_date(cls, v) -> dt.date:
-        """Parse date from string."""
+    def convert_string_to_date(cls, v) -> dt.date:
         if isinstance(v, str):
-            return dt.datetime.strptime(v, '%Y-%m-%d').date()
+            return dt.datetime.strptime(v, "%Y-%m-%d").date()
         return v
 
     def to_meetup(self, talks: List[Talk] = None) -> Meetup:
-        """Convert to Meetup entity."""
         return Meetup(
             number=self.meetup_id,
             title=self.title,
@@ -152,12 +138,11 @@ class MeetupSheetRow(BaseModel):
             livestream_id=self.livestream_id,
             tags=self.tags,
             featured=self.featured,
-            status=MeetupStatus.PUBLISHED if self.enabled else MeetupStatus.DRAFT
+            status=MeetupStatus.PUBLISHED if self.enabled else MeetupStatus.DRAFT,
         )
 
 
 class TalkSheetRow(BaseModel):
-    """Model for parsing talk/speaker data from the main sheet tab."""
     meetup: str = Field(alias="Meetup")
     first_name: str = Field(alias="Imię")
     last_name: str = Field(alias="Nazwisko")
@@ -172,18 +157,16 @@ class TalkSheetRow(BaseModel):
     twitter_url: Optional[str] = Field(default=None, alias="Link do Twitter")
     website_url: Optional[str] = Field(default=None, alias="Link do strony")
 
-    @field_validator('bio', 'talk_description', mode='before')
+    @field_validator("bio", "talk_description", mode="before")
     @classmethod
-    def clean_text(cls, v) -> str:
-        """Clean text fields."""
+    def strip_text_fields(cls, v) -> str:
         if v is None:
             return ""
         return str(v).strip()
 
-    @field_validator('language', mode='before')
+    @field_validator("language", mode="before")
     @classmethod
-    def normalize_language(cls, v) -> str:
-        """Normalize language code."""
+    def convert_to_language_code(cls, v) -> str:
         if v is None or str(v).strip() == "":
             return "pl"
         lang = str(v).strip().lower()
@@ -194,25 +177,33 @@ class TalkSheetRow(BaseModel):
     @computed_field
     @property
     def full_name(self) -> str:
-        """Get full speaker name."""
         return f"{self.first_name} {self.last_name}".strip()
 
     @computed_field
     @property
     def speaker_id(self) -> str:
-        """Generate speaker ID from name."""
+        return self._generate_speaker_id_from_name()
+
+    def _generate_speaker_id_from_name(self) -> str:
         import re
 
         from unidecode import unidecode
 
         name = self.full_name.lower()
         name = unidecode(name)
-        name = re.sub(r'[^a-z0-9\s-]', '', name)
-        name = re.sub(r'\s+', '-', name)
-        return name.strip('-')
+        name = re.sub(r"[^a-z0-9\s-]", "", name)
+        name = re.sub(r"\s+", "-", name)
+        return name.strip("-")
 
     def to_speaker(self) -> Speaker:
-        """Convert to Speaker entity."""
+        return Speaker(
+            id=self.speaker_id,
+            name=self.full_name,
+            bio=self.bio,
+            social_links=self._build_social_links(),
+        )
+
+    def _build_social_links(self) -> List[SocialLink]:
         social_links = []
 
         if self.linkedin_url:
@@ -224,19 +215,13 @@ class TalkSheetRow(BaseModel):
         if self.website_url:
             social_links.append(SocialLink(platform="website", url=self.website_url))
 
-        return Speaker(
-            id=self.speaker_id,
-            name=self.full_name,
-            bio=self.bio,
-            social_links=social_links
-        )
+        return social_links
 
     def to_talk(self) -> Talk:
-        """Convert to Talk entity."""
         return Talk(
             speaker_id=self.speaker_id,
             title=self.talk_title,
             description=self.talk_description,
             title_en=self.talk_title_en,
-            language=Language.ENGLISH if self.language == "en" else Language.POLISH
+            language=Language.ENGLISH if self.language == "en" else Language.POLISH,
         )
