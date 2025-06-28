@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from rich.console import Console
 from rich.logging import RichHandler
@@ -11,7 +10,7 @@ def setup_logging(
     show_time: bool = True,
     show_path: bool = False,
     enable_rich_tracebacks: bool = True,
-    console: Optional[Console] = None,
+    console: Console | None = None,
 ) -> None:
     """
     Set up logging with rich formatting.
