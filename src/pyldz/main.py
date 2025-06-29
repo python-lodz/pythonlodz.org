@@ -5,13 +5,13 @@ import sys
 
 from pyldz.config import AppConfig
 from pyldz.logging_config import setup_logging
-from pyldz.meetup import GoogleSheetsRepository
+from pyldz.meetup import GoogleSheetsRepository, Meetup, Speaker
 
 log = logging.getLogger(__name__)
 
 
-def display_meetup_summary(meetup):
-    log.info("📅 Meetup #%s: %s", meetup.number, meetup.title)
+def display_meetup_summary(meetup: Meetup):
+    log.info("📅 Meetup #%s: %s", meetup.meetup_id, meetup.title)
     log.info("   📍 Location: %s", meetup.location)
     log.info("   🗓️  Date: %s at %s", meetup.date, meetup.time)
     log.info("   🎤 Talks: %d", meetup.talk_count)
@@ -28,14 +28,14 @@ def display_meetup_summary(meetup):
     _display_meetup_talks(meetup)
 
 
-def _display_meetup_talks(meetup):
+def _display_meetup_talks(meetup: Meetup):
     for i, talk in enumerate(meetup.talks, 1):
         log.info("   Talk %d: %s (Speaker: %s)", i, talk.title, talk.speaker_id)
         if talk.language.value == "en":
             log.info("           Language: English")
 
 
-def display_speaker_summary(speaker):
+def display_speaker_summary(speaker: Speaker):
     log.info("👤 %s (ID: %s)", speaker.name, speaker.id)
     if speaker.bio:
         bio_preview = _truncate_bio_for_summary(speaker.bio)
@@ -81,7 +81,7 @@ def _create_repository(config):
     return GoogleSheetsRepository(config.google_sheets)
 
 
-def _fetch_and_validate_meetups(repository):
+def _fetch_and_validate_meetups(repository: GoogleSheetsRepository) -> list[Meetup]:
     log.info("📊 Fetching enabled meetups...")
     meetups = repository.get_all_enabled_meetups()
 
@@ -102,7 +102,7 @@ def _display_all_meetups(meetups):
         log.info("")
 
 
-def _display_all_speakers(repository):
+def _display_all_speakers(repository: GoogleSheetsRepository):
     log.info("👥 SPEAKERS:")
     log.info("-" * 30)
     speakers = repository.get_all_speakers()
