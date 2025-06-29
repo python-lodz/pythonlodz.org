@@ -1,14 +1,24 @@
 from __future__ import annotations
 
 import datetime
-from enum import Enum
+import logging
+from enum import Enum, StrEnum
+from typing import Any
 
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 from pydantic import AnyHttpUrl, BaseModel, Field, computed_field, field_validator
+
+from pyldz.config import GoogleSheetsConfig
+
+log = logging.getLogger(__name__)
 
 
 class Language(str, Enum):
-    POLISH = "pl"
-    ENGLISH = "en"
+    PL = "PL"
+    EN = "EN"
 
 
 class MeetupStatus(str, Enum):
@@ -26,27 +36,27 @@ class Speaker(BaseModel):
     id: str
     name: str
     bio: str
-    avatar_path: AnyHttpUrl | None = None
-    social_links: list[SocialLink] = Field(default_factory=list)
+    avatar_path: AnyHttpUrl
+    social_links: list[SocialLink]
 
 
 class Talk(BaseModel):
     speaker_id: str
     title: str
-    description: str | None = None
-    title_en: str | None = None
-    language: Language = Language.POLISH
+    description: str
+    language: Language
+    title_en: str | None
     youtube_id: str | None = None
 
 
 class Meetup(BaseModel):
-    number: str
+    meetup_id: str
     title: str
     date: datetime.date
     time: str
     location: str
-    talks: list[Talk] = Field(default_factory=list)
-    sponsors: list[str] = Field(default_factory=list)
+    talks: list[Talk]
+    sponsors: list[str]
     status: MeetupStatus = MeetupStatus.DRAFT
     meetup_url: AnyHttpUrl | None = None
     feedback_url: AnyHttpUrl | None = None
@@ -83,51 +93,45 @@ class Meetup(BaseModel):
         return f"{day_name} {self.date.strftime('%d.%m.%Y')}r. godz. {self.time}"
 
 
-class MeetupSheetRow(BaseModel):
-    meetup_id: str = Field(alias="MEETUP_ID")
-    title: str = Field(alias="TITLE")
-    date: datetime.date = Field(alias="DATE")
-    time: str = Field(alias="TIME")
-    location: str = Field(alias="LOCATION")
-    enabled: bool = Field(alias="ENABLED")
-    meetup_url: AnyHttpUrl | None = Field(default=None, alias="MEETUP_URL")
-    feedback_url: AnyHttpUrl | None = Field(default=None, alias="FEEDBACK_URL")
-    livestream_id: str | None = Field(default=None, alias="LIVESTREAM_ID")
-    sponsors: list[str] = Field(default_factory=list, alias="SPONSORS")
-    tags: list[str] = Field(default_factory=list, alias="TAGS")
-    featured: bool = Field(default=False, alias="FEATURED")
+class MeetupType(StrEnum):
+    TALKS = "talks"
+    SUMMER_EDITION = "summer_edition"
 
-    @field_validator("enabled", "featured", mode="before")
-    @classmethod
-    def convert_sheet_boolean_strings(cls, v) -> bool:
-        if isinstance(v, str):
-            return v.upper() == "TRUE"
-        return bool(v)
 
-    @field_validator("sponsors", "tags", mode="before")
+class _MeetupSheetRow(BaseModel):
+    meetup_id: str
+    type: MeetupType
+    date: datetime.date
+    time: str = "18:00"
+    location: str
+    enabled: bool
+    sponsors: list[str]
+    meetup_url: AnyHttpUrl | None
+    feedback_url: AnyHttpUrl | None
+    livestream_id: str | None
+
+    @computed_field
+    @property
+    def title(self) -> str:
+        return f"Meetup {self.meetup_id}"
+
+    @field_validator("sponsors", mode="before")
     @classmethod
     def split_comma_separated_values(cls, v) -> list[str]:
         if isinstance(v, str) and v.strip():
             return [item.strip() for item in v.split(",") if item.strip()]
         return []
 
-    @field_validator("meetup_url", "feedback_url", mode="before")
+    @field_validator("meetup_url", "feedback_url", "livestream_id", mode="before")
     @classmethod
     def convert_empty_string_to_none(cls, v) -> str | None:
         if isinstance(v, str) and v.strip() == "":
             return None
         return v
 
-    @field_validator("date", mode="before")
-    @classmethod
-    def convert_string_to_date(cls, v) -> datetime.date:
-        if isinstance(v, str):
-            return datetime.datetime.strptime(v, "%Y-%m-%d").date()
-        return v
-
     def to_meetup(self, talks: list[Talk] | None = None) -> Meetup:
         return Meetup(
-            number=self.meetup_id,
+            meetup_id=self.meetup_id,
             title=self.title,
             date=self.date,
             time=self.time,
@@ -137,43 +141,31 @@ class MeetupSheetRow(BaseModel):
             meetup_url=self.meetup_url,
             feedback_url=self.feedback_url,
             livestream_id=self.livestream_id,
-            tags=self.tags,
-            featured=self.featured,
             status=MeetupStatus.PUBLISHED if self.enabled else MeetupStatus.DRAFT,
         )
 
 
-class TalkSheetRow(BaseModel):
-    meetup: str = Field(alias="Meetup")
-    first_name: str = Field(alias="Imię")
-    last_name: str = Field(alias="Nazwisko")
-    bio: str = Field(default="", alias="BIO")
-    photo_url: AnyHttpUrl | None = Field(default=None, alias="Zdjęcie")
-    talk_title: str = Field(alias="Tytuł prezentacji")
-    talk_description: str | None = Field(default=None, alias="Opis prezentacji")
-    talk_title_en: str | None = Field(default=None, alias="Tytuł prezentacji EN")
-    language: str = Field(default="pl", alias="Język prezentacji")
-    linkedin_url: AnyHttpUrl | None = Field(default=None, alias="Link do LinkedIn")
-    github_url: AnyHttpUrl | None = Field(default=None, alias="Link do GitHub")
-    twitter_url: AnyHttpUrl | None = Field(default=None, alias="Link do Twitter")
-    website_url: AnyHttpUrl | None = Field(default=None, alias="Link do strony")
+class _TalkSheetRow(BaseModel):
+    meetup_id: str
+    first_name: str
+    last_name: str
+    bio: str
+    photo_url: AnyHttpUrl
+    talk_title: str
+    talk_description: str
+    language: str
+    talk_title_en: str | None
+    facebook_url: AnyHttpUrl | None
+    linkedin_url: AnyHttpUrl | None
+    youtube_url: AnyHttpUrl | None
+    other_urls: list[AnyHttpUrl] = []
 
-    @field_validator("bio", "talk_description", mode="before")
+    @field_validator("talk_title_en", "talk_description", mode="before")
     @classmethod
     def strip_text_fields(cls, v) -> str:
         if v is None:
             return ""
         return str(v).strip()
-
-    @field_validator("language", mode="before")
-    @classmethod
-    def convert_to_language_code(cls, v) -> str:
-        if v is None or str(v).strip() == "":
-            return "pl"
-        lang = str(v).strip().lower()
-        if lang in ["en", "english", "ang"]:
-            return "en"
-        return "pl"
 
     @computed_field
     @property
@@ -201,15 +193,15 @@ class TalkSheetRow(BaseModel):
             id=self.speaker_id,
             name=self.full_name,
             bio=self.bio,
+            avatar_path=self.photo_url,
             social_links=self._build_social_links(),
         )
 
     @field_validator(
-        "photo_url",
+        "talk_title_en",
+        "facebook_url",
         "linkedin_url",
-        "github_url",
-        "twitter_url",
-        "website_url",
+        "youtube_url",
         mode="before",
     )
     @classmethod
@@ -218,17 +210,25 @@ class TalkSheetRow(BaseModel):
             return None
         return v
 
+    @field_validator("other_urls", mode="before")
+    @classmethod
+    def split_comma_separated_values(cls, v) -> list[str]:
+        if isinstance(v, str) and v.strip():
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return []
+
     def _build_social_links(self) -> list[SocialLink]:
         social_links = []
 
+        if self.facebook_url:
+            social_links.append(SocialLink(platform="facebook", url=self.facebook_url))
         if self.linkedin_url:
             social_links.append(SocialLink(platform="linkedin", url=self.linkedin_url))
-        if self.github_url:
-            social_links.append(SocialLink(platform="github", url=self.github_url))
-        if self.twitter_url:
-            social_links.append(SocialLink(platform="twitter", url=self.twitter_url))
-        if self.website_url:
-            social_links.append(SocialLink(platform="website", url=self.website_url))
+        if self.youtube_url:
+            social_links.append(SocialLink(platform="youtube", url=self.youtube_url))
+
+        for other in self.other_urls:
+            social_links.append(SocialLink(platform="website", url=other))
 
         return social_links
 
@@ -238,5 +238,173 @@ class TalkSheetRow(BaseModel):
             title=self.talk_title,
             description=self.talk_description,
             title_en=self.talk_title_en,
-            language=Language.ENGLISH if self.language == "en" else Language.POLISH,
+            language=Language.EN if self.language == "en" else Language.PL,
         )
+
+
+class GoogleSheetsRepository:
+    def __init__(self, config: GoogleSheetsConfig):
+        self.config = config
+        self.scopes = (
+            "https://www.googleapis.com/auth/spreadsheets.readonly",
+            "https://www.googleapis.com/auth/drive.readonly",
+        )
+
+    def _get_credentials(self) -> Credentials:
+        if not self.config.credentials_path.exists():
+            raise FileNotFoundError(
+                f"Credentials file not found: {self.config.credentials_path}"
+            )
+
+        credentials = None
+
+        if self.config.token_cache_path.exists():
+            credentials = Credentials.from_authorized_user_file(
+                str(self.config.token_cache_path), self.scopes
+            )
+            if credentials and credentials.expired and credentials.refresh_token:
+                credentials.refresh(Request())
+
+        if credentials is None or not credentials.valid:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                str(self.config.credentials_path), self.scopes
+            )
+            credentials = flow.run_local_server(port=0)
+
+        self.config.token_cache_path.write_text(credentials.to_json())
+        return credentials
+
+    def _fetch_sheet_data(self, sheet_name: str) -> list[dict]:
+        credentials = self._get_credentials()
+        sheets = build("sheets", "v4", credentials=credentials, cache_discovery=False)
+
+        range_name = f"{sheet_name}!A1:ZZ"
+
+        sheet_result = (
+            sheets.spreadsheets()
+            .values()
+            .get(
+                spreadsheetId=self.config.sheet_id,
+                range=range_name,
+                majorDimension="ROWS",
+            )
+            .execute()
+        )
+
+        raw_rows = sheet_result.get("values", [])
+
+        header: dict = raw_rows[0]
+        result: list[dict] = []
+
+        for row in raw_rows[1:]:
+            padded_row = row + [""] * (len(header) - len(row))
+            result.append(dict(zip(header, padded_row)))
+
+        return result
+
+    def fetch_meetups_data(self) -> list[_MeetupSheetRow]:
+        rows = self._fetch_sheet_data(self.config.meetups_sheet_name)
+        return [_MeetupSheetRow.model_validate(row) for row in rows]
+
+    def fetch_talks_data(self) -> list[_TalkSheetRow]:
+        rows = self._fetch_sheet_data(self.config.talks_sheet_name)
+        return [_TalkSheetRow.model_validate(row) for row in rows]
+
+    def _get_enabled_meetups(
+        self, meetups_data: list[dict[str, Any]]
+    ) -> list[_MeetupSheetRow]:
+        enabled_meetups = []
+
+        for meetup_data in meetups_data:
+            meetup_row = _MeetupSheetRow.model_validate(meetup_data)
+            if meetup_row.enabled:
+                enabled_meetups.append(meetup_row)
+
+        return enabled_meetups
+
+    def _get_talks_for_meetup(
+        self, meetup_id: str, talks_data: list[_TalkSheetRow]
+    ) -> list[Talk]:
+        return [
+            talk_row.to_talk()
+            for talk_row in talks_data
+            if talk_row.meetup_id == meetup_id
+        ]
+
+    def get_speakers_for_meetup(
+        self, meetup_id: str, talks_data: list[dict[str, Any]]
+    ) -> list[Speaker]:
+        speakers = []
+        seen_speaker_ids = set()
+
+        for talk_data in talks_data:
+            if talk_data.get("Meetup") == meetup_id:
+                try:
+                    talk_row = _TalkSheetRow.model_validate(talk_data)
+
+                    if talk_row.speaker_id not in seen_speaker_ids:
+                        speaker = talk_row.to_speaker()
+                        speakers.append(speaker)
+                        seen_speaker_ids.add(talk_row.speaker_id)
+
+                except Exception as e:
+                    log.error(
+                        "Error parsing speaker data for meetup %s: %s", meetup_id, e
+                    )
+                    continue
+
+        return speakers
+
+    def get_meetup_by_id(self, meetup_id: str) -> Meetup | None:
+        meetups_data: list[_MeetupSheetRow] = self.fetch_meetups_data()
+
+        meetup: _MeetupSheetRow | None = next(
+            filter(lambda m: m.meetup_id == meetup_id, meetups_data), None
+        )
+        if not meetup or not meetup.enabled:
+            return None
+
+        talks_data: list[_TalkSheetRow] = self.fetch_talks_data()
+
+        talks = self._get_talks_for_meetup(meetup_id, talks_data)
+
+        return meetup.to_meetup(talks)
+
+    def get_all_enabled_meetups(self) -> list[Meetup]:
+        meetups_data: list[_MeetupSheetRow] = self.fetch_meetups_data()
+        talks_data: list[_TalkSheetRow] = self.fetch_talks_data()
+
+        meetups = []
+        for meetup_row in meetups_data:
+            if not meetup_row.enabled:
+                continue
+
+            talks: list[Talk] = self._get_talks_for_meetup(
+                meetup_row.meetup_id, talks_data
+            )
+            meetup = meetup_row.to_meetup(talks)
+            meetups.append(meetup)
+
+        return meetups
+
+    def get_all_speakers(self) -> list[Speaker]:
+        talks_data = self.fetch_talks_data()
+        meetups_data = self.fetch_meetups_data()
+
+        enabled_meetup_ids = {
+            meetup.meetup_id for meetup in meetups_data if meetup.enabled
+        }
+
+        speakers = []
+        seen_speaker_ids = set()
+
+        for talk_data in talks_data:
+            if talk_data.meetup_id in enabled_meetup_ids:
+                talk_row = _TalkSheetRow.model_validate(talk_data)
+
+                if talk_row.speaker_id not in seen_speaker_ids:
+                    speaker = talk_row.to_speaker()
+                    speakers.append(speaker)
+                    seen_speaker_ids.add(talk_row.speaker_id)
+
+        return speakers

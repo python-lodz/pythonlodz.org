@@ -4,9 +4,9 @@ from datetime import date
 
 from pyldz.models import (
     Meetup,
-    MeetupSheetRow,
     Talk,
-    TalkSheetRow,
+    _MeetupSheetRow,
+    _TalkSheetRow,
 )
 
 
@@ -14,7 +14,7 @@ def test_meetup_properties():
     """Test meetup computed properties."""
     talk = Talk(speaker_id="john-doe", title="Test Talk")
     meetup = Meetup(
-        number="42",
+        meetup_id="42",
         title="Meetup #42",
         date=date(2024, 6, 27),
         time="18:00",
@@ -25,7 +25,7 @@ def test_meetup_properties():
     assert meetup.talk_count == 1
 
     empty_meetup = Meetup(
-        number="43",
+        meetup_id="43",
         title="Meetup #43",
         date=date(2024, 6, 27),
         time="18:00",
@@ -52,7 +52,7 @@ def test_parse_enabled_meetup():
         "FEATURED": "TRUE",
     }
 
-    row = MeetupSheetRow.model_validate(data)
+    row = _MeetupSheetRow.model_validate(data)
     assert row.meetup_id == "42"
     assert row.title == "Meetup #42"
     assert row.date == date(2024, 6, 27)
@@ -75,7 +75,7 @@ def test_parse_disabled_meetup():
         "ENABLED": "FALSE",
     }
 
-    row = MeetupSheetRow.model_validate(data)
+    row = _MeetupSheetRow.model_validate(data)
     assert row.enabled is False
 
 
@@ -99,8 +99,8 @@ def test_filter_enabled_meetups():
         "ENABLED": "FALSE",
     }
 
-    enabled_row = MeetupSheetRow.model_validate(enabled_data)
-    disabled_row = MeetupSheetRow.model_validate(disabled_data)
+    enabled_row = _MeetupSheetRow.model_validate(enabled_data)
+    disabled_row = _MeetupSheetRow.model_validate(disabled_data)
 
     all_rows = [enabled_row, disabled_row]
     enabled_only = [row for row in all_rows if row.enabled]
@@ -124,8 +124,8 @@ def test_parse_talk_from_sheet():
         "Link do GitHub": "https://github.com/johndoe",
     }
 
-    row = TalkSheetRow.model_validate(data)
-    assert row.meetup == "42"
+    row = _TalkSheetRow.model_validate(data)
+    assert row.meetup_id == "42"
     assert row.first_name == "John"
     assert row.last_name == "Doe"
     assert row.bio == "A Python developer"
@@ -146,8 +146,8 @@ def test_parse_talk_minimal_data():
         "Tytuł prezentacji": "Introduction to Python",
     }
 
-    row = TalkSheetRow.model_validate(data)
-    assert row.meetup == "42"
+    row = _TalkSheetRow.model_validate(data)
+    assert row.meetup_id == "42"
     assert row.first_name == "John"
     assert row.last_name == "Doe"
     assert row.talk_title == "Introduction to Python"

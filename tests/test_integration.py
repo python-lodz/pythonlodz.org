@@ -216,7 +216,7 @@ def test_complete_data_flow_single_meetup(
         talk1.title_en
         == "Python Config That Will Give You Chills (In a Good Way, I Promise!)"
     )
-    assert talk1.language == Language.POLISH
+    assert talk1.language == Language.PL
     assert "Konfiguracja — wszyscy jej potrzebujemy" in talk1.description
 
     # Second talk - Sebastian
@@ -226,7 +226,7 @@ def test_complete_data_flow_single_meetup(
         talk2.title
         == "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔"
     )
-    assert talk2.language == Language.POLISH
+    assert talk2.language == Language.PL
 
     # Verify computed properties
     assert meetup.has_talks is True
@@ -375,7 +375,7 @@ def test_error_handling_and_resilience(mock_get_creds, mock_build, repository):
 def test_model_integration_and_validation():
     """Test that models work correctly together in integration scenarios."""
     # Test creating a complete meetup with talks and speakers
-    from pyldz.models import MeetupSheetRow, TalkSheetRow
+    from pyldz.meetup import _MeetupSheetRow, _TalkSheetRow
 
     # Test talk sheet row parsing
     talk_data = {
@@ -387,7 +387,7 @@ def test_model_integration_and_validation():
         "Język prezentacji": "en",
     }
 
-    talk_row = TalkSheetRow.model_validate(talk_data)
+    talk_row = _TalkSheetRow.model_validate(talk_data)
     speaker = talk_row.to_speaker()
     talk = talk_row.to_talk()
 
@@ -401,12 +401,12 @@ def test_model_integration_and_validation():
         "ENABLED": "TRUE",
     }
 
-    meetup_row = MeetupSheetRow.model_validate(meetup_data)
+    meetup_row = _MeetupSheetRow.model_validate(meetup_data)
     meetup = meetup_row.to_meetup([talk])
 
     # Verify integration
-    assert meetup.number == "42"
+    assert meetup.meetup_id == "42"
     assert len(meetup.talks) == 1
     assert meetup.talks[0].speaker_id == speaker.id
-    assert meetup.talks[0].language == Language.ENGLISH
+    assert meetup.talks[0].language == Language.EN
     assert speaker.name == "John Doe"
