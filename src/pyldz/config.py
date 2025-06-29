@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,17 @@ class GoogleSheetsConfig(BaseSettings):
     token_cache_path: Path = Field(default=Path(".client_secret.token.json"))
     meetups_sheet_name: str = Field(default="meetups")
     talks_sheet_name: str = Field(default="Sheet1")
+
+    @field_validator("credentials_path")
+    @classmethod
+    def validate_credentials_file_exists(cls, v: Path) -> Path:
+        if not v.exists():
+            raise ValueError(
+                f"Credentials file not found: {v}. "
+                f"Please ensure you have the Google Sheets API credentials file. "
+                f"You can get it from: https://console.cloud.google.com/"
+            )
+        return v
 
 
 class AssetsConfig(BaseSettings):

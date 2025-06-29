@@ -4,8 +4,8 @@ import logging
 import sys
 
 from pyldz.config import AppConfig
-from pyldz.logging_config import setup_default_logging
-from pyldz.repository import GoogleSheetsRepository
+from pyldz.logging_config import setup_logging
+from pyldz.meetup import GoogleSheetsRepository
 
 log = logging.getLogger(__name__)
 
@@ -51,13 +51,14 @@ def _truncate_bio_for_summary(bio):
 
 
 def main():
-    setup_default_logging(debug=False)
+    setup_logging(level="DEBUG")
 
     log.info("🚀 Python Łódź Meetup Data Fetcher")
     log.info("=" * 50)
 
     try:
-        config = _load_and_validate_configuration()
+        log.info("📋 Loading configuration...")
+        config = AppConfig()
         repository = _create_repository(config)
         meetups = _fetch_and_validate_meetups(repository)
         _display_all_meetups(meetups)
@@ -73,22 +74,6 @@ def main():
         log.error("💥 An error occurred: %s", e)
         log.exception("Full traceback:")
         return 1
-
-
-def _load_and_validate_configuration():
-    log.info("📋 Loading configuration...")
-    config = AppConfig()
-
-    if not config.google_sheets.credentials_path.exists():
-        log.error(
-            "❌ Credentials file not found: %s",
-            config.google_sheets.credentials_path,
-        )
-        log.info("💡 Please ensure you have the Google Sheets API credentials file.")
-        log.info("   You can get it from: https://console.cloud.google.com/")
-        sys.exit(1)
-
-    return config
 
 
 def _create_repository(config):

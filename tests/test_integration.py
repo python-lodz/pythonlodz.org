@@ -1,7 +1,6 @@
 """Integration tests for the complete Google Sheets data flow."""
 
 from datetime import date
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
@@ -14,11 +13,15 @@ from pyldz.repository import GoogleSheetsRepository
 @pytest.fixture
 def app_config():
     """Create test application configuration."""
+    # Create dummy credentials file for validation
+    credentials_file = tmp_path / "test_credentials.json"
+    credentials_file.write_text('{"type": "service_account"}')
+
     return AppConfig(
         google_sheets=GoogleSheetsConfig(
             sheet_id="test_sheet_id",
-            credentials_path=Path("test_credentials.json"),
-            token_cache_path=Path("test_token.json"),
+            credentials_path=credentials_file,
+            token_cache_path=tmp_path / "test_token.json",
             meetups_sheet_name="meetups",
             talks_sheet_name="Sheet1",
         ),
