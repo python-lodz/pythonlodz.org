@@ -50,33 +50,3 @@ def setup_logging(
     logging.getLogger("googleapiclient").setLevel(logging.WARNING)
     logging.getLogger("google_auth_httplib2").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-
-
-def get_logger(name: str) -> logging.Logger:
-    """
-    Get a logger instance for the given name.
-
-    Args:
-        name: Logger name (typically __name__)
-
-    Returns:
-        Logger instance
-    """
-    return logging.getLogger(name)
-
-
-# Convenience function for common usage
-def setup_default_logging(debug: bool = False) -> None:
-    """
-    Set up default logging configuration.
-
-    Args:
-        debug: Whether to enable debug logging
-    """
-    level = "DEBUG" if debug else "INFO"
-    setup_logging(
-        level=level,
-        show_time=True,
-        show_path=debug,  # Only show paths in debug mode
-        enable_rich_tracebacks=True,
-    )
