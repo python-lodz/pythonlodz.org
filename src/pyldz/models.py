@@ -9,7 +9,14 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from pydantic import AnyHttpUrl, BaseModel, Field, computed_field, field_validator
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_validator,
+)
 
 from pyldz.config import GoogleSheetsConfig
 
@@ -55,14 +62,12 @@ class Meetup(BaseModel):
     date: datetime.date
     time: str
     location: str
-    talks: list[Talk]
-    sponsors: list[str]
     status: MeetupStatus = MeetupStatus.DRAFT
     meetup_url: AnyHttpUrl | None = None
     feedback_url: AnyHttpUrl | None = None
     livestream_id: str | None = None
-    tags: list[str] = Field(default_factory=list)
-    featured: bool = False
+    talks: list[Talk]
+    sponsors: list[str]
 
     @computed_field
     @property
@@ -98,7 +103,7 @@ class MeetupType(StrEnum):
     SUMMER_EDITION = "summer_edition"
 
 
-class _MeetupSheetRow(BaseModel):
+class _MeetupRow(BaseModel):
     meetup_id: str
     type: MeetupType
     date: datetime.date
@@ -113,7 +118,7 @@ class _MeetupSheetRow(BaseModel):
     @computed_field
     @property
     def title(self) -> str:
-        return f"Meetup {self.meetup_id}"
+        return f"Meetup #{self.meetup_id}"
 
     @field_validator("sponsors", mode="before")
     @classmethod
@@ -129,14 +134,14 @@ class _MeetupSheetRow(BaseModel):
             return None
         return v
 
-    def to_meetup(self, talks: list[Talk] | None = None) -> Meetup:
+    def to_meetup(self, talks: list[Talk]) -> Meetup:
         return Meetup(
             meetup_id=self.meetup_id,
             title=self.title,
             date=self.date,
             time=self.time,
             location=self.location,
-            talks=talks or [],
+            talks=talks,
             sponsors=self.sponsors,
             meetup_url=self.meetup_url,
             feedback_url=self.feedback_url,
@@ -145,7 +150,7 @@ class _MeetupSheetRow(BaseModel):
         )
 
 
-class _TalkSheetRow(BaseModel):
+class _TalkRow(BaseModel):
     meetup_id: str
     first_name: str
     last_name: str
@@ -160,12 +165,25 @@ class _TalkSheetRow(BaseModel):
     youtube_url: AnyHttpUrl | None
     other_urls: list[AnyHttpUrl] = []
 
-    @field_validator("talk_title_en", "talk_description", mode="before")
+    @field_validator(
+        "facebook_url",
+        "linkedin_url",
+        "youtube_url",
+        "talk_title_en",
+        mode="before",
+    )
     @classmethod
-    def strip_text_fields(cls, v) -> str:
-        if v is None:
-            return ""
-        return str(v).strip()
+    def convert_empty_url_to_none(cls, v) -> str | None:
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
+
+    @field_validator("other_urls", mode="before")
+    @classmethod
+    def split_new_line_separated_values(cls, v) -> list[str]:
+        if isinstance(v, str) and v.strip():
+            return [item.strip() for item in v.split("\n") if item.strip()]
+        return []
 
     @computed_field
     @property
@@ -197,26 +215,6 @@ class _TalkSheetRow(BaseModel):
             social_links=self._build_social_links(),
         )
 
-    @field_validator(
-        "talk_title_en",
-        "facebook_url",
-        "linkedin_url",
-        "youtube_url",
-        mode="before",
-    )
-    @classmethod
-    def convert_empty_url_to_none(cls, v) -> str | None:
-        if isinstance(v, str) and v.strip() == "":
-            return None
-        return v
-
-    @field_validator("other_urls", mode="before")
-    @classmethod
-    def split_comma_separated_values(cls, v) -> list[str]:
-        if isinstance(v, str) and v.strip():
-            return [item.strip() for item in v.split(",") if item.strip()]
-        return []
-
     def _build_social_links(self) -> list[SocialLink]:
         social_links = []
 
@@ -242,7 +240,7 @@ class _TalkSheetRow(BaseModel):
         )
 
 
-class GoogleSheetsRepository:
+class GoogleSheetsAPI:
     def __init__(self, config: GoogleSheetsConfig):
         self.config = config
         self.scopes = (
@@ -251,11 +249,6 @@ class GoogleSheetsRepository:
         )
 
     def _get_credentials(self) -> Credentials:
-        if not self.config.credentials_path.exists():
-            raise FileNotFoundError(
-                f"Credentials file not found: {self.config.credentials_path}"
-            )
-
         credentials = None
 
         if self.config.token_cache_path.exists():
@@ -274,11 +267,11 @@ class GoogleSheetsRepository:
         self.config.token_cache_path.write_text(credentials.to_json())
         return credentials
 
-    def _fetch_sheet_data(self, sheet_name: str) -> list[dict]:
+    def fetch_data(self, table_name: str) -> list[dict]:
         credentials = self._get_credentials()
         sheets = build("sheets", "v4", credentials=credentials, cache_discovery=False)
 
-        range_name = f"{sheet_name}!A1:ZZ"
+        range_name = f"{table_name}!A1:ZZ"
 
         sheet_result = (
             sheets.spreadsheets()
@@ -302,28 +295,26 @@ class GoogleSheetsRepository:
 
         return result
 
-    def fetch_meetups_data(self) -> list[_MeetupSheetRow]:
-        rows = self._fetch_sheet_data(self.config.meetups_sheet_name)
-        return [_MeetupSheetRow.model_validate(row) for row in rows]
 
-    def fetch_talks_data(self) -> list[_TalkSheetRow]:
-        rows = self._fetch_sheet_data(self.config.talks_sheet_name)
-        return [_TalkSheetRow.model_validate(row) for row in rows]
+class Tables(StrEnum):
+    MEETUPS = "meetups"
+    TALKS = "talks"
 
-    def _get_enabled_meetups(
-        self, meetups_data: list[dict[str, Any]]
-    ) -> list[_MeetupSheetRow]:
-        enabled_meetups = []
 
-        for meetup_data in meetups_data:
-            meetup_row = _MeetupSheetRow.model_validate(meetup_data)
-            if meetup_row.enabled:
-                enabled_meetups.append(meetup_row)
+class GoogleSheetsRepository:
+    def __init__(self, api: GoogleSheetsAPI):
+        self.api = api
 
-        return enabled_meetups
+    def _fetch_meetups_data(self) -> list[_MeetupRow]:
+        rows = self.api.fetch_data(Tables.MEETUPS)
+        return [_MeetupRow.model_validate(row) for row in rows]
+
+    def _fetch_talks_data(self) -> list[_TalkRow]:
+        rows = self.api.fetch_data(Tables.TALKS)
+        return [_TalkRow.model_validate(row) for row in rows]
 
     def _get_talks_for_meetup(
-        self, meetup_id: str, talks_data: list[_TalkSheetRow]
+        self, meetup_id: str, talks_data: list[_TalkRow]
     ) -> list[Talk]:
         return [
             talk_row.to_talk()
@@ -332,47 +323,38 @@ class GoogleSheetsRepository:
         ]
 
     def get_speakers_for_meetup(
-        self, meetup_id: str, talks_data: list[dict[str, Any]]
+        self, meetup_id: str, talks_data: list[_TalkRow]
     ) -> list[Speaker]:
         speakers = []
         seen_speaker_ids = set()
 
-        for talk_data in talks_data:
-            if talk_data.get("Meetup") == meetup_id:
-                try:
-                    talk_row = _TalkSheetRow.model_validate(talk_data)
-
-                    if talk_row.speaker_id not in seen_speaker_ids:
-                        speaker = talk_row.to_speaker()
-                        speakers.append(speaker)
-                        seen_speaker_ids.add(talk_row.speaker_id)
-
-                except Exception as e:
-                    log.error(
-                        "Error parsing speaker data for meetup %s: %s", meetup_id, e
-                    )
-                    continue
+        for talk_row in talks_data:
+            if talk_row.meetup_id == meetup_id:
+                if talk_row.speaker_id not in seen_speaker_ids:
+                    speaker = talk_row.to_speaker()
+                    speakers.append(speaker)
+                    seen_speaker_ids.add(talk_row.speaker_id)
 
         return speakers
 
     def get_meetup_by_id(self, meetup_id: str) -> Meetup | None:
-        meetups_data: list[_MeetupSheetRow] = self.fetch_meetups_data()
+        meetups_data: list[_MeetupRow] = self._fetch_meetups_data()
 
-        meetup: _MeetupSheetRow | None = next(
+        meetup: _MeetupRow | None = next(
             filter(lambda m: m.meetup_id == meetup_id, meetups_data), None
         )
         if not meetup or not meetup.enabled:
             return None
 
-        talks_data: list[_TalkSheetRow] = self.fetch_talks_data()
+        talks_data: list[_TalkRow] = self._fetch_talks_data()
 
         talks = self._get_talks_for_meetup(meetup_id, talks_data)
 
         return meetup.to_meetup(talks)
 
     def get_all_enabled_meetups(self) -> list[Meetup]:
-        meetups_data: list[_MeetupSheetRow] = self.fetch_meetups_data()
-        talks_data: list[_TalkSheetRow] = self.fetch_talks_data()
+        meetups_data: list[_MeetupRow] = self._fetch_meetups_data()
+        talks_data: list[_TalkRow] = self._fetch_talks_data()
 
         meetups = []
         for meetup_row in meetups_data:
@@ -386,25 +368,3 @@ class GoogleSheetsRepository:
             meetups.append(meetup)
 
         return meetups
-
-    def get_all_speakers(self) -> list[Speaker]:
-        talks_data = self.fetch_talks_data()
-        meetups_data = self.fetch_meetups_data()
-
-        enabled_meetup_ids = {
-            meetup.meetup_id for meetup in meetups_data if meetup.enabled
-        }
-
-        speakers = []
-        seen_speaker_ids = set()
-
-        for talk_data in talks_data:
-            if talk_data.meetup_id in enabled_meetup_ids:
-                talk_row = _TalkSheetRow.model_validate(talk_data)
-
-                if talk_row.speaker_id not in seen_speaker_ids:
-                    speaker = talk_row.to_speaker()
-                    speakers.append(speaker)
-                    seen_speaker_ids.add(talk_row.speaker_id)
-
-        return speakers

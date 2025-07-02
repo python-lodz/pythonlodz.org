@@ -5,11 +5,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class GoogleSheetsConfig(BaseSettings):
+    model_config = SettingsConfigDict(extra="ignore")
+
     sheet_id: str
     credentials_path: Path = Path(".client_secret.json")
     token_cache_path: Path = Path(".client_secret.token.json")
-    meetups_sheet_name: str = "meetups"
-    talks_sheet_name: str = "talks"
 
     @field_validator("credentials_path")
     @classmethod
