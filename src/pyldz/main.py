@@ -5,7 +5,7 @@ import sys
 
 from pyldz.config import AppConfig
 from pyldz.logging_config import setup_logging
-from pyldz.meetup import GoogleSheetsRepository, Meetup, Speaker
+from pyldz.meetup import GoogleSheetsAPI, GoogleSheetsRepository, Meetup, Speaker
 
 log = logging.getLogger(__name__)
 
@@ -21,9 +21,6 @@ def display_meetup_summary(meetup: Meetup):
 
     if meetup.meetup_url:
         log.info("   🔗 Meetup URL: %s", meetup.meetup_url)
-
-    if meetup.featured:
-        log.info("   ⭐ Featured meetup")
 
     _display_meetup_talks(meetup)
 
@@ -56,42 +53,15 @@ def main():
     log.info("🚀 Python Łódź Meetup Data Fetcher")
     log.info("=" * 50)
 
-    try:
-        log.info("📋 Loading configuration...")
-        config = AppConfig()
-        repository = _create_repository(config)
-        meetups = _fetch_and_validate_meetups(repository)
-        _display_all_meetups(meetups)
-        _display_all_speakers(repository)
+    log.info("📋 Loading configuration...")
+    config = AppConfig()
 
-        log.info("🎉 Data fetch completed successfully!")
-        return 0
-
-    except KeyboardInterrupt:
-        log.info("⏹️  Operation cancelled by user")
-        return 1
-    except Exception as e:
-        log.error("💥 An error occurred: %s", e)
-        log.exception("Full traceback:")
-        return 1
-
-
-def _create_repository(config):
-    log.info("🔗 Connecting to Google Sheets...")
-    return GoogleSheetsRepository(config.google_sheets)
-
-
-def _fetch_and_validate_meetups(repository: GoogleSheetsRepository) -> list[Meetup]:
-    log.info("📊 Fetching enabled meetups...")
+    repository = GoogleSheetsRepository(api=GoogleSheetsAPI(config.google_sheets))
     meetups = repository.get_all_enabled_meetups()
+    _display_all_meetups(meetups)
 
-    if not meetups:
-        log.warning("⚠️  No enabled meetups found.")
-        sys.exit(0)
-
-    log.info("✅ Found %d enabled meetup(s)", len(meetups))
-    log.info("")
-    return meetups
+    log.info("🎉 Data fetch completed successfully!")
+    return 0
 
 
 def _display_all_meetups(meetups):
@@ -99,18 +69,6 @@ def _display_all_meetups(meetups):
     log.info("-" * 30)
     for meetup in sorted(meetups, key=lambda m: m.date, reverse=True):
         display_meetup_summary(meetup)
-        log.info("")
-
-
-def _display_all_speakers(repository: GoogleSheetsRepository):
-    log.info("👥 SPEAKERS:")
-    log.info("-" * 30)
-    speakers = repository.get_all_speakers()
-    log.info("✅ Found %d unique speaker(s)", len(speakers))
-    log.info("")
-
-    for speaker in sorted(speakers, key=lambda s: s.name):
-        display_speaker_summary(speaker)
         log.info("")
 
 
