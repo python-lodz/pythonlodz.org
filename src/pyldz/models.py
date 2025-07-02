@@ -368,3 +368,16 @@ class GoogleSheetsRepository:
             meetups.append(meetup)
 
         return meetups
+
+    def get_all_speakers(self) -> list[Speaker]:
+        talks_data: list[_TalkRow] = self._fetch_talks_data()
+        speakers = []
+        seen_speaker_ids = set()
+
+        for talk_row in talks_data:
+            if talk_row.speaker_id not in seen_speaker_ids:
+                speaker = talk_row.to_speaker()
+                speakers.append(speaker)
+                seen_speaker_ids.add(talk_row.speaker_id)
+
+        return speakers
