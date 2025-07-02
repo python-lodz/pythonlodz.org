@@ -9,6 +9,7 @@ from typing_extensions import Annotated
 
 from pyldz.config import AppConfig
 from pyldz.hugo_generator import HugoMeetupGenerator
+from pyldz.image_generator import MeetupImageGenerator
 from pyldz.logging_config import setup_logging
 from pyldz.meetup import GoogleSheetsAPI, GoogleSheetsRepository, Meetup, Speaker
 
@@ -125,6 +126,88 @@ def fill_hugo(
         log.info(f"  - {file_path}")
 
     log.info("🎉 Hugo file generation completed successfully!")
+
+
+@app.command()
+def generate_images(
+    output_dir: Annotated[
+        Path,
+        typer.Option(
+            "--output-dir",
+            "-o",
+            help="Output directory for Hugo site (default: page)",
+        ),
+    ] = Path("page"),
+    meetup_id: Annotated[
+        str | None,
+        typer.Option(
+            "--meetup-id",
+            "-m",
+            help="Generate image for specific meetup ID (optional)",
+        ),
+    ] = None,
+) -> None:
+    """Generate featured images for meetups."""
+    setup_logging(level="INFO")
+
+    log.info("🖼️  Generating meetup featured images...")
+    log.info("=" * 50)
+
+    # Load configuration
+    config = AppConfig()
+
+    # Setup repository
+    api = GoogleSheetsAPI(config.google_sheets)
+    repository = GoogleSheetsRepository(api)
+
+    # Setup image generator
+    assets_dir = output_dir / "assets"
+    cache_dir = output_dir.parent / "cache" / "avatars"
+    image_generator = MeetupImageGenerator(assets_dir, cache_dir)
+
+    if meetup_id:
+        # Generate image for specific meetup
+        meetup = repository.get_meetup_by_id(meetup_id)
+        if not meetup:
+            log.error(f"Meetup {meetup_id} not found or not enabled")
+            raise typer.Exit(1)
+
+        speakers = repository.get_speakers_for_meetup(
+            meetup_id, repository._fetch_talks_data()
+        )
+        output_path = output_dir / "content" / "spotkania" / meetup_id / "featured.png"
+
+        try:
+            image_generator.generate_featured_image(meetup, speakers, output_path)
+            log.info(f"Generated image for meetup {meetup_id}: {output_path}")
+        except Exception as e:
+            log.error(f"Failed to generate image for meetup {meetup_id}: {e}")
+            raise typer.Exit(1)
+    else:
+        # Generate images for all enabled meetups
+        meetups = repository.get_all_enabled_meetups()
+        generated_count = 0
+
+        for meetup in meetups:
+            speakers = repository.get_speakers_for_meetup(
+                meetup.meetup_id, repository._fetch_talks_data()
+            )
+            output_path = (
+                output_dir / "content" / "spotkania" / meetup.meetup_id / "featured.png"
+            )
+
+            try:
+                image_generator.generate_featured_image(meetup, speakers, output_path)
+                log.info(f"Generated image for meetup {meetup.meetup_id}")
+                generated_count += 1
+            except Exception as e:
+                log.error(
+                    f"Failed to generate image for meetup {meetup.meetup_id}: {e}"
+                )
+
+        log.info(f"Generated {generated_count} images out of {len(meetups)} meetups")
+
+    log.info("🎉 Image generation completed!")
 
 
 def main() -> None:

@@ -1,13 +1,22 @@
+import logging
 import shutil
 from pathlib import Path
 
+from pyldz.image_generator import MeetupImageGenerator
 from pyldz.meetup import GoogleSheetsRepository, Meetup
+
+log = logging.getLogger(__name__)
 
 
 class HugoMeetupGenerator:
     def __init__(self, output_dir: Path):
         self.output_dir = output_dir
         self.meetups_dir = output_dir / "content" / "spotkania"
+
+        # Initialize image generator
+        assets_dir = output_dir / "assets"
+        cache_dir = output_dir.parent / "cache" / "avatars"
+        self.image_generator = MeetupImageGenerator(assets_dir, cache_dir)
 
     def generate_meetup_markdown(self, meetup: Meetup) -> str:
         """Generate markdown content for a meetup."""
@@ -103,38 +112,49 @@ class HugoMeetupGenerator:
         ]
         return "\n".join(frontmatter_parts)
 
-    def create_featured_image(self, meetup: Meetup, meetup_dir: Path) -> Path:
-        """Create a simple featured image for the meetup."""
-        # For now, create a simple placeholder image
-        # TODO: Generate actual infographic with speaker photos and meetup details
+    def create_featured_image(
+        self, meetup: Meetup, speakers: list, meetup_dir: Path
+    ) -> Path:
+        """Create a featured image for the meetup using Python image generation."""
         featured_image_path = meetup_dir / "featured.png"
 
-        # Check if there's a template image we can copy
-        template_image = (
-            self.output_dir
-            / "assets"
-            / "images"
-            / "python_lodz_logo_transparent_border.png"
-        )
-        if template_image.exists():
-            shutil.copy2(template_image, featured_image_path)
-        else:
-            # Create a simple text file as placeholder if no template exists
-            placeholder_text = f"Featured image for {meetup.title}\nDate: {meetup.date}\nLocation: {meetup.location}"
-            featured_image_path.with_suffix(".txt").write_text(
-                placeholder_text, encoding="utf-8"
+        try:
+            # Generate the image using the image generator
+            self.image_generator.generate_featured_image(
+                meetup, speakers, featured_image_path
             )
-            # For now, we'll just reference the image in markdown even if it doesn't exist
+            log.info(f"Generated featured image for meetup {meetup.meetup_id}")
+        except Exception as e:
+            log.error(
+                f"Failed to generate featured image for meetup {meetup.meetup_id}: {e}"
+            )
+            # Fallback to copying a template image
+            template_image = (
+                self.output_dir
+                / "assets"
+                / "images"
+                / "python_lodz_logo_transparent_border.png"
+            )
+            if template_image.exists():
+                shutil.copy2(template_image, featured_image_path)
+                log.info(f"Used fallback template image for meetup {meetup.meetup_id}")
+            else:
+                # Create a simple text file as placeholder if no template exists
+                placeholder_text = f"Featured image for {meetup.title}\nDate: {meetup.date}\nLocation: {meetup.location}"
+                featured_image_path.with_suffix(".txt").write_text(
+                    placeholder_text, encoding="utf-8"
+                )
+                log.warning(f"Created text placeholder for meetup {meetup.meetup_id}")
 
         return featured_image_path
 
-    def create_meetup_file(self, meetup: Meetup) -> Path:
+    def create_meetup_file(self, meetup: Meetup, speakers: list) -> Path:
         """Create a markdown file for a meetup."""
         meetup_dir = self.meetups_dir / meetup.meetup_id
         meetup_dir.mkdir(parents=True, exist_ok=True)
 
         # Create featured image
-        self.create_featured_image(meetup, meetup_dir)
+        self.create_featured_image(meetup, speakers, meetup_dir)
 
         # Generate content
         frontmatter = self.generate_frontmatter(meetup)
@@ -153,7 +173,11 @@ class HugoMeetupGenerator:
         generated_files = []
 
         for meetup in meetups:
-            file_path = self.create_meetup_file(meetup)
+            # Get speakers for this meetup
+            speakers = repository.get_speakers_for_meetup(
+                meetup.meetup_id, repository._fetch_talks_data()
+            )
+            file_path = self.create_meetup_file(meetup, speakers)
             generated_files.append(file_path)
 
         return generated_files
