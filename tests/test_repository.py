@@ -135,7 +135,7 @@ def test_repository_fetch_meetups_data(repository: GoogleSheetsRepository):
                     speaker_id="john-doe",
                     title="Example Talk Title 1",
                     description="Example talk description 1",
-                    language=Language.EN,
+                    language=Language.PL,
                     title_en="Example Talk Title 1 in English",
                     youtube_id=None,
                 ),
@@ -244,6 +244,49 @@ def test_get_speakers_for_meetup_different_meetup(repository: GoogleSheetsReposi
     result = repository.get_speakers_for_meetup("60", talks_data)
 
     expected = [
+        Speaker(
+            id="bob-brown",
+            name="Bob Brown",
+            bio="Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+            avatar_path="https://i.pravatar.cc/300?img=13",
+            social_links=[
+                SocialLink(platform="facebook", url="https://facebook.com/example3"),
+                SocialLink(platform="linkedin", url="https://linkedin.com/in/example3"),
+                SocialLink(platform="website", url="https://example3.com"),
+            ],
+        ),
+    ]
+
+    assert result == expected
+
+
+def test_get_all_speakers(repository: GoogleSheetsRepository):
+    result = repository.get_all_speakers()
+
+    expected = [
+        Speaker(
+            id="john-doe",
+            name="John Doe",
+            bio="Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            avatar_path="https://i.pravatar.cc/300?img=68",
+            social_links=[
+                SocialLink(platform="facebook", url="https://facebook.com/example1"),
+                SocialLink(platform="linkedin", url="https://linkedin.com/in/example1"),
+                SocialLink(platform="youtube", url="https://youtube.com/@example1"),
+                SocialLink(platform="website", url="https://example1.com"),
+            ],
+        ),
+        Speaker(
+            id="jane-smith",
+            name="Jane Smith",
+            bio="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            avatar_path="https://i.pravatar.cc/300?img=49",
+            social_links=[
+                SocialLink(platform="linkedin", url="https://linkedin.com/in/example2"),
+                SocialLink(platform="youtube", url="https://youtube.com/@example2"),
+                SocialLink(platform="website", url="https://example2.com"),
+            ],
+        ),
         Speaker(
             id="bob-brown",
             name="Bob Brown",
