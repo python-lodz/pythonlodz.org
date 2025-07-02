@@ -2,7 +2,15 @@ from datetime import date
 
 import pytest
 
-from pyldz.meetup import GoogleSheetsRepository, Language, Meetup, MeetupStatus, Talk
+from pyldz.meetup import (
+    GoogleSheetsRepository,
+    Language,
+    Meetup,
+    MeetupStatus,
+    SocialLink,
+    Speaker,
+    Talk,
+)
 
 
 class FakeGoogleSheetsAPI:
@@ -127,7 +135,7 @@ def test_repository_fetch_meetups_data(repository: GoogleSheetsRepository):
                     speaker_id="john-doe",
                     title="Example Talk Title 1",
                     description="Example talk description 1",
-                    language=Language.PL,
+                    language=Language.EN,
                     title_en="Example Talk Title 1 in English",
                     youtube_id=None,
                 ),
@@ -142,3 +150,50 @@ def test_repository_fetch_meetups_data(repository: GoogleSheetsRepository):
             ],
         )
     ]
+
+
+def test_get_meetup_by_id_existing_enabled_meetup(repository: GoogleSheetsRepository):
+    result = repository.get_meetup_by_id("58")
+
+    expected = Meetup(
+        meetup_id="58",
+        title="Meetup #58",
+        date=date(2025, 5, 28),
+        time="18:00",
+        status=MeetupStatus.PUBLISHED,
+        meetup_url="https://www.meetup.com/python-lodz/events/306971418/",
+        feedback_url=None,
+        livestream_id=None,
+        sponsors=["indiebi", "sunscrapers"],
+        location="indiebi",
+        talks=[
+            Talk(
+                speaker_id="john-doe",
+                title="Example Talk Title 1",
+                description="Example talk description 1",
+                language=Language.PL,
+                title_en="Example Talk Title 1 in English",
+                youtube_id=None,
+            ),
+            Talk(
+                speaker_id="jane-smith",
+                title="Example Talk Title 2 in English",
+                description="Example talk description 2",
+                language=Language.PL,
+                title_en="Example Talk Title 2 in English",
+                youtube_id=None,
+            ),
+        ],
+    )
+
+    assert result == expected
+
+
+def test_get_meetup_by_id_disabled_meetup(repository: GoogleSheetsRepository):
+    result = repository.get_meetup_by_id("59")
+    assert result is None
+
+
+def test_get_meetup_by_id_nonexistent_meetup(repository: GoogleSheetsRepository):
+    result = repository.get_meetup_by_id("999")
+    assert result is None
