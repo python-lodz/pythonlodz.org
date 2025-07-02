@@ -197,3 +197,64 @@ def test_get_meetup_by_id_disabled_meetup(repository: GoogleSheetsRepository):
 def test_get_meetup_by_id_nonexistent_meetup(repository: GoogleSheetsRepository):
     result = repository.get_meetup_by_id("999")
     assert result is None
+
+
+def test_get_speakers_for_meetup_with_speakers(repository: GoogleSheetsRepository):
+    # We need to get the talks data first to pass to the method
+    talks_data = repository._fetch_talks_data()
+    result = repository.get_speakers_for_meetup("58", talks_data)
+
+    expected = [
+        Speaker(
+            id="john-doe",
+            name="John Doe",
+            bio="Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            avatar_path="https://i.pravatar.cc/300?img=68",
+            social_links=[
+                SocialLink(platform="facebook", url="https://facebook.com/example1"),
+                SocialLink(platform="linkedin", url="https://linkedin.com/in/example1"),
+                SocialLink(platform="youtube", url="https://youtube.com/@example1"),
+                SocialLink(platform="website", url="https://example1.com"),
+            ],
+        ),
+        Speaker(
+            id="jane-smith",
+            name="Jane Smith",
+            bio="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            avatar_path="https://i.pravatar.cc/300?img=49",
+            social_links=[
+                SocialLink(platform="linkedin", url="https://linkedin.com/in/example2"),
+                SocialLink(platform="youtube", url="https://youtube.com/@example2"),
+                SocialLink(platform="website", url="https://example2.com"),
+            ],
+        ),
+    ]
+
+    assert result == expected
+
+
+def test_get_speakers_for_meetup_no_speakers(repository: GoogleSheetsRepository):
+    talks_data = repository._fetch_talks_data()
+    result = repository.get_speakers_for_meetup("999", talks_data)
+    assert result == []
+
+
+def test_get_speakers_for_meetup_different_meetup(repository: GoogleSheetsRepository):
+    talks_data = repository._fetch_talks_data()
+    result = repository.get_speakers_for_meetup("60", talks_data)
+
+    expected = [
+        Speaker(
+            id="bob-brown",
+            name="Bob Brown",
+            bio="Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+            avatar_path="https://i.pravatar.cc/300?img=13",
+            social_links=[
+                SocialLink(platform="facebook", url="https://facebook.com/example3"),
+                SocialLink(platform="linkedin", url="https://linkedin.com/in/example3"),
+                SocialLink(platform="website", url="https://example3.com"),
+            ],
+        ),
+    ]
+
+    assert result == expected
