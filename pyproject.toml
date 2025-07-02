@@ -12,6 +12,7 @@ dependencies = [
     "rich>=14.0.0",
     "google-auth>=2.40.3",
     "google-auth-oauthlib>=1.2.2",
+    "typer>=0.16.0",
 ]
 
 [dependency-groups]
