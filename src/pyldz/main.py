@@ -41,7 +41,7 @@ def _display_meetup_talks(meetup: Meetup) -> None:
     """Display talks for a meetup."""
     for i, talk in enumerate(meetup.talks, 1):
         log.info("   Talk %d: %s (Speaker: %s)", i, talk.title, talk.speaker_id)
-        if talk.language.value == "en":
+        if talk.language.value == "EN":
             log.info("           Language: English")
 
 
