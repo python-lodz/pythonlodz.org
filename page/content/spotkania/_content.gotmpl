@@ -1,0 +1,108 @@
+{{ range $meetup_number, $meetup := site.Data.meetups }}
+
+    {{ $time := .Site.Params.dateParse "2006-01-02" $meetup.date }}
+
+    {{ $info_graphic := ""}}
+    {{ if or (not $meetup.talks) (eq (len $meetup.talks) 1) }}
+        {{- $info_graphic = partial "infographic-image-solo.html" (dict "meetup" $meetup) -}}
+    {{ else if eq (len $meetup.talks) 2 }}
+        {{- $info_graphic = partial "infographic-image-duo.html" (dict "meetup" $meetup) -}}
+    {{ end }}
+
+    {{ $contentValue := printf `
+<img src="%s" alt="Infographic" />
+
+## Informacje
+
+**📅 data:** %s</br>
+**🕕 godzina:** %s</br>
+**📍 miejsce:** %s</br>`
+        $info_graphic.Permalink $meetup.date $meetup.time $meetup.place
+    }}
+
+    {{ if $meetup.meetup_link }}
+        {{ $contentValue = printf "%s \n ➡️ [**LINK DO ZAPISÓW**](%s) ⬅️" $contentValue $meetup.meetup_link }}
+    {{ end }}
+
+    {{ if $meetup.feedback_link }}
+        {{ $contentValue = printf "%s </br></br> 📝 [**ANKIETA** - oceń spotkanie oraz prelekcje](%s)" $contentValue $meetup.feedback_link }}
+    {{ end }}
+
+    {{ if $meetup.live_stream }}
+        {{ $liveLink := printf "{{< youtubeLite id=\"%s\" label=\"%s\" >}}" $meetup.live_stream "Label" }}
+        {{ $contentValue = printf "%s \n ## Live Stream \n %s" $contentValue $liveLink }}
+    {{ end }}
+
+    {{ $contentValue := printf "%s \n ## Prelekcje" $contentValue}}
+
+    {{ if not $meetup.talks }}
+
+        {{ $contentValue = printf `%s
+Już wkrótce ogłosimy oficjalną agendę naszego najnowszego spotkania Python Łódź. Bądźcie czujni, bo szykujemy naprawdę interesujące prezentacje.
+
+Niezależnie od tematu, każde spotkanie to świetna okazja, by poszerzyć swoją wiedzę, poznać nowych ludzi i razem budować silną społeczność miłośników Pythona.
+
+Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z pełną informacją o wydarzeniu.` $contentValue}}
+
+    {{ end }}
+
+    {{ range $meetup.talks }}
+        {{ $cleanedTitle := replace (replace .talk_title "\n" " ") "\t" " " }}
+        {{ $cleanedTitle = replaceRE `\s+` " " $cleanedTitle }}
+        {{ $contentValue = printf "%s \n ### %s" $contentValue $cleanedTitle }}
+        {{ $contentValue = printf "%s \n %s" $contentValue (printf "{{< speaker speaker_id=\"%s\" >}}" .speaker_id) }}
+        {{ if .talk_description }}
+            {{ with .talk_description }}
+                {{/* turn every LF into “two-spaces LF” which Markdown ⇒ <br> */}}
+                {{ $desc := replace . "\n" "  \n" }}
+                {{ $contentValue = printf "%s\n%s" $contentValue $desc }}
+            {{ end }}
+        {{ end }}
+        {{ if .youtube }}
+            {{ $liveLink := printf "{{< youtubeLite id=\"%s\" label=\"%s\" >}}" .youtube "Label" }}
+            {{ $contentValue = printf "%s \n #### Nagranie \n %s" $contentValue $liveLink }}
+        {{ end }}
+    {{ end }}
+
+    {{ $contentValue = printf "%s \n ## Sponsorzy" $contentValue }}
+    {{ range $meetup.sponsors }}
+        {{ $contentValue = printf "%s \n %s </br>" $contentValue (printf "{{< article link=\"/sponsorzy/%s/\" >}}" .) }}
+    {{ end }}
+
+    {{ $photos := resources.Match (printf "images/meetups/%s/*" $meetup_number) }}
+    {{ if gt (len $photos) 0 }}
+        {{ $contentValue = printf "%s \n ## Zdjęcia\n{{< gallery >}}" $contentValue}}
+        {{ range $photos }}
+             {{ $contentValue = printf "%s \n <img src=\"%s\" class=\"grid-w33\" />" $contentValue .RelPermalink }}
+        {{ end }}
+        {{ $contentValue = printf "%s \n {{< /gallery >}}" $contentValue}}
+    {{ end }}
+
+    {{/* Add page. */}}
+    {{ $content := dict "mediaType" "text/markdown" "value" $contentValue }}
+    {{ $params := dict "talks" $meetup.talks  }}
+
+    {{ $dates := dict "date" (time.AsTime $meetup.date) }}
+    {{ $page := dict
+        "content" $content
+        "dates" $dates
+        "time" $meetup.time
+        "place" $meetup.place
+        "params" $params
+        "path" $meetup_number
+        "title" $meetup.title
+    }}
+    {{ $.AddPage $page }}
+
+    {{/* Add featured image. */}}
+
+    {{ $content := dict
+        "mediaType" $info_graphic.MediaType.Type
+        "value" $info_graphic
+    }}
+    {{ $resource := dict
+        "content" $content
+        "path" (printf "%s/featured.png" $meetup_number)
+    }}
+    {{ $.AddResource $resource }}
+{{ end }}

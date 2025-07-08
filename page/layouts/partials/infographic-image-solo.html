@@ -1,0 +1,101 @@
+{{ $fontNormal := resources.Get "fonts/OpenSans-Medium.ttf" }}
+{{ $fontBold := resources.Get "fonts/OpenSans-Bold.ttf" }}
+
+{{ $meetup := .meetup }}
+
+
+{{ $bg := resources.Get "images/infographic_template.png" }}
+
+
+{{ $final := $bg }}
+
+
+{{ $imgWidth := $final.Width }}
+
+{{ $bottomDateOptions := dict
+  "color" "#393f5f"
+  "size" 66
+  "x" 890
+  "y" 132
+  "font" $fontNormal
+}}
+{{ $final = $final.Filter (images.Text "ZAPRASZA" $bottomDateOptions) }}
+
+{{ $date := (printf "%sr. godz. %s" ($meetup.date | time.Format "Monday 02.01.2006"| strings.ToUpper) $meetup.time) }}
+{{ $mainDateOptions := dict 
+  "color" "#393f5f" 
+  "size" 80 
+  "x" (div $imgWidth 2) 
+  "y" 267.5
+  "font" $fontNormal
+  "alignx" "center" 
+}}
+{{ $final = $final.Filter (images.Text $date $mainDateOptions) }}
+
+{{ $bottomDateOptions := dict
+  "color" "#393f5f" 
+  "size" 28
+  "x" 157
+  "y" 1014
+  "font" $fontNormal
+}}
+{{ $final = $final.Filter (images.Text $date $bottomDateOptions) }}
+
+{{ $bottomPlaceOptions := dict
+  "color" "#393f5f" 
+  "size" 28
+  "x" 1156
+  "y" 1014
+  "font" $fontNormal
+}}
+{{ $final = $final.Filter (images.Text $meetup.place $bottomPlaceOptions) }}
+
+{{ $avatarBackground := resources.Get "images/avatars/tba.png" }}
+{{ $final := $final.Filter (images.Overlay $avatarBackground 779.9 436) }}
+
+{{ if $meetup.talks }}
+  {{ $talk1 := index $meetup.talks 0}}
+
+  {{ $speaker1 := index site.Data.speakers $talk1.speaker_id }}
+  {{ $author1Options := dict
+    "color" "#393f5f"
+    "size" 32
+    "x" (div $imgWidth 2)
+    "y" 815
+    "font" $fontNormal
+    "alignx" "center"
+  }}
+  {{ $final = $final.Filter (images.Text $speaker1.name $author1Options) }}
+
+  {{ $title1Options := dict
+        "color" "#393f5f"
+        "size" 32
+        "x" (div $imgWidth 2)
+        "y" 870
+        "font" $fontBold
+        "alignx" "center"
+    }}
+  {{ $final = $final.Filter (images.Text $talk1.talk_title $title1Options) }}
+
+  {{ $avatarMaskFilter := images.Mask (resources.Get "images/avatars/mask.png") }}
+
+  {{ $speaker1Img := resources.Get $speaker1.avatar }}
+  {{ $speaker1 := $speaker1Img.Fill "300x300 center" }}
+
+  {{ $maskedSpeaker1 := $speaker1  | images.Filter $avatarMaskFilter }}
+
+  {{ $final = $final.Filter (images.Overlay $maskedSpeaker1 (sub (div $imgWidth 2) 150)  465) }}
+
+{{ else }}
+  {{ $title1Options := dict
+    "color" "#393f5f"
+    "size" 80
+    "x" (div $imgWidth 2)
+    "y" 800
+    "font" $fontBold
+    "alignx" "center"
+  }}
+  {{ $final = $final.Filter (images.Text "TBA" $title1Options) }}
+{{ end }}
+
+{{ return $final }}
