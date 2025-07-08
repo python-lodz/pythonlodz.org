@@ -2,7 +2,7 @@
 /page/public/
 /page/resources/_gen/
 /page/assets/jsconfig.json
-/pagehugo_stats.json
+/page/hugo_stats.json
 
 # Executable may be added to repository
 hugo.exe
