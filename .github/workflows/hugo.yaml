@@ -23,8 +23,9 @@ jobs:
           hugo-version: "0.144.2"
 
       - name: Build
-        run: hugo --minify
-        working-directory: ./page
+        run: |
+          cd page
+          hugo --minify
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
