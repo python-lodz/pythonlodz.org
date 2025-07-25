@@ -14,7 +14,8 @@ aliases:
 **📅 data:** 2025-07-30</br>
 **🕕 godzina:** 18:00</br>
 **📍 miejsce:** IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska</br>
-➡️ [**LINK DO ZAPISÓW**](https://www.meetup.com/python-lodz/events/309046591) ⬅️
+➡️ [**LINK DO ZAPISÓW na meetup**](https://www.meetup.com/python-lodz/events/309046591) ⬅️</br>
+➡️ [**Zgłoszenia do Lightning Talk**](https://docs.google.com/forms/d/e/1FAIpQLSd14qYEV4946e_sZOToWV9cE1bEqO0BYZF3tYlzdL2s1YIBJg/viewform?usp=dialog) ⬅️
 
 ## Lightning Talk
 
