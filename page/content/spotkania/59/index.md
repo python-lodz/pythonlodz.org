@@ -17,6 +17,8 @@ aliases:
 ➡️ [**LINK DO ZAPISÓW na meetup**](https://www.meetup.com/python-lodz/events/309046591) ⬅️</br>
 ➡️ [**Zgłoszenia do Lightning Talk**](https://docs.google.com/forms/d/e/1FAIpQLSd14qYEV4946e_sZOToWV9cE1bEqO0BYZF3tYlzdL2s1YIBJg/viewform?usp=dialog) ⬅️
 
+{{< youtubeLite id="kQj-Zb4AbSM" label="Meetup 59 live ling" >}}
+
 ## Lightning Talk
 
 Chcesz spróbować swoich sił na scenie?
