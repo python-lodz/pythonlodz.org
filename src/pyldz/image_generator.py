@@ -25,10 +25,12 @@ class MeetupImageGenerator:
 
         Args:
             assets_dir: Path to Hugo assets directory containing templates and fonts
-            cache_dir: Optional directory for caching downloaded avatars
+            cache_dir: Optional directory for storing avatars (defaults to assets/images/avatars)
         """
         self.assets_dir = assets_dir
-        self.cache_dir = cache_dir or (assets_dir.parent / "cache" / "avatars")
+        # Store avatars directly under the Hugo assets directory so Hugo can access them
+        # Default to the existing assets/images/avatars directory
+        self.cache_dir = cache_dir or (assets_dir / "images" / "avatars")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Template paths
@@ -274,8 +276,9 @@ class MeetupImageGenerator:
         Returns None for general I/O errors. Raises on face detection issues.
         """
         try:
-            raw_cache = self.cache_dir / f"{speaker.id}.png"
-            processed_cache = self.cache_dir / f"{speaker.id}_face.png"
+            # Save original and processed avatars directly in assets/images/avatars
+            raw_cache = self.cache_dir / f"{speaker.id}_original.png"
+            processed_cache = self.cache_dir / f"{speaker.id}.png"
 
             if processed_cache.exists():
                 avatar = Image.open(processed_cache).convert("RGBA")
@@ -288,7 +291,7 @@ class MeetupImageGenerator:
                         "RGBA"
                     )
                     original.save(raw_cache, "PNG")
-                    log.info(f"Cached avatar for {speaker.name}")
+                    log.info(f"Saved original avatar for {speaker.name}: {raw_cache}")
 
                 # Face-center and square-crop; may raise FaceDetectionError
                 centered = face_centering.detect_and_center_square(original)

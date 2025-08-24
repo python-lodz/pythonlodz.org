@@ -145,7 +145,7 @@ class TestMeetupImageGenerator:
         """Test generator initialization with default cache directory."""
         generator = MeetupImageGenerator(temp_assets_dir)
 
-        expected_cache = temp_assets_dir.parent / "cache" / "avatars"
+        expected_cache = temp_assets_dir / "images" / "avatars"
         assert generator.cache_dir == expected_cache
         assert expected_cache.exists()
 
