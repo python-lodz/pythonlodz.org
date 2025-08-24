@@ -4,6 +4,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from pyldz import face_centering
 from pyldz.models import Meetup, Speaker
 
 log = logging.getLogger(__name__)
@@ -268,26 +269,38 @@ class MeetupImageGenerator:
     def _get_speaker_avatar(
         self, speaker: Speaker, size: tuple[int, int]
     ) -> Image.Image | None:
-        """Load speaker avatar from bytes data."""
+        """Load speaker avatar, center on detected face, and resize.
+
+        Returns None for general I/O errors. Raises on face detection issues.
+        """
         try:
-            # Create cache filename from speaker ID
-            cache_file = self.cache_dir / f"{speaker.id}.png"
+            raw_cache = self.cache_dir / f"{speaker.id}.png"
+            processed_cache = self.cache_dir / f"{speaker.id}_face.png"
 
-            if cache_file.exists():
-                # Load from cache
-                avatar = Image.open(cache_file).convert("RGBA")
+            if processed_cache.exists():
+                avatar = Image.open(processed_cache).convert("RGBA")
             else:
-                # Load avatar from bytes data
-                avatar = Image.open(BytesIO(speaker.avatar.content)).convert("RGBA")
+                # Load original (possibly from raw cache)
+                if raw_cache.exists():
+                    original = Image.open(raw_cache).convert("RGBA")
+                else:
+                    original = Image.open(BytesIO(speaker.avatar.content)).convert(
+                        "RGBA"
+                    )
+                    original.save(raw_cache, "PNG")
+                    log.info(f"Cached avatar for {speaker.name}")
 
-                # Save to cache
-                avatar.save(cache_file, "PNG")
-                log.info(f"Cached avatar for {speaker.name}")
+                # Face-center and square-crop; may raise FaceDetectionError
+                centered = face_centering.detect_and_center_square(original)
+                centered.save(processed_cache, "PNG")
+                avatar = centered
 
-            # Resize to requested size
             avatar = avatar.resize(size, Image.Resampling.LANCZOS)
             return avatar
 
+        except face_centering.FaceDetectionError:
+            # Propagate face detection errors as requested
+            raise
         except Exception as e:
             log.warning(f"Could not load avatar for {speaker.name}: {e}")
             return None

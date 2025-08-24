@@ -6,12 +6,17 @@ from unittest.mock import Mock, patch
 import pytest
 
 from pyldz.config import AppConfig, GoogleSheetsConfig
-from pyldz.models import Language, MeetupStatus
-from pyldz.repository import GoogleSheetsRepository
+from pyldz.models import (
+    GoogleSheetsRepository,
+    Language,
+    MeetupStatus,
+    _MeetupRow,
+    _TalkRow,
+)
 
 
 @pytest.fixture
-def app_config():
+def app_config(tmp_path):
     """Create test application configuration."""
     # Create dummy credentials file for validation
     credentials_file = tmp_path / "test_credentials.json"
@@ -375,7 +380,6 @@ def test_error_handling_and_resilience(mock_get_creds, mock_build, repository):
 def test_model_integration_and_validation():
     """Test that models work correctly together in integration scenarios."""
     # Test creating a complete meetup with talks and speakers
-    from pyldz.meetup import _MeetupSheetRow, _TalkSheetRow
 
     # Test talk sheet row parsing
     talk_data = {
@@ -387,7 +391,7 @@ def test_model_integration_and_validation():
         "Język prezentacji": "en",
     }
 
-    talk_row = _TalkSheetRow.model_validate(talk_data)
+    talk_row = _TalkRow.model_validate(talk_data)
     speaker = talk_row.to_speaker()
     talk = talk_row.to_talk()
 
@@ -401,7 +405,7 @@ def test_model_integration_and_validation():
         "ENABLED": "TRUE",
     }
 
-    meetup_row = _MeetupSheetRow.model_validate(meetup_data)
+    meetup_row = _MeetupRow.model_validate(meetup_data)
     meetup = meetup_row.to_meetup([talk])
 
     # Verify integration
