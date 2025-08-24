@@ -9,7 +9,7 @@ import pytest
 from PIL import Image
 
 from pyldz.image_generator import ImageGenerationError, MeetupImageGenerator
-from pyldz.meetup import Language, Meetup, Speaker, Talk
+from pyldz.models import Language, Meetup, Speaker, Talk
 
 
 @pytest.fixture
