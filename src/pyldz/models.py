@@ -1,22 +1,25 @@
 from __future__ import annotations
 
 import datetime
+import io
 import logging
+import re
 from enum import Enum, StrEnum
-from typing import Any
+from pathlib import Path
+from typing import Callable
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 from pydantic import (
     AnyHttpUrl,
     BaseModel,
-    ConfigDict,
-    Field,
     computed_field,
     field_validator,
 )
+from unidecode import unidecode
 
 from pyldz.config import GoogleSheetsConfig
 
@@ -43,7 +46,7 @@ class Speaker(BaseModel):
     id: str
     name: str
     bio: str
-    avatar_path: AnyHttpUrl
+    avatar: File
     social_links: list[SocialLink]
 
 
@@ -196,22 +199,18 @@ class _TalkRow(BaseModel):
         return self._generate_speaker_id_from_name()
 
     def _generate_speaker_id_from_name(self) -> str:
-        import re
-
-        from unidecode import unidecode
-
         name = self.full_name.lower()
         name = unidecode(name)
         name = re.sub(r"[^a-z0-9\s-]", "", name)
         name = re.sub(r"\s+", "-", name)
         return name.strip("-")
 
-    def to_speaker(self) -> Speaker:
+    def to_speaker(self, photo_downloader: Callable[[AnyHttpUrl], File]) -> Speaker:
         return Speaker(
             id=self.speaker_id,
             name=self.full_name,
             bio=self.bio,
-            avatar_path=self.photo_url,
+            avatar=photo_downloader(self.photo_url),
             social_links=self._build_social_links(),
         )
 
@@ -238,6 +237,15 @@ class _TalkRow(BaseModel):
             title_en=self.talk_title_en,
             language=Language.EN if self.language == "en" else Language.PL,
         )
+
+
+class File(BaseModel):
+    name: str
+    content: bytes
+
+    @property
+    def extension(self) -> str:
+        return Path(self.name).suffix
 
 
 class GoogleSheetsAPI:
@@ -295,6 +303,34 @@ class GoogleSheetsAPI:
 
         return result
 
+    def download_from_drive(self, file_url: AnyHttpUrl) -> File:
+        credentials = self._get_credentials()
+        drive = build("drive", "v3", credentials=credentials)
+
+        # Extract file ID from Google Drive URL
+        match = re.search(r"(?:id=|file/d/)([\w-]{25,})", str(file_url))
+        if not match:
+            raise ValueError("Invalid file URL")
+
+        file_id = match.group(1)
+
+        # Get file info
+        file_info = drive.files().get(fileId=file_id).execute()
+
+        # Download file
+        request = drive.files().get_media(fileId=file_id)
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+
+        return File(
+            name=file_info["name"],
+            content=fh.getvalue(),
+        )
+
 
 class Tables(StrEnum):
     MEETUPS = "meetups"
@@ -331,7 +367,9 @@ class GoogleSheetsRepository:
         for talk_row in talks_data:
             if talk_row.meetup_id == meetup_id:
                 if talk_row.speaker_id not in seen_speaker_ids:
-                    speaker = talk_row.to_speaker()
+                    speaker = talk_row.to_speaker(
+                        photo_downloader=self.api.download_from_drive
+                    )
                     speakers.append(speaker)
                     seen_speaker_ids.add(talk_row.speaker_id)
 

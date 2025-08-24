@@ -11,7 +11,7 @@ from pyldz.config import AppConfig
 from pyldz.hugo_generator import HugoMeetupGenerator
 from pyldz.image_generator import MeetupImageGenerator
 from pyldz.logging_config import setup_logging
-from pyldz.meetup import GoogleSheetsAPI, GoogleSheetsRepository, Meetup, Speaker
+from pyldz.models import GoogleSheetsAPI, GoogleSheetsRepository, Meetup, Speaker
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +100,14 @@ def fill_hugo(
             help="Output directory for Hugo site (default: page)",
         ),
     ] = Path("page"),
+    meetup_id: Annotated[
+        str | None,
+        typer.Option(
+            "--meetup-id",
+            "-m",
+            help="Generate Hugo files for specific meetup ID (optional)",
+        ),
+    ] = None,
 ) -> None:
     """Generate Hugo markdown files for meetups from Google Sheets data."""
     setup_logging(level="INFO")
@@ -107,19 +115,16 @@ def fill_hugo(
     log.info("🚀 Generating Hugo meetup files...")
     log.info("=" * 50)
 
-    # Load configuration
     config = AppConfig()
 
-    # Setup repository
-    api = GoogleSheetsAPI(config.google_sheets)
-    repository = GoogleSheetsRepository(api)
-
-    # Setup generator
+    repository = GoogleSheetsRepository(GoogleSheetsAPI(config.google_sheets))
     generator = HugoMeetupGenerator(output_dir)
 
-    # Generate all meetups
     log.info("Generating meetup markdown files...")
-    generated_files = generator.generate_all_meetups(repository)
+    if meetup_id:
+        generated_files = [generator.generate_meetup(meetup_id, repository)]
+    else:
+        generated_files = generator.generate_all_meetups(repository)
 
     log.info(f"Generated {len(generated_files)} meetup files:")
     for file_path in generated_files:
@@ -211,7 +216,6 @@ def generate_images(
 
 
 def main() -> None:
-    """Main entry point for the CLI."""
     app()
 
 

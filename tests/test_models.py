@@ -1,13 +1,11 @@
-"""Tests for Pydantic models business logic."""
-
 from datetime import date
 
 from pyldz.models import (
     Meetup,
     Talk,
-    _MeetupSheetRow,
-    _TalkSheetRow,
 )
+from pyldz.models import _MeetupRow as _MeetupSheetRow
+from pyldz.models import _TalkRow as _TalkSheetRow
 
 
 def test_meetup_properties():

@@ -1,12 +1,10 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any
 
-import requests
 from PIL import Image, ImageDraw, ImageFont
 
-from pyldz.meetup import Meetup, Speaker
+from pyldz.models import Meetup, Speaker
 
 log = logging.getLogger(__name__)
 
@@ -270,7 +268,7 @@ class MeetupImageGenerator:
     def _get_speaker_avatar(
         self, speaker: Speaker, size: tuple[int, int]
     ) -> Image.Image | None:
-        """Download and cache speaker avatar."""
+        """Load speaker avatar from bytes data."""
         try:
             # Create cache filename from speaker ID
             cache_file = self.cache_dir / f"{speaker.id}.png"
@@ -279,15 +277,12 @@ class MeetupImageGenerator:
                 # Load from cache
                 avatar = Image.open(cache_file).convert("RGBA")
             else:
-                # Download avatar
-                response = requests.get(str(speaker.avatar_path), timeout=10)
-                response.raise_for_status()
-
-                avatar = Image.open(BytesIO(response.content)).convert("RGBA")
+                # Load avatar from bytes data
+                avatar = Image.open(BytesIO(speaker.avatar.content)).convert("RGBA")
 
                 # Save to cache
                 avatar.save(cache_file, "PNG")
-                log.info(f"Downloaded and cached avatar for {speaker.name}")
+                log.info(f"Cached avatar for {speaker.name}")
 
             # Resize to requested size
             avatar = avatar.resize(size, Image.Resampling.LANCZOS)

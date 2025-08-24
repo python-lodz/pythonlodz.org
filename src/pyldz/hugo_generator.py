@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 from pyldz.image_generator import MeetupImageGenerator
-from pyldz.meetup import GoogleSheetsRepository, Meetup
+from pyldz.models import GoogleSheetsRepository, Meetup
 
 log = logging.getLogger(__name__)
 
@@ -167,13 +167,22 @@ class HugoMeetupGenerator:
 
         return markdown_file
 
+    def generate_meetup(
+        self, meetup_id: str, repository: GoogleSheetsRepository
+    ) -> Path:
+        meetup = repository.get_meetup_by_id(meetup_id)
+        assert meetup is not None
+
+        speakers = repository.get_speakers_for_meetup(
+            meetup.meetup_id, repository._fetch_talks_data()
+        )
+        return self.create_meetup_file(meetup, speakers)
+
     def generate_all_meetups(self, repository: GoogleSheetsRepository) -> list[Path]:
-        """Generate markdown files for all enabled meetups."""
         meetups = repository.get_all_enabled_meetups()
         generated_files = []
 
         for meetup in meetups:
-            # Get speakers for this meetup
             speakers = repository.get_speakers_for_meetup(
                 meetup.meetup_id, repository._fetch_talks_data()
             )

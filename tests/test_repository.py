@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from pyldz.meetup import (
+from pyldz.models import (
     GoogleSheetsRepository,
     Language,
     Meetup,
