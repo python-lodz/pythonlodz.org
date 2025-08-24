@@ -28,9 +28,7 @@ def test_detect_and_center_square_single_face(monkeypatch, sample_rect_image):
     monkeypatch.setattr(
         face_centering,
         "_deepface_extract_faces",
-        lambda img: [
-            _fake_face({"x": 80, "y": 20, "w": 40, "h": 60})
-        ],
+        lambda img: [_fake_face({"x": 80, "y": 20, "w": 40, "h": 60})],
     )
 
     squared = face_centering.detect_and_center_square(sample_rect_image)
@@ -66,7 +64,9 @@ def test_detect_and_center_square_multiple_faces(monkeypatch, sample_rect_image)
 
 
 class TestImageGeneratorFaceCentering:
-    def test_get_speaker_avatar_uses_centered_square_and_caching(self, tmp_path, monkeypatch):
+    def test_get_speaker_avatar_uses_centered_square_and_caching(
+        self, tmp_path, monkeypatch
+    ):
         # Prepare assets dir with minimal structure
         assets_dir = tmp_path / "assets"
         (assets_dir / "images" / "avatars").mkdir(parents=True)
@@ -115,7 +115,6 @@ class TestImageGeneratorFaceCentering:
         assert result is not None
         assert result.size == (300, 300)
 
-        # Processed cache should exist
-        processed_cache = generator.cache_dir / f"{speaker.id}_face.png"
+        # Processed avatar should exist with new naming
+        processed_cache = generator.cache_dir / f"{speaker.id}.png"
         assert processed_cache.exists()
-

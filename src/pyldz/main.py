@@ -167,8 +167,8 @@ def generate_images(
 
     # Setup image generator
     assets_dir = output_dir / "assets"
-    cache_dir = output_dir.parent / "cache" / "avatars"
-    image_generator = MeetupImageGenerator(assets_dir, cache_dir)
+    avatars_dir = assets_dir / "images" / "avatars"
+    image_generator = MeetupImageGenerator(assets_dir, avatars_dir)
 
     if meetup_id:
         # Generate image for specific meetup
