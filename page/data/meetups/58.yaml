@@ -2,11 +2,7 @@ title: "Meetup #58"
 date: 2025-05-28
 time: "18:00"
 place: "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska"
-meetup_link: "https://www.meetup.com/python-lodz/events/306971418/"
-feedback_link: "https://forms.gle/237YJFHy6G1jw9999"
-live_stream: "b1rlgmlVHQo"
 sponsors: [indiebi, sunscrapers]
-tags: ["Następne spotkanie!"]
 featured: true
 talks:
   - speaker_id: grzegorz-kocjan
@@ -31,7 +27,7 @@ talks:
       🎯 Dlaczego większość tradycyjnych metod konfiguracji to strzał w kolano
       🎯 Jak zbudować konfigurację tak solidną, że nic jej nie wytrąci z rytmu
       🎯 Jak porządnie przetestować konfigurację i jej użycie (żeby nie rozpadła się na produkcji)
-      🎯 Jakie sekrety Pydantic może jeszcze przed Tobą skrywać 
+      🎯 Jakie sekrety Pydantic może jeszcze przed Tobą skrywać
 
       Jeśli uważasz, że konfiguracja jest nudna, spróbuj przesiedzieć tę prezentację i nie poczuć przy tym chociaż odrobiny ekscytacji. Najgorszy scenariusz? Wychodzisz z mniejszą liczbą koszmarów związanych z configiem. Najlepszy? Masz wreszcie konfigurację, która po prostu działa.
 

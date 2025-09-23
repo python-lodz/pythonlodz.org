@@ -12,7 +12,14 @@ place: "indiebi"
 **📅 data:** 2025-09-24</br>
 **🕕 godzina:** 18:00</br>
 **📍 miejsce:** IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska</br>
-➡️ [**LINK DO ZAPISÓW**](https://www.meetup.com/python-lodz/events/310676651/) ⬅️
+
+{{< button href="https://www.meetup.com/python-lodz/events/310676651/" target="\_blank">}}
+LINK DO ZAPISÓW
+{{< /button >}}
+</br></br>
+{{< button href="https://forms.gle/cuBqexZXAH6tJSp78" target="\_blank" >}}
+ANKIETA – oceń spotkanie
+{{< /button >}}
 
 ## Prelekcje
 

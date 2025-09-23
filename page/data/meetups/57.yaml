@@ -2,14 +2,13 @@ title: "Meetup #57"
 date: 2025-03-26
 time: "18:00"
 place: "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska"
-meetup_link: "https://www.meetup.com/python-lodz/events/305850516/"
 sponsors: [indiebi, sunscrapers]
 featured: true
 
 talks:
   - speaker_id: "michal-moroz"
     talk_title: |-
-      Czego o product developmencie uczy 5 lat 
+      Czego o product developmencie uczy 5 lat
       rozwoju własnej aplikacji do journalingu
     talk_description: |-
       Rozwijam produkt, którego sam jestem klientem i product ownerem. I na pierwszy rzut oka, to powinno dawać mi natychmiastowy feedback. W końcu nie ma narzutów komunikacyjnych, czekania aż ktoś zaakceptuje jakiś pomysł. A jednak, często idee walidują się miesiącami. Dlaczego tak jest?
