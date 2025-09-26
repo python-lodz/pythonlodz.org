@@ -12,6 +12,9 @@ hugo.linux
 # Temporary lock file while building
 /page/.hugo_build.lock
 
+# Hugo generated page files
+/page/public/
+
 .env
 
 # Secret for google api
