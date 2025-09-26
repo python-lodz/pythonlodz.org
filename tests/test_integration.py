@@ -1,12 +1,14 @@
 """Integration tests for the complete Google Sheets data flow."""
 
 from datetime import date
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
 from pyldz.config import AppConfig, GoogleSheetsConfig
 from pyldz.models import (
+    GoogleSheetsAPI,
     GoogleSheetsRepository,
     Language,
     MeetupStatus,
@@ -38,7 +40,7 @@ def app_config(tmp_path):
 @pytest.fixture
 def repository(app_config):
     """Create repository with test configuration."""
-    return GoogleSheetsRepository(app_config.google_sheets)
+    return GoogleSheetsRepository(GoogleSheetsAPI(app_config.google_sheets))
 
 
 @pytest.fixture
@@ -169,34 +171,128 @@ def complete_mock_data():
     return meetups_data, talks_data
 
 
-@patch("pyldz.repository.GoogleSheetsRepository.fetch_meetups_data")
-@patch("pyldz.repository.GoogleSheetsRepository.fetch_talks_data")
+@patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
+@patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
 def test_complete_data_flow_single_meetup(
     mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
 ):
     """Test complete flow for fetching a single meetup with all data."""
     meetups_data, talks_data = complete_mock_data
 
-    # Setup mocks - convert raw data to dict format
-    header_meetups = meetups_data[0]
-    meetups_dict_data = [dict(zip(header_meetups, row)) for row in meetups_data[1:]]
-    mock_fetch_meetups.return_value = meetups_dict_data
+    # Setup mocks - return typed rows expected by repository
+    mock_fetch_meetups.return_value = [
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "58",
+                "type": "talks",
+                "date": "2025-05-28",
+                "time": "18:00",
+                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "enabled": "TRUE",
+                "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
+                "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
+                "livestream_id": "b1rlgmlVHQo",
+                "sponsors": "indiebi,sunscrapers",
+            }
+        ),
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "59",
+                "type": "talks",
+                "date": "2025-07-30",
+                "time": "18:00",
+                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "enabled": "TRUE",
+                "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
+                "feedback_url": "",
+                "livestream_id": "",
+                "sponsors": "indiebi,sunscrapers",
+            }
+        ),
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "60",
+                "type": "talks",
+                "date": "2025-09-30",
+                "time": "18:00",
+                "location": "TBA",
+                "enabled": "FALSE",
+                "meetup_url": "",
+                "feedback_url": "",
+                "livestream_id": "",
+                "sponsors": "",
+            }
+        ),
+    ]
 
-    header_talks = talks_data[0]
-    talks_dict_data = [dict(zip(header_talks, row)) for row in talks_data[1:]]
-    mock_fetch_talks.return_value = talks_dict_data
+    mock_fetch_talks.return_value = [
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "58",
+                "first_name": "Grzegorz",
+                "last_name": "Kocjan",
+                "bio": "Python developer z wieloletnim doświadczeniem w tworzeniu aplikacji webowych.",
+                "photo_url": "https://example.com/grzegorz.jpg",
+                "talk_title": "Pythonowa konfiguracja, która przyprawi Cię o dreszcze (w dobry sposób, obiecuję!)",
+                "talk_description": "Konfiguracja — wszyscy jej potrzebujemy, wszyscy jej nienawidzimy. A mimo to, w każdym projekcie przynajmniej raz udaje nam się ją zepsuć.",
+                "talk_title_en": "Python Config That Will Give You Chills (In a Good Way, I Promise!)",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/grzegorzkocjan",
+                "github_url": "https://github.com/gkocjan",
+                "facebook_url": "",
+                "youtube_url": "",
+                "other_urls": "",
+            }
+        ),
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "58",
+                "first_name": "Sebastian",
+                "last_name": "Buczyński",
+                "bio": "Senior Python Developer, entuzjasta clean code i dobrych praktyk programistycznych.",
+                "photo_url": "https://example.com/sebastian.jpg",
+                "talk_title": "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔",
+                "talk_description": "Wokół tematu wydajności w Pythonie narosło wiele mitów. Rozwiejmy te fałszywe przekonania opierając się na twardych danych.",
+                "talk_title_en": "A software developer optimized the application, but no one congratulated them because it was written in Python 😔",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/sebastianbuczynski",
+                "github_url": "https://github.com/sebabuczynski",
+                "facebook_url": "",
+                "youtube_url": "https://twitter.com/sebabuczynski",
+                "other_urls": "",
+            }
+        ),
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "59",
+                "first_name": "Łukasz",
+                "last_name": "Langa",
+                "bio": "Python Core Developer, twórca Black, były Python Release Manager.",
+                "photo_url": "https://example.com/lukasz.jpg",
+                "talk_title": "Nowość w Pythonie 3.14 oraz PyScript",
+                "talk_description": "Przegląd najnowszych funkcjonalności w Pythonie 3.14 oraz wprowadzenie do PyScript.",
+                "talk_title_en": "What's New in Python 3.14 and PyScript",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/lukaszlanga",
+                "github_url": "https://github.com/ambv",
+                "facebook_url": "",
+                "youtube_url": "",
+                "other_urls": "https://lukasz.langa.pl",
+            }
+        ),
+    ]
 
     # Test fetching meetup #58
     meetup = repository.get_meetup_by_id("58")
 
     # Verify meetup data
     assert meetup is not None
-    assert meetup.number == "58"
+    assert meetup.meetup_id == "58"
     assert meetup.title == "Meetup #58"
     assert meetup.date == date(2025, 5, 28)
     assert meetup.time == "18:00"
     assert meetup.location == "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska"
-    assert meetup.featured is True
+    # featured field removed in current model
     assert meetup.status == MeetupStatus.PUBLISHED
     assert (
         str(meetup.meetup_url) == "https://www.meetup.com/python-lodz/events/306971418/"
@@ -205,7 +301,7 @@ def test_complete_data_flow_single_meetup(
     assert meetup.livestream_id == "b1rlgmlVHQo"
     assert "indiebi" in meetup.sponsors
     assert "sunscrapers" in meetup.sponsors
-    assert "Następne spotkanie!" in meetup.tags
+    # tags field removed in current model
 
     # Verify talks
     assert len(meetup.talks) == 2
@@ -238,8 +334,8 @@ def test_complete_data_flow_single_meetup(
     assert meetup.talk_count == 2
 
 
-@patch("pyldz.repository.GoogleSheetsRepository.fetch_meetups_data")
-@patch("pyldz.repository.GoogleSheetsRepository.fetch_talks_data")
+@patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
+@patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
 def test_complete_data_flow_all_enabled_meetups(
     mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
 ):
@@ -272,8 +368,8 @@ def test_complete_data_flow_all_enabled_meetups(
     assert meetup_59.talks[0].speaker_id == "lukasz-langa"
 
 
-@patch("pyldz.repository.GoogleSheetsRepository.fetch_meetups_data")
-@patch("pyldz.repository.GoogleSheetsRepository.fetch_talks_data")
+@patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
+@patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
 def test_speakers_extraction_and_deduplication(
     mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
 ):
@@ -311,8 +407,8 @@ def test_speakers_extraction_and_deduplication(
     assert len(lukasz.social_links) == 3  # LinkedIn, GitHub, and website
 
 
-@patch("pyldz.repository.GoogleSheetsRepository.fetch_meetups_data")
-@patch("pyldz.repository.GoogleSheetsRepository.fetch_talks_data")
+@patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
+@patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
 def test_disabled_meetup_filtering(
     mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
 ):
@@ -356,8 +452,8 @@ def test_configuration_validation(app_config):
     assert app_config.dry_run is True
 
 
-@patch("pyldz.repository.build")
-@patch("pyldz.repository.GoogleSheetsRepository._get_credentials")
+@patch("pyldz.models.build")
+@patch("pyldz.models.GoogleSheetsRepository._get_credentials")
 def test_error_handling_and_resilience(mock_get_creds, mock_build, repository):
     """Test error handling and resilience of the complete flow."""
     # Setup mocks to simulate various error conditions
