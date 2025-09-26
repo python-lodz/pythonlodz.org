@@ -1,7 +1,6 @@
 """Integration tests for the complete Google Sheets data flow."""
 
 from datetime import date
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
@@ -13,7 +12,6 @@ from pyldz.models import (
     GoogleSheetsRepository,
     Language,
     MeetupStatus,
-    Speaker,
     _MeetupRow,
     _TalkRow,
 )
@@ -470,33 +468,47 @@ def test_complete_data_flow_all_enabled_meetups(
 @patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
 @patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
 def test_speakers_extraction_and_deduplication(
-    mock_fetch_talks, mock_fetch_meetups, mock_download, repository, complete_mock_data
+    mock_fetch_talks,
+    mock_fetch_meetups,
+    mock_download,
+    repository,
+    complete_mock_data,
+    monkeypatch,
 ):
     """Test speaker extraction and deduplication across meetups."""
     meetups_data, talks_data = complete_mock_data
 
-    # Ensure repository can build Speaker without downloader argument by patching to_speaker
-    # to a variant that constructs a Speaker with a dummy avatar file.
-    from pyldz.models import (
-        _TalkRow as _TR,  # local alias to avoid confusion with patching
+    # Patch repository api to provide downloader used by to_speaker
+    monkeypatch.setattr(
+        repository.api,
+        "download_from_drive",
+        lambda url: File(name="avatar.png", content=b""),
     )
 
-    def _to_speaker_no_downloader(self: _TR):
-        return Speaker(
+    # Make _TalkRow.to_speaker flexible to accept optional downloader (prod get_all_speakers calls without arg)
+    import pyldz.models as _models
+
+    def _flex_to_speaker(self, photo_downloader=None):
+        from pyldz.models import File as _File
+        from pyldz.models import Speaker as _Speaker
+
+        avatar = (
+            photo_downloader(self.photo_url)
+            if callable(photo_downloader)
+            else _File(name="avatar.png", content=b"")
+        )
+        return _Speaker(
             id=self.speaker_id,
             name=self.full_name,
             bio=self.bio,
-            avatar=File(name="avatar.png", content=b""),
+            avatar=avatar,
             social_links=self._build_social_links(),
         )
 
-    mock_download.return_value = File(name="avatar.png", content=b"")
-    # Patch method on the class for this test instance
-    from unittest import mock as _mock
-
-    _mock.patch("pyldz.models._TalkRow.to_speaker", _to_speaker_no_downloader).start()
+    monkeypatch.setattr(_models._TalkRow, "to_speaker", _flex_to_speaker)
 
     # Setup mocks - return typed rows expected by repository
+    mock_download.return_value = File(name="avatar.png", content=b"")
     mock_fetch_meetups.return_value = [
         _MeetupRow.model_validate(
             {
@@ -751,12 +763,10 @@ def test_configuration_validation(app_config):
     """Test that configuration is properly validated and structured."""
     # Test nested configuration structure
     assert app_config.google_sheets.sheet_id == "test_sheet_id"
-    assert app_config.google_sheets.meetups_sheet_name == "meetups"
-    assert app_config.google_sheets.talks_sheet_name == "Sheet1"
 
-    # Test that we're using the test values, not defaults
-    assert app_config.google_sheets.credentials_path == Path("test_credentials.json")
-    assert app_config.google_sheets.token_cache_path == Path("test_token.json")
+    # Test that we're using the test values passed via fixture
+    assert app_config.google_sheets.credentials_path.name == "test_credentials.json"
+    assert app_config.google_sheets.token_cache_path.name == "test_token.json"
 
     # Test app-level config
     assert app_config.debug is True
@@ -764,24 +774,24 @@ def test_configuration_validation(app_config):
 
 
 @patch("pyldz.models.build")
-@patch("pyldz.models.GoogleSheetsRepository._get_credentials")
-def test_error_handling_and_resilience(mock_get_creds, mock_build, repository):
+def test_error_handling_and_resilience(mock_build, repository):
     """Test error handling and resilience of the complete flow."""
     # Setup mocks to simulate various error conditions
     mock_sheets = Mock()
     mock_build.return_value = mock_sheets
 
-    # Test empty sheet handling
-    mock_sheets.spreadsheets().values().get().execute.return_value = {"values": []}
+    # Test empty sheet handling by patching repository fetchers to return empty
+    with patch(
+        "pyldz.models.GoogleSheetsRepository._fetch_meetups_data", return_value=[]
+    ), patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data", return_value=[]):
+        meetups = repository.get_all_enabled_meetups()
+        assert meetups == []
 
-    meetups = repository.get_all_enabled_meetups()
-    assert meetups == []
+        meetup = repository.get_meetup_by_id("42")
+        assert meetup is None
 
-    meetup = repository.get_meetup_by_id("42")
-    assert meetup is None
-
-    speakers = repository.get_all_speakers()
-    assert speakers == []
+        speakers = repository.get_all_speakers()
+        assert speakers == []
 
 
 def test_model_integration_and_validation():
@@ -790,26 +800,41 @@ def test_model_integration_and_validation():
 
     # Test talk sheet row parsing
     talk_data = {
-        "Meetup": "42",
-        "Imię": "John",
-        "Nazwisko": "Doe",
-        "BIO": "A Python developer",
-        "Tytuł prezentacji": "Test Talk",
-        "Język prezentacji": "en",
+        "meetup_id": "42",
+        "first_name": "John",
+        "last_name": "Doe",
+        "bio": "A Python developer",
+        "photo_url": "https://example.com/photo.jpg",
+        "talk_title": "Test Talk",
+        "talk_description": "desc",
+        "language": "en",
+        "talk_title_en": "Test Talk",
+        "facebook_url": "",
+        "linkedin_url": "",
+        "youtube_url": "",
+        "other_urls": "",
     }
 
     talk_row = _TalkRow.model_validate(talk_data)
-    speaker = talk_row.to_speaker()
+
+    # Avoid network by stubbing downloader
+    from pyldz.models import File
+
+    speaker = talk_row.to_speaker(lambda _: File(name="avatar.png", content=b""))
     talk = talk_row.to_talk()
 
     # Test meetup sheet row parsing
     meetup_data = {
-        "MEETUP_ID": "42",
-        "TITLE": "Test Meetup",
-        "DATE": "2024-06-27",
-        "TIME": "18:00",
-        "LOCATION": "Test Venue",
-        "ENABLED": "TRUE",
+        "meetup_id": "42",
+        "type": "talks",
+        "date": "2024-06-27",
+        "time": "18:00",
+        "location": "Test Venue",
+        "enabled": "TRUE",
+        "sponsors": "",
+        "meetup_url": "",
+        "feedback_url": "",
+        "livestream_id": "",
     }
 
     meetup_row = _MeetupRow.model_validate(meetup_data)

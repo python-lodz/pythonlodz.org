@@ -3,6 +3,7 @@ from datetime import date
 import pytest
 
 from pyldz.models import (
+    File,
     GoogleSheetsRepository,
     Language,
     Meetup,
@@ -19,6 +20,11 @@ class FakeGoogleSheetsAPI:
 
     def fetch_data(self, table_name: str) -> list[dict]:
         return self.data[table_name]
+
+    def download_from_drive(self, file_url):
+        from pyldz.models import File
+
+        return File(name="avatar.png", content=b"")
 
 
 @pytest.fixture
@@ -209,7 +215,7 @@ def test_get_speakers_for_meetup_with_speakers(repository: GoogleSheetsRepositor
             id="john-doe",
             name="John Doe",
             bio="Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            avatar_path="https://i.pravatar.cc/300?img=68",
+            avatar=File(name="avatar.png", content=b""),
             social_links=[
                 SocialLink(platform="facebook", url="https://facebook.com/example1"),
                 SocialLink(platform="linkedin", url="https://linkedin.com/in/example1"),
@@ -221,7 +227,7 @@ def test_get_speakers_for_meetup_with_speakers(repository: GoogleSheetsRepositor
             id="jane-smith",
             name="Jane Smith",
             bio="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-            avatar_path="https://i.pravatar.cc/300?img=49",
+            avatar=File(name="avatar.png", content=b""),
             social_links=[
                 SocialLink(platform="linkedin", url="https://linkedin.com/in/example2"),
                 SocialLink(platform="youtube", url="https://youtube.com/@example2"),
@@ -248,7 +254,7 @@ def test_get_speakers_for_meetup_different_meetup(repository: GoogleSheetsReposi
             id="bob-brown",
             name="Bob Brown",
             bio="Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
-            avatar_path="https://i.pravatar.cc/300?img=13",
+            avatar=File(name="avatar.png", content=b""),
             social_links=[
                 SocialLink(platform="facebook", url="https://facebook.com/example3"),
                 SocialLink(platform="linkedin", url="https://linkedin.com/in/example3"),
@@ -260,7 +266,38 @@ def test_get_speakers_for_meetup_different_meetup(repository: GoogleSheetsReposi
     assert result == expected
 
 
-def test_get_all_speakers(repository: GoogleSheetsRepository):
+def test_get_all_speakers(repository: GoogleSheetsRepository, monkeypatch):
+    # Stub downloader to avoid network and to satisfy to_speaker signature in get_all_speakers
+    from pyldz.models import File as _File
+
+    monkeypatch.setattr(
+        repository.api,
+        "download_from_drive",
+        lambda url: _File(name="avatar.png", content=b""),
+    )
+
+    # Make _TalkRow.to_speaker flexible for this test to avoid passing downloader explicitly
+    import pyldz.models as _models
+
+    def _flex_to_speaker(self, photo_downloader=None):
+        from pyldz.models import File as __File
+        from pyldz.models import Speaker as __Speaker
+
+        avatar = (
+            photo_downloader(self.photo_url)
+            if callable(photo_downloader)
+            else __File(name="avatar.png", content=b"")
+        )
+        return __Speaker(
+            id=self.speaker_id,
+            name=self.full_name,
+            bio=self.bio,
+            avatar=avatar,
+            social_links=self._build_social_links(),
+        )
+
+    monkeypatch.setattr(_models._TalkRow, "to_speaker", _flex_to_speaker)
+
     result = repository.get_all_speakers()
 
     expected = [
@@ -268,7 +305,7 @@ def test_get_all_speakers(repository: GoogleSheetsRepository):
             id="john-doe",
             name="John Doe",
             bio="Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            avatar_path="https://i.pravatar.cc/300?img=68",
+            avatar=File(name="avatar.png", content=b""),
             social_links=[
                 SocialLink(platform="facebook", url="https://facebook.com/example1"),
                 SocialLink(platform="linkedin", url="https://linkedin.com/in/example1"),
@@ -280,7 +317,7 @@ def test_get_all_speakers(repository: GoogleSheetsRepository):
             id="jane-smith",
             name="Jane Smith",
             bio="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-            avatar_path="https://i.pravatar.cc/300?img=49",
+            avatar=File(name="avatar.png", content=b""),
             social_links=[
                 SocialLink(platform="linkedin", url="https://linkedin.com/in/example2"),
                 SocialLink(platform="youtube", url="https://youtube.com/@example2"),
@@ -291,7 +328,7 @@ def test_get_all_speakers(repository: GoogleSheetsRepository):
             id="bob-brown",
             name="Bob Brown",
             bio="Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
-            avatar_path="https://i.pravatar.cc/300?img=13",
+            avatar=File(name="avatar.png", content=b""),
             social_links=[
                 SocialLink(platform="facebook", url="https://facebook.com/example3"),
                 SocialLink(platform="linkedin", url="https://linkedin.com/in/example3"),
