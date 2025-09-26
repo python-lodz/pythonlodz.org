@@ -2,6 +2,13 @@
 
 Repo for keeping the source code of our official website
 
+## Roadmap
+
+- Upcoming event on main page
+- CFP page with form https://forms.gle/HzXsBTu9DFi4mUAx8
+- How to find us tutorial page (https://www.youtube.com/watch?v=Eeyk2EG6Xto)
+- Own meetup signups (without third-party pages like meetup.com)
+
 ## How to run the website locally
 
 1. [Install Hugo](https://gohugo.io/installation/).
@@ -15,6 +22,7 @@ Repo for keeping the source code of our official website
 4. Run the Hugo development server:
 
    ```
+   cd page
    hugo server
    ```
 
