@@ -9,7 +9,7 @@ import pytest
 from PIL import Image
 
 from pyldz.image_generator import ImageGenerationError, MeetupImageGenerator
-from pyldz.models import Language, Meetup, Speaker, Talk
+from pyldz.models import File, Language, Meetup, Speaker, Talk
 
 
 @pytest.fixture
@@ -103,7 +103,7 @@ def sample_speaker():
         id="john-doe",
         name="John Doe",
         bio="A developer",
-        avatar_path="https://example.com/avatar.jpg",
+        avatar=File(name="avatar.png", content=b""),
         social_links=[],
     )
 
@@ -116,14 +116,14 @@ def sample_speakers():
             id="john-doe",
             name="John Doe",
             bio="A developer",
-            avatar_path="https://example.com/avatar1.jpg",
+            avatar=File(name="avatar1.png", content=b""),
             social_links=[],
         ),
         Speaker(
             id="jane-smith",
             name="Jane Smith",
             bio="Another developer",
-            avatar_path="https://example.com/avatar2.jpg",
+            avatar=File(name="avatar2.png", content=b""),
             social_links=[],
         ),
     ]
@@ -233,16 +233,9 @@ class TestMeetupImageGenerator:
         speaker = generator._find_speaker_by_id(sample_speakers, "nonexistent")
         assert speaker is None
 
-    @patch("requests.get")
-    def test_get_speaker_avatar_download(
-        self, mock_get, temp_assets_dir, sample_speaker
-    ):
-        """Test downloading and caching speaker avatar."""
+    def test_get_speaker_avatar_download(self, temp_assets_dir):
+        """Test loading and caching speaker avatar from provided bytes."""
         generator = MeetupImageGenerator(temp_assets_dir)
-
-        # Mock successful download
-        mock_response = Mock()
-        mock_response.raise_for_status.return_value = None
 
         # Create a test image in memory
         test_image = Image.new("RGB", (100, 100), (255, 0, 0))
@@ -251,17 +244,22 @@ class TestMeetupImageGenerator:
         img_bytes = BytesIO()
         test_image.save(img_bytes, format="PNG")
         img_bytes.seek(0)
-        mock_response.content = img_bytes.getvalue()
 
-        mock_get.return_value = mock_response
+        speaker = Speaker(
+            id="john-doe",
+            name="John Doe",
+            bio="A developer",
+            avatar=File(name="avatar.png", content=img_bytes.getvalue()),
+            social_links=[],
+        )
 
-        avatar = generator._get_speaker_avatar(sample_speaker, (50, 50))
+        avatar = generator._get_speaker_avatar(speaker, (50, 50))
 
         assert avatar is not None
         assert avatar.size == (50, 50)
 
         # Check that avatar was cached
-        cache_file = generator.cache_dir / f"{sample_speaker.id}.png"
+        cache_file = generator.cache_dir / f"{speaker.id}.png"
         assert cache_file.exists()
 
     def test_get_speaker_avatar_from_cache(self, temp_assets_dir, sample_speaker):
