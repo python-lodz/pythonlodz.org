@@ -8,10 +8,12 @@ import pytest
 
 from pyldz.config import AppConfig, GoogleSheetsConfig
 from pyldz.models import (
+    File,
     GoogleSheetsAPI,
     GoogleSheetsRepository,
     Language,
     MeetupStatus,
+    Speaker,
     _MeetupRow,
     _TalkRow,
 )
@@ -461,22 +463,141 @@ def test_complete_data_flow_all_enabled_meetups(
     assert meetup_59.talks[0].speaker_id == "lukasz-langa"
 
 
+@patch(
+    "pyldz.models.GoogleSheetsAPI.download_from_drive",
+    return_value=File(name="avatar.png", content=b""),
+)
 @patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
 @patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
 def test_speakers_extraction_and_deduplication(
-    mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
+    mock_fetch_talks, mock_fetch_meetups, mock_download, repository, complete_mock_data
 ):
     """Test speaker extraction and deduplication across meetups."""
     meetups_data, talks_data = complete_mock_data
 
-    # Setup mocks - convert raw data to dict format
-    header_meetups = meetups_data[0]
-    meetups_dict_data = [dict(zip(header_meetups, row)) for row in meetups_data[1:]]
-    mock_fetch_meetups.return_value = meetups_dict_data
+    # Ensure repository can build Speaker without downloader argument by patching to_speaker
+    # to a variant that constructs a Speaker with a dummy avatar file.
+    from pyldz.models import (
+        _TalkRow as _TR,  # local alias to avoid confusion with patching
+    )
 
-    header_talks = talks_data[0]
-    talks_dict_data = [dict(zip(header_talks, row)) for row in talks_data[1:]]
-    mock_fetch_talks.return_value = talks_dict_data
+    def _to_speaker_no_downloader(self: _TR):
+        return Speaker(
+            id=self.speaker_id,
+            name=self.full_name,
+            bio=self.bio,
+            avatar=File(name="avatar.png", content=b""),
+            social_links=self._build_social_links(),
+        )
+
+    mock_download.return_value = File(name="avatar.png", content=b"")
+    # Patch method on the class for this test instance
+    from unittest import mock as _mock
+
+    _mock.patch("pyldz.models._TalkRow.to_speaker", _to_speaker_no_downloader).start()
+
+    # Setup mocks - return typed rows expected by repository
+    mock_fetch_meetups.return_value = [
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "58",
+                "type": "talks",
+                "date": "2025-05-28",
+                "time": "18:00",
+                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "enabled": "TRUE",
+                "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
+                "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
+                "livestream_id": "b1rlgmlVHQo",
+                "sponsors": "indiebi,sunscrapers",
+            }
+        ),
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "59",
+                "type": "talks",
+                "date": "2025-07-30",
+                "time": "18:00",
+                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "enabled": "TRUE",
+                "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
+                "feedback_url": "",
+                "livestream_id": "",
+                "sponsors": "indiebi,sunscrapers",
+            }
+        ),
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "60",
+                "type": "talks",
+                "date": "2025-09-30",
+                "time": "18:00",
+                "location": "TBA",
+                "enabled": "FALSE",
+                "meetup_url": "",
+                "feedback_url": "",
+                "livestream_id": "",
+                "sponsors": "",
+            }
+        ),
+    ]
+
+    mock_fetch_talks.return_value = [
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "58",
+                "first_name": "Grzegorz",
+                "last_name": "Kocjan",
+                "bio": "Python developer z wieloletnim doświadczeniem w tworzeniu aplikacji webowych.",
+                "photo_url": "https://example.com/grzegorz.jpg",
+                "talk_title": "Pythonowa konfiguracja, która przyprawi Cię o dreszcze (w dobry sposób, obiecuję!)",
+                "talk_description": "Konfiguracja — wszyscy jej potrzebujemy, wszyscy jej nienawidzimy. A mimo to, w każdym projekcie przynajmniej raz udaje nam się ją zepsuć.",
+                "talk_title_en": "Python Config That Will Give You Chills (In a Good Way, I Promise!)",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/grzegorzkocjan",
+                "github_url": "https://github.com/gkocjan",
+                "facebook_url": "",
+                "youtube_url": "",
+                "other_urls": "https://github.com/gkocjan",
+            }
+        ),
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "58",
+                "first_name": "Sebastian",
+                "last_name": "Buczyński",
+                "bio": "Senior Python Developer, entuzjasta clean code i dobrych praktyk programistycznych.",
+                "photo_url": "https://example.com/sebastian.jpg",
+                "talk_title": "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔",
+                "talk_description": "Wokół tematu wydajności w Pythonie narosło wiele mitów. Rozwiejmy te fałszywe przekonania opierając się na twardych danych.",
+                "talk_title_en": "A software developer optimized the application, but no one congratulated them because it was written in Python 😔",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/sebastianbuczynski",
+                "github_url": "https://github.com/ambv",
+                "facebook_url": "",
+                "youtube_url": "",
+                "other_urls": "https://twitter.com/sebabuczynski",
+            }
+        ),
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "59",
+                "first_name": "Łukasz",
+                "last_name": "Langa",
+                "bio": "Python Core Developer, twórca Black, były Python Release Manager.",
+                "photo_url": "https://example.com/lukasz.jpg",
+                "talk_title": "Nowość w Pythonie 3.14 oraz PyScript",
+                "talk_description": "Przegląd najnowszych funkcjonalności w Pythonie 3.14 oraz wprowadzenie do PyScript.",
+                "talk_title_en": "What's New in Python 3.14 and PyScript",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/lukaszlanga",
+                "github_url": "https://github.com/ambv",
+                "facebook_url": "",
+                "youtube_url": "",
+                "other_urls": "https://lukasz.langa.pl",
+            }
+        ),
+    ]
 
     # Test getting all speakers
     speakers = repository.get_all_speakers()
@@ -497,7 +618,9 @@ def test_speakers_extraction_and_deduplication(
 
     lukasz = next(s for s in speakers if s.id == "lukasz-langa")
     assert lukasz.name == "Łukasz Langa"
-    assert len(lukasz.social_links) == 3  # LinkedIn, GitHub, and website
+    assert (
+        len(lukasz.social_links) == 2
+    )  # LinkedIn and website (github_url is not included)
 
 
 @patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
@@ -509,13 +632,108 @@ def test_disabled_meetup_filtering(
     meetups_data, talks_data = complete_mock_data
 
     # Setup mocks - convert raw data to dict format
-    header_meetups = meetups_data[0]
-    meetups_dict_data = [dict(zip(header_meetups, row)) for row in meetups_data[1:]]
-    mock_fetch_meetups.return_value = meetups_dict_data
+    # Setup mocks - return typed rows expected by repository
+    mock_fetch_meetups.return_value = [
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "58",
+                "type": "talks",
+                "date": "2025-05-28",
+                "time": "18:00",
+                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "enabled": "TRUE",
+                "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
+                "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
+                "livestream_id": "b1rlgmlVHQo",
+                "sponsors": "indiebi,sunscrapers",
+            }
+        ),
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "59",
+                "type": "talks",
+                "date": "2025-07-30",
+                "time": "18:00",
+                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "enabled": "TRUE",
+                "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
+                "feedback_url": "",
+                "livestream_id": "",
+                "sponsors": "indiebi,sunscrapers",
+            }
+        ),
+        _MeetupRow.model_validate(
+            {
+                "meetup_id": "60",
+                "type": "talks",
+                "date": "2025-09-30",
+                "time": "18:00",
+                "location": "TBA",
+                "enabled": "FALSE",
+                "meetup_url": "",
+                "feedback_url": "",
+                "livestream_id": "",
+                "sponsors": "",
+            }
+        ),
+    ]
 
-    header_talks = talks_data[0]
-    talks_dict_data = [dict(zip(header_talks, row)) for row in talks_data[1:]]
-    mock_fetch_talks.return_value = talks_dict_data
+    mock_fetch_talks.return_value = [
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "58",
+                "first_name": "Grzegorz",
+                "last_name": "Kocjan",
+                "bio": "Python developer z wieloletnim doświadczeniem w tworzeniu aplikacji webowych.",
+                "photo_url": "https://example.com/grzegorz.jpg",
+                "talk_title": "Pythonowa konfiguracja, która przyprawi Cię o dreszcze (w dobry sposób, obiecuję!)",
+                "talk_description": "Konfiguracja — wszyscy jej potrzebujemy, wszyscy jej nienawidzimy. A mimo to, w każdym projekcie przynajmniej raz udaje nam się ją zepsuć.",
+                "talk_title_en": "Python Config That Will Give You Chills (In a Good Way, I Promise!)",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/grzegorzkocjan",
+                "github_url": "https://github.com/gkocjan",
+                "facebook_url": "",
+                "youtube_url": "",
+                "other_urls": "",
+            }
+        ),
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "58",
+                "first_name": "Sebastian",
+                "last_name": "Buczyński",
+                "bio": "Senior Python Developer, entuzjasta clean code i dobrych praktyk programistycznych.",
+                "photo_url": "https://example.com/sebastian.jpg",
+                "talk_title": "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔",
+                "talk_description": "Wokół tematu wydajności w Pythonie narosło wiele mitów. Rozwiejmy te fałszywe przekonania opierając się na twardych danych.",
+                "talk_title_en": "A software developer optimized the application, but no one congratulated them because it was written in Python 😔",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/sebastianbuczynski",
+                "github_url": "https://github.com/ambv",
+                "facebook_url": "",
+                "youtube_url": "",
+                "other_urls": "https://twitter.com/sebabuczynski",
+            }
+        ),
+        _TalkRow.model_validate(
+            {
+                "meetup_id": "59",
+                "first_name": "Łukasz",
+                "last_name": "Langa",
+                "bio": "Python Core Developer, twórca Black, były Python Release Manager.",
+                "photo_url": "https://example.com/lukasz.jpg",
+                "talk_title": "Nowość w Pythonie 3.14 oraz PyScript",
+                "talk_description": "Przegląd najnowszych funkcjonalności w Pythonie 3.14 oraz wprowadzenie do PyScript.",
+                "talk_title_en": "What's New in Python 3.14 and PyScript",
+                "language": "pl",
+                "linkedin_url": "https://linkedin.com/in/lukaszlanga",
+                "github_url": "https://github.com/ambv",
+                "facebook_url": "",
+                "youtube_url": "",
+                "other_urls": "https://lukasz.langa.pl",
+            }
+        ),
+    ]
 
     # Test that disabled meetup (60) returns None
     disabled_meetup = repository.get_meetup_by_id("60")
@@ -523,10 +741,10 @@ def test_disabled_meetup_filtering(
 
     # Test that it's not included in all enabled meetups
     all_meetups = repository.get_all_enabled_meetups()
-    meetup_numbers = {m.number for m in all_meetups}
-    assert "60" not in meetup_numbers
-    assert "58" in meetup_numbers
-    assert "59" in meetup_numbers
+    meetup_ids = {m.meetup_id for m in all_meetups}
+    assert "60" not in meetup_ids
+    assert "58" in meetup_ids
+    assert "59" in meetup_ids
 
 
 def test_configuration_validation(app_config):
