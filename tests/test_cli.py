@@ -32,7 +32,7 @@ def mock_repository():
         # Mock meetup data
         from datetime import date
 
-        from pyldz.meetup import Language, Meetup, MeetupStatus, Talk
+        from pyldz.models import Language, Meetup, MeetupStatus, Talk
 
         sample_meetup = Meetup(
             meetup_id="58",
@@ -173,7 +173,7 @@ def test_dry_run_with_optional_fields(runner, mock_config):
 
         from pydantic import AnyHttpUrl
 
-        from pyldz.meetup import Language, Meetup, MeetupStatus, Talk
+        from pyldz.models import Language, Meetup, MeetupStatus, Talk
 
         sample_meetup = Meetup(
             meetup_id="59",
