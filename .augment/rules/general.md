@@ -14,3 +14,4 @@ use absolute imports
 avoid overengineering and keep simple, related concepts together
 avoid unnecessary exception handling, prefer stric types, input verification and simpler code later
 when supported by the lib use Annotation syntax
+use git add with files list, never add all files to the repository
