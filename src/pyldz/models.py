@@ -25,6 +25,23 @@ from pyldz.config import GoogleSheetsConfig
 
 log = logging.getLogger(__name__)
 
+FALLBACK_PHOTO_PATH = (
+    Path(__file__).parent.parent.parent
+    / "page"
+    / "assets"
+    / "images"
+    / "avatars"
+    / "no_photo.png"
+)
+
+
+def load_fallback_photo() -> File:
+    """Load the fallback photo for speakers without a photo_url."""
+    return File(
+        name="no_photo.png",
+        content=FALLBACK_PHOTO_PATH.read_bytes(),
+    )
+
 
 class Language(str, Enum):
     PL = "PL"
@@ -158,7 +175,7 @@ class _TalkRow(BaseModel):
     first_name: str
     last_name: str
     bio: str
-    photo_url: AnyHttpUrl
+    photo_url: AnyHttpUrl | None
     talk_title: str
     talk_description: str
     language: str
@@ -167,6 +184,13 @@ class _TalkRow(BaseModel):
     linkedin_url: AnyHttpUrl | None
     youtube_url: AnyHttpUrl | None
     other_urls: list[AnyHttpUrl] = []
+
+    @field_validator("photo_url", mode="before")
+    @classmethod
+    def convert_empty_photo_url_to_none(cls, v) -> str | None:
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
 
     @field_validator(
         "facebook_url",
@@ -205,12 +229,23 @@ class _TalkRow(BaseModel):
         name = re.sub(r"\s+", "-", name)
         return name.strip("-")
 
-    def to_speaker(self, photo_downloader: Callable[[AnyHttpUrl], File]) -> Speaker:
+    def to_speaker(
+        self, photo_downloader: Callable[[AnyHttpUrl], File] | None = None
+    ) -> Speaker:
+        if self.photo_url is None:
+            avatar = load_fallback_photo()
+        else:
+            avatar = (
+                photo_downloader(self.photo_url)
+                if photo_downloader
+                else load_fallback_photo()
+            )
+
         return Speaker(
             id=self.speaker_id,
             name=self.full_name,
             bio=self.bio,
-            avatar=photo_downloader(self.photo_url),
+            avatar=avatar,
             social_links=self._build_social_links(),
         )
 
