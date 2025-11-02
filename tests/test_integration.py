@@ -846,3 +846,60 @@ def test_model_integration_and_validation():
     assert meetup.talks[0].speaker_id == speaker.id
     assert meetup.talks[0].language == Language.EN
     assert speaker.name == "John Doe"
+
+
+def test_speaker_with_missing_photo_url_uses_fallback():
+    """Test that speaker with missing photo_url uses fallback image."""
+    from pyldz.models import File
+
+    # Test with None photo_url
+    talk_data_none = {
+        "meetup_id": "42",
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "bio": "A Python developer",
+        "photo_url": None,
+        "talk_title": "Test Talk",
+        "talk_description": "desc",
+        "language": "en",
+        "talk_title_en": "Test Talk",
+        "facebook_url": "",
+        "linkedin_url": "",
+        "youtube_url": "",
+        "other_urls": "",
+    }
+
+    talk_row_none = _TalkRow.model_validate(talk_data_none)
+    speaker_none = talk_row_none.to_speaker(
+        lambda _: File(name="avatar.png", content=b"")
+    )
+
+    # Verify fallback is used
+    assert speaker_none.avatar.name == "no_photo.png"
+    assert speaker_none.avatar.content != b""
+
+    # Test with empty string photo_url
+    talk_data_empty = {
+        "meetup_id": "42",
+        "first_name": "Bob",
+        "last_name": "Johnson",
+        "bio": "A Python developer",
+        "photo_url": "",
+        "talk_title": "Test Talk",
+        "talk_description": "desc",
+        "language": "en",
+        "talk_title_en": "Test Talk",
+        "facebook_url": "",
+        "linkedin_url": "",
+        "youtube_url": "",
+        "other_urls": "",
+    }
+
+    talk_row_empty = _TalkRow.model_validate(talk_data_empty)
+    speaker_empty = talk_row_empty.to_speaker(
+        lambda _: File(name="avatar.png", content=b"")
+    )
+
+    # Verify fallback is used
+    assert speaker_empty.avatar.name == "no_photo.png"
+    assert speaker_empty.avatar.content != b""
