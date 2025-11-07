@@ -3,6 +3,7 @@ from datetime import date
 from pyldz.models import (
     Language,
     Meetup,
+    MultiLanguage,
     Talk,
 )
 from pyldz.models import (
@@ -26,7 +27,7 @@ def test_meetup_properties():
         title="Meetup #42",
         date=date(2024, 6, 27),
         time="18:00",
-        location="Test Venue",
+        location=MultiLanguage(pl="Test Venue", en="Test Venue"),
         talks=[talk],
         sponsors=[],
         language=Language.PL,
@@ -39,7 +40,7 @@ def test_meetup_properties():
         title="Meetup #43",
         date=date(2024, 6, 27),
         time="18:00",
-        location="Test Venue",
+        location=MultiLanguage(pl="Test Venue", en="Test Venue"),
         talks=[],
         sponsors=[],
         language=Language.PL,

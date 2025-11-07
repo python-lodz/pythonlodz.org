@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -6,8 +7,11 @@ from pyldz.models import (
     File,
     GoogleSheetsRepository,
     Language,
+    Location,
+    LocationRepository,
     Meetup,
     MeetupStatus,
+    MultiLanguage,
     SocialLink,
     Speaker,
     Talk,
@@ -121,7 +125,17 @@ def fake_talks():
 def repository(fake_meetups, fake_talks):
     data = {"meetups": fake_meetups, "talks": fake_talks}
     api = FakeGoogleSheetsAPI(data)
-    return GoogleSheetsRepository(api)
+
+    # Create a mock LocationRepository with test location
+    location_repo = LocationRepository(Path("/tmp/nonexistent"))
+    location_repo._locations_cache["indiebi"] = Location(
+        name=MultiLanguage(
+            pl="IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+            en="IndieBI, Piotrkowska 157A, building Hi Piotrkowska",
+        )
+    )
+
+    return GoogleSheetsRepository(api, location_repo)
 
 
 def test_repository_fetch_meetups_data(repository: GoogleSheetsRepository):
@@ -137,7 +151,10 @@ def test_repository_fetch_meetups_data(repository: GoogleSheetsRepository):
             feedback_url=None,
             livestream_id=None,
             sponsors=["indiebi", "sunscrapers"],
-            location="indiebi",
+            location=MultiLanguage(
+                pl="IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                en="IndieBI, Piotrkowska 157A, building Hi Piotrkowska",
+            ),
             language=Language.PL,
             talks=[
                 Talk(
@@ -174,7 +191,10 @@ def test_get_meetup_by_id_existing_enabled_meetup(repository: GoogleSheetsReposi
         feedback_url=None,
         livestream_id=None,
         sponsors=["indiebi", "sunscrapers"],
-        location="indiebi",
+        location=MultiLanguage(
+            pl="IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+            en="IndieBI, Piotrkowska 157A, building Hi Piotrkowska",
+        ),
         language=Language.PL,
         talks=[
             Talk(

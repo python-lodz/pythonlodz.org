@@ -6,7 +6,7 @@ import pytest
 from typer.testing import CliRunner
 
 from pyldz.main import app
-from pyldz.models import Language, Meetup, MeetupStatus, Talk
+from pyldz.models import Language, Meetup, MeetupStatus, MultiLanguage, Talk
 
 
 @pytest.fixture
@@ -15,10 +15,13 @@ def runner():
 
 
 @pytest.fixture
-def mock_config():
+def mock_config(tmp_path):
     with patch("pyldz.main.AppConfig") as mock:
         config_instance = Mock()
         config_instance.google_sheets = Mock()
+        config_instance.hugo = Mock()
+        config_instance.hugo.data_dir = tmp_path / "data"
+        (config_instance.hugo.data_dir / "locations").mkdir(parents=True)
         mock.return_value = config_instance
         yield config_instance
 
@@ -34,7 +37,10 @@ def mock_repository():
             title="Meetup #58",
             date=date(2025, 5, 28),
             time="18:00",
-            location="indiebi",
+            location=MultiLanguage(
+                pl="IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                en="IndieBI, Piotrkowska 157A, building Hi Piotrkowska",
+            ),
             status=MeetupStatus.PUBLISHED,
             meetup_url="https://www.meetup.com/python-lodz/events/306971418/",
             feedback_url=None,

@@ -5,7 +5,7 @@ import pytest
 from PIL import Image
 
 from pyldz.image_generator import ImageGenerationError, MeetupImageGenerator
-from pyldz.models import File, Language, Meetup, Speaker, Talk
+from pyldz.models import File, Language, Meetup, MultiLanguage, Speaker, Talk
 
 
 @pytest.fixture
@@ -44,7 +44,9 @@ def sample_meetup():
         title="Meetup #42",
         date=datetime.date(2024, 6, 27),
         time="18:00",
-        location="Test Venue, Test Street 123",
+        location=MultiLanguage(
+            pl="Test Venue, Test Street 123", en="Test Venue, Test Street 123"
+        ),
         language=Language.PL,
         talks=[
             Talk(
@@ -66,7 +68,9 @@ def sample_duo_meetup():
         title="Meetup #43",
         date=datetime.date(2024, 7, 25),
         time="18:00",
-        location="Test Venue, Test Street 123",
+        location=MultiLanguage(
+            pl="Test Venue, Test Street 123", en="Test Venue, Test Street 123"
+        ),
         language=Language.PL,
         talks=[
             Talk(
@@ -144,7 +148,7 @@ def test_generate_featured_image_no_talks(temp_assets_dir, tmp_path):
         title="Meetup #44",
         date=datetime.date(2024, 8, 29),
         time="18:00",
-        location="Test Venue",
+        location=MultiLanguage(pl="Test Venue PL", en="Test Venue EN"),
         talks=[],
         sponsors=[],
         language=Language.PL,

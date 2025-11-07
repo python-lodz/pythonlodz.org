@@ -9,7 +9,9 @@ from pyldz.models import (
     GoogleSheetsAPI,
     GoogleSheetsRepository,
     Language,
+    LocationRepository,
     MeetupStatus,
+    MultiLanguage,
     Speaker,
     _MeetupRow,
     _TalkRow,
@@ -36,7 +38,10 @@ def app_config(tmp_path):
 
 @pytest.fixture
 def repository(app_config):
-    return GoogleSheetsRepository(GoogleSheetsAPI(app_config.google_sheets))
+    location_repo = LocationRepository(app_config.hugo.data_dir / "locations")
+    return GoogleSheetsRepository(
+        GoogleSheetsAPI(app_config.google_sheets), location_repo
+    )
 
 
 @pytest.fixture
@@ -62,7 +67,7 @@ def complete_mock_data():
             "Meetup #58",
             "2025-05-28",
             "18:00",
-            "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+            "indiebi",
             "TRUE",
             "https://www.meetup.com/python-lodz/events/306971418/",
             "https://forms.gle/237YJFHy6G1jw9999",
@@ -77,7 +82,7 @@ def complete_mock_data():
             "Meetup #59",
             "2025-07-30",
             "18:00",
-            "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+            "indiebi",
             "TRUE",
             "https://www.meetup.com/python-lodz/events/306971418/",
             "",
@@ -92,7 +97,7 @@ def complete_mock_data():
             "Meetup #60",
             "2025-09-30",
             "18:00",
-            "TBA",
+            "indiebi",
             "FALSE",
             "",
             "",
@@ -186,7 +191,7 @@ def test_complete_data_flow_single_meetup(
                 "type": "talks",
                 "date": "2025-05-28",
                 "time": "18:00",
-                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "location": "indiebi",
                 "enabled": "TRUE",
                 "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
                 "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
@@ -201,7 +206,7 @@ def test_complete_data_flow_single_meetup(
                 "type": "talks",
                 "date": "2025-07-30",
                 "time": "18:00",
-                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "location": "indiebi",
                 "enabled": "TRUE",
                 "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
                 "feedback_url": "",
@@ -216,7 +221,7 @@ def test_complete_data_flow_single_meetup(
                 "type": "talks",
                 "date": "2025-09-30",
                 "time": "18:00",
-                "location": "TBA",
+                "location": "indiebi",
                 "enabled": "FALSE",
                 "meetup_url": "",
                 "feedback_url": "",
@@ -293,7 +298,7 @@ def test_complete_data_flow_single_meetup(
     assert meetup.title == "Meetup #58"
     assert meetup.date == date(2025, 5, 28)
     assert meetup.time == "18:00"
-    assert meetup.location == "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska"
+    assert meetup.location_name == 'IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska"'
     # featured field removed in current model
     assert meetup.status == MeetupStatus.PUBLISHED
     assert (
@@ -351,7 +356,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "type": "talks",
                 "date": "2025-05-28",
                 "time": "18:00",
-                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "location": "indiebi",
                 "enabled": "TRUE",
                 "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
                 "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
@@ -366,7 +371,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "type": "talks",
                 "date": "2025-07-30",
                 "time": "18:00",
-                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "location": "indiebi",
                 "enabled": "TRUE",
                 "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
                 "feedback_url": "",
@@ -381,7 +386,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "type": "talks",
                 "date": "2025-09-30",
                 "time": "18:00",
-                "location": "TBA",
+                "location": "indiebi",
                 "enabled": "FALSE",
                 "meetup_url": "",
                 "feedback_url": "",
@@ -482,7 +487,7 @@ def test_disabled_meetup_filtering(
                 "type": "talks",
                 "date": "2025-05-28",
                 "time": "18:00",
-                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "location": "indiebi",
                 "enabled": "TRUE",
                 "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
                 "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
@@ -497,7 +502,7 @@ def test_disabled_meetup_filtering(
                 "type": "talks",
                 "date": "2025-07-30",
                 "time": "18:00",
-                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
+                "location": "indiebi",
                 "enabled": "TRUE",
                 "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
                 "feedback_url": "",
@@ -655,7 +660,7 @@ def test_model_integration_and_validation():
         "type": "talks",
         "date": "2024-06-27",
         "time": "18:00",
-        "location": "Test Venue",
+        "location": "test_venue",
         "enabled": "TRUE",
         "sponsors": "",
         "meetup_url": "",
@@ -664,8 +669,19 @@ def test_model_integration_and_validation():
         "language": "EN",
     }
 
+    # Create a mock LocationRepository
+    from pathlib import Path
+
+    from pyldz.models import Location
+
+    location_repo = LocationRepository(Path("/tmp/nonexistent"))
+    # Manually add a test location
+    location_repo._locations_cache["test_venue"] = Location(
+        name=MultiLanguage(pl="Test Venue PL", en="Test Venue EN")
+    )
+
     meetup_row = _MeetupRow.model_validate(meetup_data)
-    meetup = meetup_row.to_meetup([talk])
+    meetup = meetup_row.to_meetup([talk], location_repo)
 
     # Verify integration
     assert meetup.meetup_id == "42"
@@ -673,6 +689,7 @@ def test_model_integration_and_validation():
     assert meetup.talks[0].speaker_id == speaker.id
     assert meetup.talks[0].language == Language.EN
     assert speaker.name == "John Doe"
+    assert meetup.location_name == "Test Venue EN"
 
 
 def test_speaker_with_missing_photo_url_uses_fallback():
