@@ -32,7 +32,7 @@ class HugoMeetupGenerator:
         content_parts.append("")
         content_parts.append(f"**📅 data:** {meetup.date}</br>")
         content_parts.append(f"**🕕 godzina:** {meetup.time}</br>")
-        content_parts.append(f"**📍 miejsce:** {meetup.location}</br>")
+        content_parts.append(f"**📍 miejsce:** {meetup.location_name}</br>")
 
         # Add meetup link if available
         if meetup.meetup_url:
@@ -107,7 +107,7 @@ class HugoMeetupGenerator:
             f'title: "{meetup.title}"',
             f"date: {meetup.date}T{meetup.time}:00+02:00",
             f'time: "{meetup.time}"',
-            f'place: "{meetup.location}"',
+            f'place: "{meetup.location_name}"',
             "---",
             "",
         ]
@@ -141,7 +141,7 @@ class HugoMeetupGenerator:
                 log.info(f"Used fallback template image for meetup {meetup.meetup_id}")
             else:
                 # Create a simple text file as placeholder if no template exists
-                placeholder_text = f"Featured image for {meetup.title}\nDate: {meetup.date}\nLocation: {meetup.location}"
+                placeholder_text = f"Featured image for {meetup.title}\nDate: {meetup.date}\nLocation: {meetup.location_name}"
                 featured_image_path.with_suffix(".txt").write_text(
                     placeholder_text, encoding="utf-8"
                 )
