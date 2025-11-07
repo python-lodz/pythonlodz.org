@@ -115,7 +115,9 @@ class MeetupImageGenerator:
         draw.text((157, 1014), date_text, fill=self.text_color, font=font_28)
 
         # Add bottom place text
-        draw.text((1156, 1014), meetup.location, fill=self.text_color, font=font_28)
+        draw.text(
+            (1156, 1014), meetup.location_name, fill=self.text_color, font=font_28
+        )
 
         tba_bg = Image.open(self.tba_avatar).convert("RGBA")
         image.paste(tba_bg, (779, 436), tba_bg)
@@ -172,7 +174,9 @@ class MeetupImageGenerator:
         draw.text((157, 1010.3), date_text, fill=self.text_color, font=font_32)
 
         # Add bottom place text
-        draw.text((1156, 1010.3), meetup.location, fill=self.text_color, font=font_32)
+        draw.text(
+            (1156, 1010.3), meetup.location_name, fill=self.text_color, font=font_32
+        )
 
         # First speaker (left side)
         talk1 = meetup.talks[0]

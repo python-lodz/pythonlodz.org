@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 from pyldz.config import AppConfig
 from pyldz.hugo_generator import HugoMeetupGenerator
 from pyldz.logging_config import setup_logging
-from pyldz.models import GoogleSheetsAPI, GoogleSheetsRepository
+from pyldz.models import GoogleSheetsAPI, GoogleSheetsRepository, LocationRepository
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +40,10 @@ def generate(
 
     config = AppConfig()
 
-    repository = GoogleSheetsRepository(GoogleSheetsAPI(config.google_sheets))
+    location_repo = LocationRepository(config.hugo.data_dir / "locations")
+    repository = GoogleSheetsRepository(
+        GoogleSheetsAPI(config.google_sheets), location_repo
+    )
     generator = HugoMeetupGenerator(output_dir)
 
     log.info("Generating meetup markdown files...")

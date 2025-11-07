@@ -12,6 +12,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from pydantic import AnyHttpUrl, BaseModel, field_validator
+from ruamel.yaml import YAML
 from unidecode import unidecode
 
 from pyldz.config import GoogleSheetsConfig
@@ -31,6 +32,17 @@ FALLBACK_PHOTO_PATH = (
 class Language(str, Enum):
     PL = "PL"
     EN = "EN"
+
+
+class MultiLanguage(BaseModel):
+    """Generic model for multi-language content."""
+
+    pl: str
+    en: str
+
+    def get_by_language(self, language: Language) -> str:
+        """Return text in the specified language."""
+        return self.pl if language == Language.PL else self.en
 
 
 class MeetupStatus(str, Enum):
@@ -77,12 +89,18 @@ class Talk(BaseModel):
     youtube_id: str | None = None
 
 
+class Location(BaseModel):
+    """Location with multi-language name."""
+
+    name: MultiLanguage
+
+
 class Meetup(BaseModel):
     meetup_id: str
     title: str
     date: datetime.date
     time: str
-    location: str
+    location: MultiLanguage
     language: Language
     status: MeetupStatus = MeetupStatus.DRAFT
     meetup_url: AnyHttpUrl | None = None
@@ -106,6 +124,11 @@ class Meetup(BaseModel):
     @property
     def talk_count(self) -> int:
         return len(self.talks)
+
+    @property
+    def location_name(self) -> str:
+        """Return location name in the meetup's language."""
+        return self.location.get_by_language(self.language)
 
     @property
     def formatted_date_polish(self) -> str:
@@ -161,13 +184,19 @@ class _MeetupRow(BaseModel):
             return None
         return v
 
-    def to_meetup(self, talks: list[Talk]) -> Meetup:
+    def to_meetup(
+        self, talks: list[Talk], location_repo: "LocationRepository"
+    ) -> Meetup:
+        location = location_repo.get_location(self.location)
+        if not location:
+            raise ValueError(f"Location not found: {self.location}")
+
         return Meetup(
             meetup_id=self.meetup_id,
             title=self.title,
             date=self.date,
             time=self.time,
-            location=self.location,
+            location=location.name,
             talks=talks,
             sponsors=self.sponsors,
             meetup_url=self.meetup_url,
@@ -364,8 +393,9 @@ class Tables(StrEnum):
 
 
 class GoogleSheetsRepository:
-    def __init__(self, api: GoogleSheetsAPI):
+    def __init__(self, api: GoogleSheetsAPI, location_repo: "LocationRepository"):
         self.api = api
+        self.location_repo = location_repo
 
     def _fetch_meetups_data(self) -> list[_MeetupRow]:
         rows = self.api.fetch_data(Tables.MEETUPS)
@@ -414,7 +444,7 @@ class GoogleSheetsRepository:
 
         talks = self._get_talks_for_meetup(meetup_id, talks_data)
 
-        return meetup.to_meetup(talks)
+        return meetup.to_meetup(talks, self.location_repo)
 
     def get_all_enabled_meetups(self) -> list[Meetup]:
         meetups_data: list[_MeetupRow] = self._fetch_meetups_data()
@@ -428,7 +458,58 @@ class GoogleSheetsRepository:
             talks: list[Talk] = self._get_talks_for_meetup(
                 meetup_row.meetup_id, talks_data
             )
-            meetup = meetup_row.to_meetup(talks)
+            meetup = meetup_row.to_meetup(talks, self.location_repo)
             meetups.append(meetup)
 
         return meetups
+
+
+class LocationRepository:
+    """Repository for loading and caching location data from YAML files."""
+
+    def __init__(self, locations_dir: Path):
+        """
+        Initialize the location repository.
+
+        Args:
+            locations_dir: Path to directory containing location YAML files
+        """
+        self.locations_dir = locations_dir
+        self._locations_cache: dict[str, Location] = {}
+        self._load_all_locations()
+
+    def _load_all_locations(self) -> None:
+        """Load all location YAML files into cache."""
+        yaml = YAML()
+        if not self.locations_dir.exists():
+            log.warning(f"Locations directory not found: {self.locations_dir}")
+            return
+
+        for location_file in self.locations_dir.glob("*.yaml"):
+            location_id = location_file.stem
+            try:
+                with open(location_file, encoding="utf-8") as f:
+                    data = yaml.load(f)
+                    if data:
+                        # Map name_pl/name_en to pl/en for MultiLanguage model
+                        multi_lang_data = {
+                            "pl": data.get("name_pl", ""),
+                            "en": data.get("name_en", ""),
+                        }
+                        location = Location(name=MultiLanguage(**multi_lang_data))
+                        self._locations_cache[location_id] = location
+                        log.debug(f"Loaded location: {location_id}")
+            except Exception as e:
+                log.error(f"Failed to load location {location_id}: {e}")
+
+    def get_location(self, location_id: str) -> Location | None:
+        """
+        Get location by ID.
+
+        Args:
+            location_id: The location identifier (filename without .yaml)
+
+        Returns:
+            Location object or None if not found
+        """
+        return self._locations_cache.get(location_id)
