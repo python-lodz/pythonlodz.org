@@ -129,53 +129,31 @@ class HugoMeetupGenerator:
         pl_image_path = meetup_dir / "featured-pl.png"
         en_image_path = meetup_dir / "featured-en.png"
 
-        try:
-            # Generate Polish version
+        images_variants: list[tuple[Path, Language, str]] = [
+            (meetup_dir / "featured-pl.png", Language.PL, "16x9"),
+            (meetup_dir / "featured-en.png", Language.EN, "16x9"),
+            (meetup_dir / "featured-pl-4x5.png", Language.PL, "4x5"),
+            (meetup_dir / "featured-en-4x5.png", Language.EN, "4x5"),
+            (meetup_dir / "featured-pl-1x1.png", Language.PL, "1x1"),
+            (meetup_dir / "featured-en-1x1.png", Language.EN, "1x1"),
+        ]
+
+        for variant in images_variants:
+            image_path, language, aspect_ratio = variant
+            log.info(f"Generating featured image {image_path.name}")
             self.image_generator.generate_featured_image(
-                meetup, speakers, pl_image_path, Language.PL
-            )
-            log.info(f"Generated Polish featured image for meetup {meetup.meetup_id}")
-
-            # Generate English version
-            self.image_generator.generate_featured_image(
-                meetup, speakers, en_image_path, Language.EN
-            )
-            log.info(f"Generated English featured image for meetup {meetup.meetup_id}")
-
-            # Create featured.png pointing to the language matching the meetup
-            if meetup.language == Language.PL:
-                shutil.copy2(pl_image_path, featured_image_path)
-            else:
-                shutil.copy2(en_image_path, featured_image_path)
-
-            log.info(
-                f"Created featured.png for meetup {meetup.meetup_id} "
-                f"(language: {meetup.language.value})"
+                meetup, speakers, image_path, language, aspect_ratio=aspect_ratio
             )
 
-        except Exception as e:
-            log.error(
-                f"Failed to generate featured images for meetup {meetup.meetup_id}: {e}"
-            )
-            raise e
+        if meetup.language == Language.PL:
+            shutil.copy2(pl_image_path, featured_image_path)
+        else:
+            shutil.copy2(en_image_path, featured_image_path)
 
-            # Fallback to copying a template image
-            template_image = (
-                self.output_dir
-                / "assets"
-                / "images"
-                / "python_lodz_logo_transparent_border.png"
-            )
-            if template_image.exists():
-                shutil.copy2(template_image, featured_image_path)
-                log.info(f"Used fallback template image for meetup {meetup.meetup_id}")
-            else:
-                # Create a simple text file as placeholder if no template exists
-                placeholder_text = f"Featured image for {meetup.title}\nDate: {meetup.date}\nLocation: {meetup.location_name}"
-                featured_image_path.with_suffix(".txt").write_text(
-                    placeholder_text, encoding="utf-8"
-                )
-                log.warning(f"Created text placeholder for meetup {meetup.meetup_id}")
+        log.info(
+            f"Created featured.png for meetup {meetup.meetup_id} "
+            f"(language: {meetup.language.value})"
+        )
 
         return featured_image_path
 
