@@ -4,7 +4,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from pyldz.models import Meetup, Speaker
+from pyldz.i18n import get_text
+from pyldz.models import Language, Meetup, Speaker
 
 log = logging.getLogger(__name__)
 
@@ -43,25 +44,31 @@ class MeetupImageGenerator:
         self.text_color = "#393f5f"
 
     def generate_featured_image(
-        self, meetup: Meetup, speakers: list[Speaker], output_path: Path
+        self,
+        meetup: Meetup,
+        speakers: list[Speaker],
+        output_path: Path,
+        language: Language | None = None,
     ) -> Path:
         """
-        Generate a featured image for a meetup.
+        Generate a featured image for a meetup in specified language.
 
         Args:
             meetup: Meetup data
             speakers: List of speakers for the meetup
             output_path: Where to save the generated image
+            language: Language for the image (defaults to meetup.language)
 
         Returns:
             Path to the generated image
         """
+        language = language or meetup.language
         try:
             if meetup.is_to_be_announced:
-                image = self._generate_tba_image(meetup)
+                image = self._generate_tba_image(meetup, language)
             elif meetup.has_single_talk:
                 speaker = self._find_speaker_by_id(speakers, meetup.talks[0].speaker_id)
-                image = self._generate_solo_image(meetup, speaker)
+                image = self._generate_solo_image(meetup, speaker, language)
             elif meetup.has_two_talks:
                 speaker1 = self._find_speaker_by_id(
                     speakers, meetup.talks[0].speaker_id
@@ -69,7 +76,7 @@ class MeetupImageGenerator:
                 speaker2 = self._find_speaker_by_id(
                     speakers, meetup.talks[1].speaker_id
                 )
-                image = self._generate_duo_image(meetup, speaker1, speaker2)
+                image = self._generate_duo_image(meetup, speaker1, speaker2, language)
             else:
                 raise Exception("Unsupported number of talks")
 
@@ -83,27 +90,26 @@ class MeetupImageGenerator:
                 f"Failed to generate image for meetup {meetup.meetup_id}: {e}"
             ) from e
 
-    def _generate_tba_image(self, meetup: Meetup) -> Image.Image:
-        return self._generate_solo_image(meetup, None)
+    def _generate_tba_image(self, meetup: Meetup, language: Language) -> Image.Image:
+        return self._generate_solo_image(meetup, None, language)
 
-    def _find_speaker_by_id(
-        self, speakers: list[Speaker], speaker_id: str
-    ) -> Speaker | None:
-        return next((s for s in speakers if s.id == speaker_id), None)
+    def _find_speaker_by_id(self, speakers: list[Speaker], speaker_id: str) -> Speaker:
+        return next(s for s in speakers if s.id == speaker_id)
 
     def _generate_solo_image(
-        self, meetup: Meetup, speaker: Speaker | None
+        self, meetup: Meetup, speaker: Speaker | None, language: Language
     ) -> Image.Image:
         # Load template
         image = Image.open(self.template).convert("RGBA")
         draw = ImageDraw.Draw(image)
 
-        # Add "ZAPRASZA" text
+        # Add language-aware "ZAPRASZA"/"INVITES" text
+        invites_text = get_text(language, "invites")
         font_66 = self._load_font(self.font_normal, 66)
-        draw.text((890, 132), "ZAPRASZA", fill=self.text_color, font=font_66)
+        draw.text((890, 132), invites_text, fill=self.text_color, font=font_66)
 
-        # Add date text (centered)
-        date_text = meetup.formatted_date_polish
+        # Add date text (centered) in appropriate language
+        date_text = meetup.formatted_date(language)
         font_80 = self._load_font(self.font_normal, 80)
         img_width = image.width
         self._draw_centered_text(
@@ -116,7 +122,10 @@ class MeetupImageGenerator:
 
         # Add bottom place text
         draw.text(
-            (1156, 1014), meetup.location_name, fill=self.text_color, font=font_28
+            (1156, 1014),
+            meetup.location_name(language),
+            fill=self.text_color,
+            font=font_28,
         )
 
         tba_bg = Image.open(self.tba_avatar).convert("RGBA")
@@ -154,15 +163,22 @@ class MeetupImageGenerator:
         return image
 
     def _generate_duo_image(
-        self, meetup: Meetup, speaker1: Speaker, speaker2: Speaker
+        self, meetup: Meetup, speaker1: Speaker, speaker2: Speaker, language: Language
     ) -> Image.Image:
         """Generate a duo meetup image using the universal template."""
         # Load template
         image = Image.open(self.template).convert("RGBA")
         draw = ImageDraw.Draw(image)
 
-        # Add main date text (centered)
-        date_text = meetup.formatted_date_polish
+        # Add language-aware "ZAPRASZA"/"INVITES" text
+        invites_text = get_text(language, "invites")
+        font_66 = self._load_font(self.font_normal, 66)
+        draw.text(
+            (890, 132), invites_text, fill=self.text_color, font=font_66, align="center"
+        )
+
+        # Add main date text (centered) in appropriate language
+        date_text = meetup.formatted_date(language)
         font_80 = self._load_font(self.font_normal, 80)
         img_width = image.width
         self._draw_centered_text(
@@ -175,7 +191,10 @@ class MeetupImageGenerator:
 
         # Add bottom place text
         draw.text(
-            (1156, 1010.3), meetup.location_name, fill=self.text_color, font=font_32
+            (1156, 1010.3),
+            meetup.location_name(language),
+            fill=self.text_color,
+            font=font_32,
         )
 
         # First speaker (left side)

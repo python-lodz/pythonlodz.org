@@ -125,27 +125,11 @@ class Meetup(BaseModel):
     def talk_count(self) -> int:
         return len(self.talks)
 
-    @property
-    def location_name(self) -> str:
-        """Return location name in the meetup's language."""
-        return self.location.get_by_language(self.language)
+    def location_name(self, language: Language | None = None) -> str:
+        return self.location.get_by_language(language or self.language)
 
-    @property
-    def formatted_date_polish(self) -> str:
-        return self._format_date_with_polish_day_name()
-
-    def _format_date_with_polish_day_name(self) -> str:
-        polish_days = {
-            0: "PONIEDZIAŁEK",
-            1: "WTOREK",
-            2: "ŚRODA",
-            3: "CZWARTEK",
-            4: "PIĄTEK",
-            5: "SOBOTA",
-            6: "NIEDZIELA",
-        }
-        day_name = polish_days[self.date.weekday()]
-        return f"{day_name} {self.date.strftime('%d.%m.%Y')}r. godz. {self.time}"
+    def formatted_date(self, language: Language | None = None) -> str:
+        return f"{self.date.strftime('%Y.%m.%d')} {self.time}"
 
 
 class MeetupType(StrEnum):

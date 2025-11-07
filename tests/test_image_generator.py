@@ -282,3 +282,59 @@ def test_create_circular_mask(temp_assets_dir):
 
     assert masked.size == test_image.size
     assert masked.mode == "RGBA"
+
+
+def test_generate_featured_image_polish_language(temp_assets_dir, sample_meetup):
+    """Test generating featured image in Polish language."""
+    generator = MeetupImageGenerator(temp_assets_dir)
+    output_path = temp_assets_dir / "featured-pl.png"
+
+    # Generate image in Polish
+    result = generator.generate_featured_image(
+        sample_meetup, [], output_path, Language.PL
+    )
+
+    assert result == output_path
+    assert output_path.exists()
+    assert output_path.suffix == ".png"
+
+
+def test_generate_featured_image_english_language(temp_assets_dir, sample_meetup):
+    """Test generating featured image in English language."""
+    generator = MeetupImageGenerator(temp_assets_dir)
+    output_path = temp_assets_dir / "featured-en.png"
+
+    # Generate image in English
+    result = generator.generate_featured_image(
+        sample_meetup, [], output_path, Language.EN
+    )
+
+    assert result == output_path
+    assert output_path.exists()
+    assert output_path.suffix == ".png"
+
+
+def test_generate_featured_image_both_languages(temp_assets_dir, sample_meetup):
+    """Test generating featured images in both languages."""
+    generator = MeetupImageGenerator(temp_assets_dir)
+    pl_path = temp_assets_dir / "featured-pl.png"
+    en_path = temp_assets_dir / "featured-en.png"
+
+    # Generate both versions
+    pl_result = generator.generate_featured_image(
+        sample_meetup, [], pl_path, Language.PL
+    )
+    en_result = generator.generate_featured_image(
+        sample_meetup, [], en_path, Language.EN
+    )
+
+    assert pl_result.exists()
+    assert en_result.exists()
+
+    # Both should be valid PNG files
+    pl_image = Image.open(pl_result)
+    en_image = Image.open(en_result)
+
+    assert pl_image.format == "PNG"
+    assert en_image.format == "PNG"
+    assert pl_image.size == en_image.size

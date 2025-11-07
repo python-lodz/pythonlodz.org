@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 from pyldz.image_generator import MeetupImageGenerator
-from pyldz.models import GoogleSheetsRepository, Meetup
+from pyldz.models import GoogleSheetsRepository, Language, Meetup
 from pyldz.speaker_yaml import write_speakers_yaml
 
 log = logging.getLogger(__name__)
@@ -116,19 +116,49 @@ class HugoMeetupGenerator:
     def create_featured_image(
         self, meetup: Meetup, speakers: list, meetup_dir: Path
     ) -> Path:
-        """Create a featured image for the meetup using Python image generation."""
+        """
+        Create featured images for both languages.
+
+        Generates images in both PL and EN, and creates a symlink/copy to featured.png
+        matching the meetup's language.
+
+        Returns:
+            Path to the featured.png (matching meetup language)
+        """
         featured_image_path = meetup_dir / "featured.png"
+        pl_image_path = meetup_dir / "featured-pl.png"
+        en_image_path = meetup_dir / "featured-en.png"
 
         try:
-            # Generate the image using the image generator
+            # Generate Polish version
             self.image_generator.generate_featured_image(
-                meetup, speakers, featured_image_path
+                meetup, speakers, pl_image_path, Language.PL
             )
-            log.info(f"Generated featured image for meetup {meetup.meetup_id}")
+            log.info(f"Generated Polish featured image for meetup {meetup.meetup_id}")
+
+            # Generate English version
+            self.image_generator.generate_featured_image(
+                meetup, speakers, en_image_path, Language.EN
+            )
+            log.info(f"Generated English featured image for meetup {meetup.meetup_id}")
+
+            # Create featured.png pointing to the language matching the meetup
+            if meetup.language == Language.PL:
+                shutil.copy2(pl_image_path, featured_image_path)
+            else:
+                shutil.copy2(en_image_path, featured_image_path)
+
+            log.info(
+                f"Created featured.png for meetup {meetup.meetup_id} "
+                f"(language: {meetup.language.value})"
+            )
+
         except Exception as e:
             log.error(
-                f"Failed to generate featured image for meetup {meetup.meetup_id}: {e}"
+                f"Failed to generate featured images for meetup {meetup.meetup_id}: {e}"
             )
+            raise e
+
             # Fallback to copying a template image
             template_image = (
                 self.output_dir

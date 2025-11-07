@@ -186,3 +186,41 @@ def test_parse_talk_minimal_data():
     assert row.talk_title == "Introduction to Python"
     assert row.bio == ""
     assert row.language == Language.PL
+
+
+def test_meetup_formatted_date_polish():
+    meetup = Meetup(
+        meetup_id="42",
+        title="Meetup #42",
+        date=date(2024, 6, 27),
+        time="18:00",
+        location=MultiLanguage(pl="Test Venue", en="Test Venue"),
+        talks=[],
+        sponsors=[],
+        language=Language.PL,
+    )
+
+    formatted = meetup.formatted_date
+    assert "CZWARTEK" in formatted
+    assert "27.06.2024" in formatted
+    assert "18:00" in formatted
+
+
+def test_meetup_formatted_date_english():
+    meetup = Meetup(
+        meetup_id="42",
+        title="Meetup #42",
+        date=date(2024, 6, 27),
+        time="18:00",
+        location=MultiLanguage(pl="Test Venue", en="Test Venue"),
+        talks=[],
+        sponsors=[],
+        language=Language.EN,
+    )
+
+    formatted = meetup.formatted_date
+    assert "THURSDAY" in formatted
+    assert "June" in formatted
+    assert "27" in formatted
+    assert "2024" in formatted
+    assert "18:00" in formatted
