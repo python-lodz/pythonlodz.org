@@ -4,7 +4,6 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from pyldz import face_centering
 from pyldz.models import Meetup, Speaker
 
 log = logging.getLogger(__name__)
@@ -17,8 +16,6 @@ class ImageGenerationError(Exception):
 
 
 class MeetupImageGenerator:
-    """Generates featured images for meetups using Python and Pillow."""
-
     def __init__(self, assets_dir: Path, cache_dir: Path | None = None):
         """
         Initialize the image generator.
@@ -35,7 +32,7 @@ class MeetupImageGenerator:
 
         # Template paths
         self.solo_template = assets_dir / "images" / "infographic_template.png"
-        self.duo_template = assets_dir / "images" / "infographic_template_duo.png"
+        self.duo_template = assets_dir / "images" / "infographic_template.png"
         self.avatar_mask = assets_dir / "images" / "avatars" / "mask.png"
         self.tba_avatar = assets_dir / "images" / "avatars" / "tba.png"
 
@@ -61,15 +58,12 @@ class MeetupImageGenerator:
             Path to the generated image
         """
         try:
-            if len(meetup.talks) == 0:
-                # No talks - use solo template with TBA
-                image = self._generate_solo_image(meetup, None)
-            elif len(meetup.talks) == 1:
-                # Single talk - use solo template
+            if meetup.is_to_be_announced:
+                image = self._generate_tba_image(meetup)
+            elif meetup.has_single_talk:
                 speaker = self._find_speaker_by_id(speakers, meetup.talks[0].speaker_id)
                 image = self._generate_solo_image(meetup, speaker)
-            elif len(meetup.talks) == 2:
-                # Two talks - use duo template
+            elif meetup.has_two_talks:
                 speaker1 = self._find_speaker_by_id(
                     speakers, meetup.talks[0].speaker_id
                 )
@@ -78,11 +72,8 @@ class MeetupImageGenerator:
                 )
                 image = self._generate_duo_image(meetup, speaker1, speaker2)
             else:
-                # More than 2 talks - use solo template with first speaker
-                speaker = self._find_speaker_by_id(speakers, meetup.talks[0].speaker_id)
-                image = self._generate_solo_image(meetup, speaker)
+                raise Exception("Unsupported number of talks")
 
-            # Save the image
             output_path.parent.mkdir(parents=True, exist_ok=True)
             image.save(output_path, "PNG")
             log.info(f"Generated featured image: {output_path}")
@@ -93,19 +84,17 @@ class MeetupImageGenerator:
                 f"Failed to generate image for meetup {meetup.meetup_id}: {e}"
             ) from e
 
+    def _generate_tba_image(self, meetup: Meetup) -> Image.Image:
+        return self._generate_solo_image(meetup, None)
+
     def _find_speaker_by_id(
         self, speakers: list[Speaker], speaker_id: str
     ) -> Speaker | None:
-        """Find a speaker by their ID."""
         return next((s for s in speakers if s.id == speaker_id), None)
 
     def _generate_solo_image(
         self, meetup: Meetup, speaker: Speaker | None
     ) -> Image.Image:
-        """Generate a solo meetup image."""
-        if not self.solo_template.exists():
-            raise ImageGenerationError(f"Solo template not found: {self.solo_template}")
-
         # Load template
         image = Image.open(self.solo_template).convert("RGBA")
         draw = ImageDraw.Draw(image)
@@ -129,10 +118,8 @@ class MeetupImageGenerator:
         # Add bottom place text
         draw.text((1156, 1014), meetup.location, fill=self.text_color, font=font_28)
 
-        # Add TBA background
-        if self.tba_avatar.exists():
-            tba_bg = Image.open(self.tba_avatar).convert("RGBA")
-            image.paste(tba_bg, (779, 436), tba_bg)
+        tba_bg = Image.open(self.tba_avatar).convert("RGBA")
+        image.paste(tba_bg, (779, 436), tba_bg)
 
         if speaker and len(meetup.talks) > 0:
             # Add speaker info
@@ -152,12 +139,10 @@ class MeetupImageGenerator:
 
             # Add speaker avatar
             avatar = self._get_speaker_avatar(speaker, (300, 300))
-            if avatar:
-                # Apply mask and position
-                masked_avatar = self._apply_circular_mask(avatar)
-                avatar_x = (img_width // 2) - 150
-                avatar_y = 465
-                image.paste(masked_avatar, (avatar_x, avatar_y), masked_avatar)
+            masked_avatar = self._apply_circular_mask(avatar)
+            avatar_x = (img_width // 2) - 150
+            avatar_y = 465
+            image.paste(masked_avatar, (avatar_x, avatar_y), masked_avatar)
         else:
             # No speaker - show TBA
             font_80_bold = self._load_font(self.font_bold, 80)
@@ -168,7 +153,7 @@ class MeetupImageGenerator:
         return image
 
     def _generate_duo_image(
-        self, meetup: Meetup, speaker1: Speaker | None, speaker2: Speaker | None
+        self, meetup: Meetup, speaker1: Speaker, speaker2: Speaker
     ) -> Image.Image:
         """Generate a duo meetup image."""
         if not self.duo_template.exists():
@@ -190,45 +175,41 @@ class MeetupImageGenerator:
         font_32 = self._load_font(self.font_normal, 32)
         draw.text((157, 1010.3), date_text, fill=self.text_color, font=font_32)
 
-        if speaker1 and len(meetup.talks) > 0:
-            # First speaker (left side)
-            talk1 = meetup.talks[0]
+        # First speaker (left side)
+        talk1 = meetup.talks[0]
 
-            # Speaker 1 name
-            draw.text((428.7, 543.8), speaker1.name, fill=self.text_color, font=font_32)
+        # Speaker 1 name
+        draw.text((428.7, 543.8), speaker1.name, fill=self.text_color, font=font_32)
 
-            # Talk 1 title
-            font_32_bold = self._load_font(self.font_bold, 32)
-            draw.text(
-                (428.7, 592.1), talk1.title, fill=self.text_color, font=font_32_bold
-            )
+        # Talk 1 title
+        font_32_bold = self._load_font(self.font_bold, 32)
+        draw.text((428.7, 592.1), talk1.title, fill=self.text_color, font=font_32_bold)
 
-            # Speaker 1 avatar
-            avatar1 = self._get_speaker_avatar(speaker1, (240, 240))
-            if avatar1:
-                masked_avatar1 = self._apply_circular_mask(avatar1)
-                image.paste(masked_avatar1, (122, 490), masked_avatar1)
+        # Speaker 1 avatar
+        tba_bg = Image.open(self.tba_avatar).convert("RGBA")
+        image.paste(tba_bg, (122, 490), tba_bg)
+        avatar1 = self._get_speaker_avatar(speaker1, (240, 240))
+        masked_avatar1 = self._apply_circular_mask(avatar1)
+        image.paste(masked_avatar1, (122, 490), masked_avatar1)
 
-        if speaker2 and len(meetup.talks) > 1:
-            # Second speaker (right side)
-            talk2 = meetup.talks[1]
+        # Second speaker (right side)
+        talk2 = meetup.talks[1]
 
-            # Speaker 2 name (right-aligned)
-            self._draw_right_aligned_text(
-                draw, speaker2.name, 1495.8, 656.6, font_32, self.text_color
-            )
+        # Speaker 2 name (right-aligned)
+        self._draw_right_aligned_text(
+            draw, speaker2.name, 1495.8, 656.6, font_32, self.text_color
+        )
 
-            # Talk 2 title (right-aligned)
-            font_32_bold = self._load_font(self.font_bold, 32)
-            self._draw_right_aligned_text(
-                draw, talk2.title, 1495.8, 704.9, font_32_bold, self.text_color
-            )
+        # Talk 2 title (right-aligned)
+        font_32_bold = self._load_font(self.font_bold, 32)
+        self._draw_right_aligned_text(
+            draw, talk2.title, 1495.8, 704.9, font_32_bold, self.text_color
+        )
 
-            # Speaker 2 avatar
-            avatar2 = self._get_speaker_avatar(speaker2, (240, 240))
-            if avatar2:
-                masked_avatar2 = self._apply_circular_mask(avatar2)
-                image.paste(masked_avatar2, (1537, 585), masked_avatar2)
+        # Speaker 2 avatar
+        avatar2 = self._get_speaker_avatar(speaker2, (240, 240))
+        masked_avatar2 = self._apply_circular_mask(avatar2)
+        image.paste(masked_avatar2, (1537, 585), masked_avatar2)
 
         return image
 
@@ -270,10 +251,11 @@ class MeetupImageGenerator:
 
     def _get_speaker_avatar(
         self, speaker: Speaker, size: tuple[int, int]
-    ) -> Image.Image | None:
+    ) -> Image.Image:
         """Load speaker avatar, center on detected face, and resize.
 
-        Returns None for general I/O errors. Raises on face detection issues.
+        Returns None for general I/O errors. For fallback photos without faces,
+        uses the image without face centering.
         """
         try:
             # Save original and processed avatars directly in assets/images/avatars
@@ -293,20 +275,28 @@ class MeetupImageGenerator:
                     original.save(raw_cache, "PNG")
                     log.info(f"Saved original avatar for {speaker.name}: {raw_cache}")
 
-                # Face-center and square-crop; may raise FaceDetectionError
-                centered = face_centering.detect_and_center_square(original)
-                centered.save(processed_cache, "PNG")
-                avatar = centered
+                # Try to face-center and square-crop
+                from pyldz import face_centering
+
+                try:
+                    centered = face_centering.detect_and_center_square(original)
+                    centered.save(processed_cache, "PNG")
+                    avatar = centered
+                except face_centering.FaceDetectionError:
+                    # For fallback photos (no_photo.png), use as-is without face centering
+                    log.warning(
+                        f"No face detected for {speaker.name}, using avatar without face centering"
+                    )
+                    original.save(processed_cache, "PNG")
+                    avatar = original
 
             avatar = avatar.resize(size, Image.Resampling.LANCZOS)
             return avatar
 
-        except face_centering.FaceDetectionError:
-            # Propagate face detection errors as requested
-            raise
         except Exception as e:
-            log.warning(f"Could not load avatar for {speaker.name}: {e}")
-            return None
+            raise ImageGenerationError(
+                f"Failed to load avatar for {speaker.name}: {e}"
+            ) from e
 
     def _apply_circular_mask(self, image: Image.Image) -> Image.Image:
         """Apply circular mask to an image."""

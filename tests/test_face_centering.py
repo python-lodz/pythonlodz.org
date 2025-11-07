@@ -1,6 +1,4 @@
 import io
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from PIL import Image
@@ -116,5 +114,63 @@ class TestImageGeneratorFaceCentering:
         assert result.size == (300, 300)
 
         # Processed avatar should exist with new naming
+        processed_cache = generator.cache_dir / f"{speaker.id}.png"
+        assert processed_cache.exists()
+
+    def test_get_speaker_avatar_no_face_detected_uses_fallback(
+        self, tmp_path, monkeypatch
+    ):
+        """Test that when face detection fails, avatar is used without face centering."""
+        # Prepare assets dir with minimal structure
+        assets_dir = tmp_path / "assets"
+        (assets_dir / "images" / "avatars").mkdir(parents=True)
+        (assets_dir / "images").mkdir(exist_ok=True)
+        (assets_dir / "fonts").mkdir(exist_ok=True)
+
+        # Minimal templates and fonts required by generator
+        Image.new("RGBA", (1920, 1080), (255, 255, 255, 255)).save(
+            assets_dir / "images" / "infographic_template.png"
+        )
+        Image.new("RGBA", (1920, 1080), (255, 255, 255, 255)).save(
+            assets_dir / "images" / "infographic_template_duo.png"
+        )
+        (assets_dir / "images" / "avatars" / "mask.png").touch()
+        (assets_dir / "images" / "avatars" / "tba.png").touch()
+        (assets_dir / "fonts" / "OpenSans-Medium.ttf").touch()
+        (assets_dir / "fonts" / "OpenSans-Bold.ttf").touch()
+
+        generator = MeetupImageGenerator(assets_dir)
+
+        # Create avatar bytes (simulating no_photo.png with no face)
+        avatar_img = Image.new("RGBA", (300, 300), (255, 200, 0, 255))
+        buf = io.BytesIO()
+        avatar_img.save(buf, format="PNG")
+        avatar_bytes = buf.getvalue()
+
+        speaker = Speaker(
+            id="speaker-no-face",
+            name="Speaker No Face",
+            bio="",
+            avatar=File(name="no_photo.png", content=avatar_bytes),
+            social_links=[],
+        )
+
+        # Patch face centering to raise FaceDetectionError (simulating no face detected)
+        from pyldz import face_centering
+
+        def fake_center_no_face(img: Image.Image) -> Image.Image:
+            raise face_centering.FaceDetectionError("No face detected")
+
+        monkeypatch.setattr(
+            face_centering, "detect_and_center_square", fake_center_no_face
+        )
+
+        # Should not raise, should return the avatar without face centering
+        result = generator._get_speaker_avatar(speaker, (300, 300))
+
+        assert result is not None
+        assert result.size == (300, 300)
+
+        # Processed avatar should exist
         processed_cache = generator.cache_dir / f"{speaker.id}.png"
         assert processed_cache.exists()

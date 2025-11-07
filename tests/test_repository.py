@@ -40,6 +40,7 @@ def fake_meetups():
             "livestream_id": "",
             "sponsors": "indiebi, sunscrapers",
             "location": "indiebi",
+            "language": "PL",
         },
         {
             "meetup_id": "59",
@@ -51,6 +52,7 @@ def fake_meetups():
             "livestream_id": "",
             "sponsors": "indiebi, sunscrapers",
             "location": "indiebi",
+            "language": "PL",
         },
     ]
 
@@ -136,6 +138,7 @@ def test_repository_fetch_meetups_data(repository: GoogleSheetsRepository):
             livestream_id=None,
             sponsors=["indiebi", "sunscrapers"],
             location="indiebi",
+            language=Language.PL,
             talks=[
                 Talk(
                     speaker_id="john-doe",
@@ -149,7 +152,7 @@ def test_repository_fetch_meetups_data(repository: GoogleSheetsRepository):
                     speaker_id="jane-smith",
                     title="Example Talk Title 2 in English",
                     description="Example talk description 2",
-                    language=Language.PL,
+                    language=Language.EN,
                     title_en="Example Talk Title 2 in English",
                     youtube_id=None,
                 ),
@@ -172,6 +175,7 @@ def test_get_meetup_by_id_existing_enabled_meetup(repository: GoogleSheetsReposi
         livestream_id=None,
         sponsors=["indiebi", "sunscrapers"],
         location="indiebi",
+        language=Language.PL,
         talks=[
             Talk(
                 speaker_id="john-doe",
@@ -185,7 +189,7 @@ def test_get_meetup_by_id_existing_enabled_meetup(repository: GoogleSheetsReposi
                 speaker_id="jane-smith",
                 title="Example Talk Title 2 in English",
                 description="Example talk description 2",
-                language=Language.PL,
+                language=Language.EN,
                 title_en="Example Talk Title 2 in English",
                 youtube_id=None,
             ),
@@ -250,80 +254,6 @@ def test_get_speakers_for_meetup_different_meetup(repository: GoogleSheetsReposi
     result = repository.get_speakers_for_meetup("60", talks_data)
 
     expected = [
-        Speaker(
-            id="bob-brown",
-            name="Bob Brown",
-            bio="Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
-            avatar=File(name="avatar.png", content=b""),
-            social_links=[
-                SocialLink(platform="facebook", url="https://facebook.com/example3"),
-                SocialLink(platform="linkedin", url="https://linkedin.com/in/example3"),
-                SocialLink(platform="website", url="https://example3.com"),
-            ],
-        ),
-    ]
-
-    assert result == expected
-
-
-def test_get_all_speakers(repository: GoogleSheetsRepository, monkeypatch):
-    # Stub downloader to avoid network and to satisfy to_speaker signature in get_all_speakers
-    from pyldz.models import File as _File
-
-    monkeypatch.setattr(
-        repository.api,
-        "download_from_drive",
-        lambda url: _File(name="avatar.png", content=b""),
-    )
-
-    # Make _TalkRow.to_speaker flexible for this test to avoid passing downloader explicitly
-    import pyldz.models as _models
-
-    def _flex_to_speaker(self, photo_downloader=None):
-        from pyldz.models import File as __File
-        from pyldz.models import Speaker as __Speaker
-
-        avatar = (
-            photo_downloader(self.photo_url)
-            if callable(photo_downloader)
-            else __File(name="avatar.png", content=b"")
-        )
-        return __Speaker(
-            id=self.speaker_id,
-            name=self.full_name,
-            bio=self.bio,
-            avatar=avatar,
-            social_links=self._build_social_links(),
-        )
-
-    monkeypatch.setattr(_models._TalkRow, "to_speaker", _flex_to_speaker)
-
-    result = repository.get_all_speakers()
-
-    expected = [
-        Speaker(
-            id="john-doe",
-            name="John Doe",
-            bio="Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            avatar=File(name="avatar.png", content=b""),
-            social_links=[
-                SocialLink(platform="facebook", url="https://facebook.com/example1"),
-                SocialLink(platform="linkedin", url="https://linkedin.com/in/example1"),
-                SocialLink(platform="youtube", url="https://youtube.com/@example1"),
-                SocialLink(platform="website", url="https://example1.com"),
-            ],
-        ),
-        Speaker(
-            id="jane-smith",
-            name="Jane Smith",
-            bio="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-            avatar=File(name="avatar.png", content=b""),
-            social_links=[
-                SocialLink(platform="linkedin", url="https://linkedin.com/in/example2"),
-                SocialLink(platform="youtube", url="https://youtube.com/@example2"),
-                SocialLink(platform="website", url="https://example2.com"),
-            ],
-        ),
         Speaker(
             id="bob-brown",
             name="Bob Brown",

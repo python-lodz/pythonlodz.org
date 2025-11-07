@@ -1,24 +1,17 @@
-from __future__ import annotations
-
 import datetime
 import io
 import logging
 import re
 from enum import Enum, StrEnum
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Self
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from pydantic import (
-    AnyHttpUrl,
-    BaseModel,
-    computed_field,
-    field_validator,
-)
+from pydantic import AnyHttpUrl, BaseModel, field_validator
 from unidecode import unidecode
 
 from pyldz.config import GoogleSheetsConfig
@@ -35,14 +28,6 @@ FALLBACK_PHOTO_PATH = (
 )
 
 
-def load_fallback_photo() -> File:
-    """Load the fallback photo for speakers without a photo_url."""
-    return File(
-        name="no_photo.png",
-        content=FALLBACK_PHOTO_PATH.read_bytes(),
-    )
-
-
 class Language(str, Enum):
     PL = "PL"
     EN = "EN"
@@ -52,6 +37,22 @@ class MeetupStatus(str, Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
     CANCELLED = "cancelled"
+
+
+class File(BaseModel):
+    name: str
+    content: bytes
+
+    @classmethod
+    def no_photo(cls) -> Self:
+        return cls(
+            name="no_photo.png",
+            content=FALLBACK_PHOTO_PATH.read_bytes(),
+        )
+
+    @property
+    def extension(self) -> str:
+        return Path(self.name).suffix
 
 
 class SocialLink(BaseModel):
@@ -82,6 +83,7 @@ class Meetup(BaseModel):
     date: datetime.date
     time: str
     location: str
+    language: Language
     status: MeetupStatus = MeetupStatus.DRAFT
     meetup_url: AnyHttpUrl | None = None
     feedback_url: AnyHttpUrl | None = None
@@ -89,17 +91,22 @@ class Meetup(BaseModel):
     talks: list[Talk]
     sponsors: list[str]
 
-    @computed_field
     @property
-    def has_talks(self) -> bool:
-        return len(self.talks) > 0
+    def is_to_be_announced(self) -> bool:
+        return len(self.talks) == 0
 
-    @computed_field
+    @property
+    def has_single_talk(self) -> bool:
+        return len(self.talks) == 1
+
+    @property
+    def has_two_talks(self) -> bool:
+        return len(self.talks) == 2
+
     @property
     def talk_count(self) -> int:
         return len(self.talks)
 
-    @computed_field
     @property
     def formatted_date_polish(self) -> str:
         return self._format_date_with_polish_day_name()
@@ -134,8 +141,8 @@ class _MeetupRow(BaseModel):
     meetup_url: AnyHttpUrl | None
     feedback_url: AnyHttpUrl | None
     livestream_id: str | None
+    language: Language
 
-    @computed_field
     @property
     def title(self) -> str:
         return f"Meetup #{self.meetup_id}"
@@ -167,6 +174,7 @@ class _MeetupRow(BaseModel):
             feedback_url=self.feedback_url,
             livestream_id=self.livestream_id,
             status=MeetupStatus.PUBLISHED if self.enabled else MeetupStatus.DRAFT,
+            language=self.language,
         )
 
 
@@ -178,7 +186,7 @@ class _TalkRow(BaseModel):
     photo_url: AnyHttpUrl | None
     talk_title: str
     talk_description: str
-    language: str
+    language: Language
     talk_title_en: str | None
     facebook_url: AnyHttpUrl | None
     linkedin_url: AnyHttpUrl | None
@@ -212,12 +220,10 @@ class _TalkRow(BaseModel):
             return [item.strip() for item in v.split("\n") if item.strip()]
         return []
 
-    @computed_field
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
 
-    @computed_field
     @property
     def speaker_id(self) -> str:
         return self._generate_speaker_id_from_name()
@@ -229,17 +235,11 @@ class _TalkRow(BaseModel):
         name = re.sub(r"\s+", "-", name)
         return name.strip("-")
 
-    def to_speaker(
-        self, photo_downloader: Callable[[AnyHttpUrl], File] | None = None
-    ) -> Speaker:
+    def to_speaker(self, photo_downloader: Callable[[AnyHttpUrl], File]) -> Speaker:
         if self.photo_url is None:
-            avatar = load_fallback_photo()
+            avatar: File = File.no_photo()
         else:
-            avatar = (
-                photo_downloader(self.photo_url)
-                if photo_downloader
-                else load_fallback_photo()
-            )
+            avatar: File = photo_downloader(self.photo_url)
 
         return Speaker(
             id=self.speaker_id,
@@ -270,17 +270,8 @@ class _TalkRow(BaseModel):
             title=self.talk_title,
             description=self.talk_description,
             title_en=self.talk_title_en,
-            language=Language.EN if self.language == "en" else Language.PL,
+            language=self.language,
         )
-
-
-class File(BaseModel):
-    name: str
-    content: bytes
-
-    @property
-    def extension(self) -> str:
-        return Path(self.name).suffix
 
 
 class GoogleSheetsAPI:
@@ -441,16 +432,3 @@ class GoogleSheetsRepository:
             meetups.append(meetup)
 
         return meetups
-
-    def get_all_speakers(self) -> list[Speaker]:
-        talks_data: list[_TalkRow] = self._fetch_talks_data()
-        speakers = []
-        seen_speaker_ids = set()
-
-        for talk_row in talks_data:
-            if talk_row.speaker_id not in seen_speaker_ids:
-                speaker = talk_row.to_speaker()
-                speakers.append(speaker)
-                seen_speaker_ids.add(talk_row.speaker_id)
-
-        return speakers

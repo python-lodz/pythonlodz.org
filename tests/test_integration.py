@@ -1,5 +1,3 @@
-"""Integration tests for the complete Google Sheets data flow."""
-
 from datetime import date
 from unittest.mock import Mock, patch
 
@@ -12,6 +10,7 @@ from pyldz.models import (
     GoogleSheetsRepository,
     Language,
     MeetupStatus,
+    Speaker,
     _MeetupRow,
     _TalkRow,
 )
@@ -19,8 +18,6 @@ from pyldz.models import (
 
 @pytest.fixture
 def app_config(tmp_path):
-    """Create test application configuration."""
-    # Create dummy credentials file for validation
     credentials_file = tmp_path / "test_credentials.json"
     credentials_file.write_text('{"type": "service_account"}')
 
@@ -39,13 +36,11 @@ def app_config(tmp_path):
 
 @pytest.fixture
 def repository(app_config):
-    """Create repository with test configuration."""
     return GoogleSheetsRepository(GoogleSheetsAPI(app_config.google_sheets))
 
 
 @pytest.fixture
 def complete_mock_data():
-    """Complete mock data simulating real Google Sheets structure."""
     meetups_data = [
         [
             "MEETUP_ID",
@@ -60,6 +55,7 @@ def complete_mock_data():
             "SPONSORS",
             "TAGS",
             "FEATURED",
+            "LANGUAGE",
         ],
         [
             "58",
@@ -74,6 +70,7 @@ def complete_mock_data():
             "indiebi,sunscrapers",
             "Następne spotkanie!",
             "TRUE",
+            "PL",
         ],
         [
             "59",
@@ -88,6 +85,7 @@ def complete_mock_data():
             "indiebi,sunscrapers",
             "Następne spotkanie!",
             "TRUE",
+            "PL",
         ],
         [
             "60",
@@ -102,6 +100,7 @@ def complete_mock_data():
             "",
             "",
             "FALSE",
+            "PL",
         ],
     ]
 
@@ -130,7 +129,7 @@ def complete_mock_data():
             "Pythonowa konfiguracja, która przyprawi Cię o dreszcze (w dobry sposób, obiecuję!)",
             "Konfiguracja — wszyscy jej potrzebujemy, wszyscy jej nienawidzimy. A mimo to, w każdym projekcie przynajmniej raz udaje nam się ją zepsuć.",
             "Python Config That Will Give You Chills (In a Good Way, I Promise!)",
-            "pl",
+            "PL",
             "https://linkedin.com/in/grzegorzkocjan",
             "https://github.com/gkocjan",
             "",
@@ -145,7 +144,7 @@ def complete_mock_data():
             "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔",
             "Wokół tematu wydajności w Pythonie narosło wiele mitów. Rozwiejmy te fałszywe przekonania opierając się na twardych danych.",
             "A software developer optimized the application, but no one congratulated them because it was written in Python 😔",
-            "pl",
+            "PL",
             "https://linkedin.com/in/sebastianbuczynski",
             "",
             "https://twitter.com/sebabuczynski",
@@ -160,7 +159,7 @@ def complete_mock_data():
             "Nowość w Pythonie 3.14 oraz PyScript",
             "Przegląd najnowszych funkcjonalności w Pythonie 3.14 oraz wprowadzenie do PyScript.",
             "What's New in Python 3.14 and PyScript",
-            "pl",
+            "PL",
             "https://linkedin.com/in/lukaszlanga",
             "https://github.com/ambv",
             "",
@@ -193,6 +192,7 @@ def test_complete_data_flow_single_meetup(
                 "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
                 "livestream_id": "b1rlgmlVHQo",
                 "sponsors": "indiebi,sunscrapers",
+                "language": "PL",
             }
         ),
         _MeetupRow.model_validate(
@@ -207,6 +207,7 @@ def test_complete_data_flow_single_meetup(
                 "feedback_url": "",
                 "livestream_id": "",
                 "sponsors": "indiebi,sunscrapers",
+                "language": "PL",
             }
         ),
         _MeetupRow.model_validate(
@@ -221,6 +222,7 @@ def test_complete_data_flow_single_meetup(
                 "feedback_url": "",
                 "livestream_id": "",
                 "sponsors": "",
+                "language": "PL",
             }
         ),
     ]
@@ -236,7 +238,7 @@ def test_complete_data_flow_single_meetup(
                 "talk_title": "Pythonowa konfiguracja, która przyprawi Cię o dreszcze (w dobry sposób, obiecuję!)",
                 "talk_description": "Konfiguracja — wszyscy jej potrzebujemy, wszyscy jej nienawidzimy. A mimo to, w każdym projekcie przynajmniej raz udaje nam się ją zepsuć.",
                 "talk_title_en": "Python Config That Will Give You Chills (In a Good Way, I Promise!)",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/grzegorzkocjan",
                 "github_url": "https://github.com/gkocjan",
                 "facebook_url": "",
@@ -254,7 +256,7 @@ def test_complete_data_flow_single_meetup(
                 "talk_title": "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔",
                 "talk_description": "Wokół tematu wydajności w Pythonie narosło wiele mitów. Rozwiejmy te fałszywe przekonania opierając się na twardych danych.",
                 "talk_title_en": "A software developer optimized the application, but no one congratulated them because it was written in Python 😔",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/sebastianbuczynski",
                 "github_url": "https://github.com/sebabuczynski",
                 "facebook_url": "",
@@ -272,7 +274,7 @@ def test_complete_data_flow_single_meetup(
                 "talk_title": "Nowość w Pythonie 3.14 oraz PyScript",
                 "talk_description": "Przegląd najnowszych funkcjonalności w Pythonie 3.14 oraz wprowadzenie do PyScript.",
                 "talk_title_en": "What's New in Python 3.14 and PyScript",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/lukaszlanga",
                 "github_url": "https://github.com/ambv",
                 "facebook_url": "",
@@ -330,7 +332,7 @@ def test_complete_data_flow_single_meetup(
     assert talk2.language == Language.PL
 
     # Verify computed properties
-    assert meetup.has_talks is True
+    assert meetup.has_two_talks is True
     assert meetup.talk_count == 2
 
 
@@ -339,7 +341,6 @@ def test_complete_data_flow_single_meetup(
 def test_complete_data_flow_all_enabled_meetups(
     mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
 ):
-    """Test complete flow for fetching all enabled meetups."""
     meetups_data, talks_data = complete_mock_data
 
     # Setup mocks - return typed rows expected by repository
@@ -356,6 +357,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
                 "livestream_id": "b1rlgmlVHQo",
                 "sponsors": "indiebi,sunscrapers",
+                "language": "PL",
             }
         ),
         _MeetupRow.model_validate(
@@ -370,6 +372,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "feedback_url": "",
                 "livestream_id": "",
                 "sponsors": "indiebi,sunscrapers",
+                "language": "PL",
             }
         ),
         _MeetupRow.model_validate(
@@ -384,6 +387,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "feedback_url": "",
                 "livestream_id": "",
                 "sponsors": "",
+                "language": "PL",
             }
         ),
     ]
@@ -399,7 +403,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "talk_title": "Pythonowa konfiguracja, która przyprawi Cię o dreszcze (w dobry sposób, obiecuję!)",
                 "talk_description": "Konfiguracja — wszyscy jej potrzebujemy, wszyscy jej nienawidzimy. A mimo to, w każdym projekcie przynajmniej raz udaje nam się ją zepsuć.",
                 "talk_title_en": "Python Config That Will Give You Chills (In a Good Way, I Promise!)",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/grzegorzkocjan",
                 "github_url": "https://github.com/gkocjan",
                 "facebook_url": "",
@@ -417,7 +421,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "talk_title": "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔",
                 "talk_description": "Wokół tematu wydajności w Pythonie narosło wiele mitów. Rozwiejmy te fałszywe przekonania opierając się na twardych danych.",
                 "talk_title_en": "A software developer optimized the application, but no one congratulated them because it was written in Python 😔",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/sebastianbuczynski",
                 "github_url": "https://github.com/sebabuczynski",
                 "facebook_url": "",
@@ -435,7 +439,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "talk_title": "Nowość w Pythonie 3.14 oraz PyScript",
                 "talk_description": "Przegląd najnowszych funkcjonalności w Pythonie 3.14 oraz wprowadzenie do PyScript.",
                 "talk_title_en": "What's New in Python 3.14 and PyScript",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/lukaszlanga",
                 "github_url": "https://github.com/ambv",
                 "facebook_url": "",
@@ -461,180 +465,6 @@ def test_complete_data_flow_all_enabled_meetups(
     assert meetup_59.talks[0].speaker_id == "lukasz-langa"
 
 
-@patch(
-    "pyldz.models.GoogleSheetsAPI.download_from_drive",
-    return_value=File(name="avatar.png", content=b""),
-)
-@patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
-@patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
-def test_speakers_extraction_and_deduplication(
-    mock_fetch_talks,
-    mock_fetch_meetups,
-    mock_download,
-    repository,
-    complete_mock_data,
-    monkeypatch,
-):
-    """Test speaker extraction and deduplication across meetups."""
-    meetups_data, talks_data = complete_mock_data
-
-    # Patch repository api to provide downloader used by to_speaker
-    monkeypatch.setattr(
-        repository.api,
-        "download_from_drive",
-        lambda url: File(name="avatar.png", content=b""),
-    )
-
-    # Make _TalkRow.to_speaker flexible to accept optional downloader (prod get_all_speakers calls without arg)
-    import pyldz.models as _models
-
-    def _flex_to_speaker(self, photo_downloader=None):
-        from pyldz.models import File as _File
-        from pyldz.models import Speaker as _Speaker
-
-        avatar = (
-            photo_downloader(self.photo_url)
-            if callable(photo_downloader)
-            else _File(name="avatar.png", content=b"")
-        )
-        return _Speaker(
-            id=self.speaker_id,
-            name=self.full_name,
-            bio=self.bio,
-            avatar=avatar,
-            social_links=self._build_social_links(),
-        )
-
-    monkeypatch.setattr(_models._TalkRow, "to_speaker", _flex_to_speaker)
-
-    # Setup mocks - return typed rows expected by repository
-    mock_download.return_value = File(name="avatar.png", content=b"")
-    mock_fetch_meetups.return_value = [
-        _MeetupRow.model_validate(
-            {
-                "meetup_id": "58",
-                "type": "talks",
-                "date": "2025-05-28",
-                "time": "18:00",
-                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
-                "enabled": "TRUE",
-                "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
-                "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
-                "livestream_id": "b1rlgmlVHQo",
-                "sponsors": "indiebi,sunscrapers",
-            }
-        ),
-        _MeetupRow.model_validate(
-            {
-                "meetup_id": "59",
-                "type": "talks",
-                "date": "2025-07-30",
-                "time": "18:00",
-                "location": "IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska",
-                "enabled": "TRUE",
-                "meetup_url": "https://www.meetup.com/python-lodz/events/306971418/",
-                "feedback_url": "",
-                "livestream_id": "",
-                "sponsors": "indiebi,sunscrapers",
-            }
-        ),
-        _MeetupRow.model_validate(
-            {
-                "meetup_id": "60",
-                "type": "talks",
-                "date": "2025-09-30",
-                "time": "18:00",
-                "location": "TBA",
-                "enabled": "FALSE",
-                "meetup_url": "",
-                "feedback_url": "",
-                "livestream_id": "",
-                "sponsors": "",
-            }
-        ),
-    ]
-
-    mock_fetch_talks.return_value = [
-        _TalkRow.model_validate(
-            {
-                "meetup_id": "58",
-                "first_name": "Grzegorz",
-                "last_name": "Kocjan",
-                "bio": "Python developer z wieloletnim doświadczeniem w tworzeniu aplikacji webowych.",
-                "photo_url": "https://example.com/grzegorz.jpg",
-                "talk_title": "Pythonowa konfiguracja, która przyprawi Cię o dreszcze (w dobry sposób, obiecuję!)",
-                "talk_description": "Konfiguracja — wszyscy jej potrzebujemy, wszyscy jej nienawidzimy. A mimo to, w każdym projekcie przynajmniej raz udaje nam się ją zepsuć.",
-                "talk_title_en": "Python Config That Will Give You Chills (In a Good Way, I Promise!)",
-                "language": "pl",
-                "linkedin_url": "https://linkedin.com/in/grzegorzkocjan",
-                "github_url": "https://github.com/gkocjan",
-                "facebook_url": "",
-                "youtube_url": "",
-                "other_urls": "https://github.com/gkocjan",
-            }
-        ),
-        _TalkRow.model_validate(
-            {
-                "meetup_id": "58",
-                "first_name": "Sebastian",
-                "last_name": "Buczyński",
-                "bio": "Senior Python Developer, entuzjasta clean code i dobrych praktyk programistycznych.",
-                "photo_url": "https://example.com/sebastian.jpg",
-                "talk_title": "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔",
-                "talk_description": "Wokół tematu wydajności w Pythonie narosło wiele mitów. Rozwiejmy te fałszywe przekonania opierając się na twardych danych.",
-                "talk_title_en": "A software developer optimized the application, but no one congratulated them because it was written in Python 😔",
-                "language": "pl",
-                "linkedin_url": "https://linkedin.com/in/sebastianbuczynski",
-                "github_url": "https://github.com/ambv",
-                "facebook_url": "",
-                "youtube_url": "",
-                "other_urls": "https://twitter.com/sebabuczynski",
-            }
-        ),
-        _TalkRow.model_validate(
-            {
-                "meetup_id": "59",
-                "first_name": "Łukasz",
-                "last_name": "Langa",
-                "bio": "Python Core Developer, twórca Black, były Python Release Manager.",
-                "photo_url": "https://example.com/lukasz.jpg",
-                "talk_title": "Nowość w Pythonie 3.14 oraz PyScript",
-                "talk_description": "Przegląd najnowszych funkcjonalności w Pythonie 3.14 oraz wprowadzenie do PyScript.",
-                "talk_title_en": "What's New in Python 3.14 and PyScript",
-                "language": "pl",
-                "linkedin_url": "https://linkedin.com/in/lukaszlanga",
-                "github_url": "https://github.com/ambv",
-                "facebook_url": "",
-                "youtube_url": "",
-                "other_urls": "https://lukasz.langa.pl",
-            }
-        ),
-    ]
-
-    # Test getting all speakers
-    speakers = repository.get_all_speakers()
-
-    # Should have 3 unique speakers
-    assert len(speakers) == 3
-
-    speaker_ids = {speaker.id for speaker in speakers}
-    assert "grzegorz-kocjan" in speaker_ids
-    assert "sebastian-buczynski" in speaker_ids
-    assert "lukasz-langa" in speaker_ids
-
-    # Verify speaker details
-    grzegorz = next(s for s in speakers if s.id == "grzegorz-kocjan")
-    assert grzegorz.name == "Grzegorz Kocjan"
-    assert "Python developer z wieloletnim doświadczeniem" in grzegorz.bio
-    assert len(grzegorz.social_links) == 2  # LinkedIn and GitHub
-
-    lukasz = next(s for s in speakers if s.id == "lukasz-langa")
-    assert lukasz.name == "Łukasz Langa"
-    assert (
-        len(lukasz.social_links) == 2
-    )  # LinkedIn and website (github_url is not included)
-
-
 @patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
 @patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
 def test_disabled_meetup_filtering(
@@ -658,6 +488,7 @@ def test_disabled_meetup_filtering(
                 "feedback_url": "https://forms.gle/237YJFHy6G1jw9999",
                 "livestream_id": "b1rlgmlVHQo",
                 "sponsors": "indiebi,sunscrapers",
+                "language": "PL",
             }
         ),
         _MeetupRow.model_validate(
@@ -672,6 +503,7 @@ def test_disabled_meetup_filtering(
                 "feedback_url": "",
                 "livestream_id": "",
                 "sponsors": "indiebi,sunscrapers",
+                "language": "PL",
             }
         ),
         _MeetupRow.model_validate(
@@ -686,6 +518,7 @@ def test_disabled_meetup_filtering(
                 "feedback_url": "",
                 "livestream_id": "",
                 "sponsors": "",
+                "language": "PL",
             }
         ),
     ]
@@ -701,7 +534,7 @@ def test_disabled_meetup_filtering(
                 "talk_title": "Pythonowa konfiguracja, która przyprawi Cię o dreszcze (w dobry sposób, obiecuję!)",
                 "talk_description": "Konfiguracja — wszyscy jej potrzebujemy, wszyscy jej nienawidzimy. A mimo to, w każdym projekcie przynajmniej raz udaje nam się ją zepsuć.",
                 "talk_title_en": "Python Config That Will Give You Chills (In a Good Way, I Promise!)",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/grzegorzkocjan",
                 "github_url": "https://github.com/gkocjan",
                 "facebook_url": "",
@@ -719,7 +552,7 @@ def test_disabled_meetup_filtering(
                 "talk_title": "Programista zoptymalizował aplikację, ale nikt mu nie pogratulował bo była w Pythonie 😔",
                 "talk_description": "Wokół tematu wydajności w Pythonie narosło wiele mitów. Rozwiejmy te fałszywe przekonania opierając się na twardych danych.",
                 "talk_title_en": "A software developer optimized the application, but no one congratulated them because it was written in Python 😔",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/sebastianbuczynski",
                 "github_url": "https://github.com/ambv",
                 "facebook_url": "",
@@ -737,7 +570,7 @@ def test_disabled_meetup_filtering(
                 "talk_title": "Nowość w Pythonie 3.14 oraz PyScript",
                 "talk_description": "Przegląd najnowszych funkcjonalności w Pythonie 3.14 oraz wprowadzenie do PyScript.",
                 "talk_title_en": "What's New in Python 3.14 and PyScript",
-                "language": "pl",
+                "language": "PL",
                 "linkedin_url": "https://linkedin.com/in/lukaszlanga",
                 "github_url": "https://github.com/ambv",
                 "facebook_url": "",
@@ -790,15 +623,8 @@ def test_error_handling_and_resilience(mock_build, repository):
         meetup = repository.get_meetup_by_id("42")
         assert meetup is None
 
-        speakers = repository.get_all_speakers()
-        assert speakers == []
-
 
 def test_model_integration_and_validation():
-    """Test that models work correctly together in integration scenarios."""
-    # Test creating a complete meetup with talks and speakers
-
-    # Test talk sheet row parsing
     talk_data = {
         "meetup_id": "42",
         "first_name": "John",
@@ -807,12 +633,12 @@ def test_model_integration_and_validation():
         "photo_url": "https://example.com/photo.jpg",
         "talk_title": "Test Talk",
         "talk_description": "desc",
-        "language": "en",
         "talk_title_en": "Test Talk",
         "facebook_url": "",
         "linkedin_url": "",
         "youtube_url": "",
         "other_urls": "",
+        "language": "EN",
     }
 
     talk_row = _TalkRow.model_validate(talk_data)
@@ -835,6 +661,7 @@ def test_model_integration_and_validation():
         "meetup_url": "",
         "feedback_url": "",
         "livestream_id": "",
+        "language": "EN",
     }
 
     meetup_row = _MeetupRow.model_validate(meetup_data)
@@ -849,9 +676,6 @@ def test_model_integration_and_validation():
 
 
 def test_speaker_with_missing_photo_url_uses_fallback():
-    """Test that speaker with missing photo_url uses fallback image."""
-    from pyldz.models import File
-
     # Test with None photo_url
     talk_data_none = {
         "meetup_id": "42",
@@ -861,7 +685,7 @@ def test_speaker_with_missing_photo_url_uses_fallback():
         "photo_url": None,
         "talk_title": "Test Talk",
         "talk_description": "desc",
-        "language": "en",
+        "language": "EN",
         "talk_title_en": "Test Talk",
         "facebook_url": "",
         "linkedin_url": "",
@@ -887,7 +711,7 @@ def test_speaker_with_missing_photo_url_uses_fallback():
         "photo_url": "",
         "talk_title": "Test Talk",
         "talk_description": "desc",
-        "language": "en",
+        "language": "EN",
         "talk_title_en": "Test Talk",
         "facebook_url": "",
         "linkedin_url": "",

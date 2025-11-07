@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -5,6 +6,7 @@ import pytest
 from typer.testing import CliRunner
 
 from pyldz.main import app
+from pyldz.models import Language, Meetup, MeetupStatus, Talk
 
 
 @pytest.fixture
@@ -14,7 +16,6 @@ def runner():
 
 @pytest.fixture
 def mock_config():
-    """Mock configuration to avoid needing real credentials."""
     with patch("pyldz.main.AppConfig") as mock:
         config_instance = Mock()
         config_instance.google_sheets = Mock()
@@ -24,15 +25,9 @@ def mock_config():
 
 @pytest.fixture
 def mock_repository():
-    """Mock repository with sample data."""
     with patch("pyldz.main.GoogleSheetsRepository") as mock_repo_class:
         repo_instance = Mock()
         mock_repo_class.return_value = repo_instance
-
-        # Mock meetup data
-        from datetime import date
-
-        from pyldz.models import Language, Meetup, MeetupStatus, Talk
 
         sample_meetup = Meetup(
             meetup_id="58",
@@ -44,6 +39,7 @@ def mock_repository():
             meetup_url="https://www.meetup.com/python-lodz/events/306971418/",
             feedback_url=None,
             livestream_id=None,
+            language=Language.PL,
             talks=[
                 Talk(
                     speaker_id="john-doe",
@@ -62,28 +58,12 @@ def mock_repository():
 
 
 def test_cli_help(runner):
-    """Test that CLI help works."""
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "Python Łódź Meetup Management CLI" in result.stdout
-    assert "dry-run" in result.stdout
-    assert "fill-hugo" in result.stdout
-
-
-def test_dry_run_command(runner, mock_config, mock_repository):
-    """Test dry-run command."""
-    with patch("pyldz.main.GoogleSheetsAPI"):
-        result = runner.invoke(app, ["dry-run"])
-
-        assert result.exit_code == 0
-        assert "Python Łódź Meetup Data Fetcher" in result.stdout
-        assert "Meetup #58" in result.stdout
-        assert "Data fetch completed successfully!" in result.stdout
+    assert "Usage:" in result.stdout
 
 
 def test_fill_hugo_command(runner, mock_config, mock_repository, tmp_path):
-    """Test fill-hugo command."""
-    # Create a temporary directory structure
     output_dir = tmp_path / "test_page"
     output_dir.mkdir()
     (output_dir / "content" / "spotkania").mkdir(parents=True)
@@ -96,7 +76,7 @@ def test_fill_hugo_command(runner, mock_config, mock_repository, tmp_path):
     logo_file.write_bytes(b"fake image data")
 
     with patch("pyldz.main.GoogleSheetsAPI"):
-        result = runner.invoke(app, ["fill-hugo", "--output-dir", str(output_dir)])
+        result = runner.invoke(app, ["--output-dir", str(output_dir)])
 
         assert result.exit_code == 0
         assert "Generating Hugo meetup files..." in result.stdout
@@ -128,84 +108,18 @@ def test_fill_hugo_command_with_default_output_dir(
             Path("page/content/spotkania/58/index.md")
         ]
 
-        result = runner.invoke(app, ["fill-hugo"])
+        result = runner.invoke(app)
 
         assert result.exit_code == 0
-        # Check that generator was called with default path
+
         mock_generator_class.assert_called_once_with(Path("page"))
 
 
-def test_dry_run_help(runner):
-    """Test dry-run command help."""
-    result = runner.invoke(app, ["dry-run", "--help"])
-    assert result.exit_code == 0
-    assert "Display meetup data without generating files" in result.stdout
-
-
-def test_fill_hugo_help(runner):
-    """Test fill-hugo command help."""
-    result = runner.invoke(app, ["fill-hugo", "--help"])
-    assert result.exit_code == 0
-    assert "Generate Hugo markdown files" in result.stdout
-    assert "--output-dir" in result.stdout
-
-
 def test_invalid_command(runner):
-    """Test invalid command returns error."""
     result = runner.invoke(app, ["invalid-command"])
     assert result.exit_code != 0
-    # Typer outputs error messages to stderr, but CliRunner captures both
     assert (
         "No such command" in result.stdout
         or "invalid-command" in result.stdout
         or result.exit_code == 2
-    )  # Typer returns exit code 2 for invalid commands
-
-
-def test_dry_run_with_optional_fields(runner, mock_config):
-    """Test dry-run command with meetup containing optional fields."""
-    with patch("pyldz.main.GoogleSheetsRepository") as mock_repo_class:
-        repo_instance = Mock()
-        mock_repo_class.return_value = repo_instance
-
-        # Mock meetup data with optional fields
-        from datetime import date
-
-        from pydantic import AnyHttpUrl
-
-        from pyldz.models import Language, Meetup, MeetupStatus, Talk
-
-        sample_meetup = Meetup(
-            meetup_id="59",
-            title="Meetup #59 with Optional Fields",
-            date=date(2025, 6, 28),
-            time="18:00",
-            location="indiebi",
-            status=MeetupStatus.PUBLISHED,
-            meetup_url=AnyHttpUrl(
-                "https://www.meetup.com/python-lodz/events/306971419/"
-            ),
-            feedback_url=AnyHttpUrl("https://feedback.example.com"),
-            livestream_id="live123",
-            talks=[
-                Talk(
-                    speaker_id="jane-doe",
-                    title="Advanced Python",
-                    description="Advanced description",
-                    language=Language.EN,
-                    title_en="Advanced Python",
-                    youtube_id="abc123",
-                )
-            ],
-            sponsors=["sponsor1"],
-        )
-
-        repo_instance.get_all_enabled_meetups.return_value = [sample_meetup]
-
-        with patch("pyldz.main.GoogleSheetsAPI"):
-            result = runner.invoke(app, ["dry-run"])
-
-            assert result.exit_code == 0
-            assert "Meetup #59" in result.stdout
-            assert "Advanced Python" in result.stdout
-            assert "Language: English" in result.stdout
+    )

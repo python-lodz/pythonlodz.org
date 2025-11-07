@@ -60,33 +60,16 @@ This repository includes a Python CLI tool (`pyldz`) for managing meetup data an
 
 ### Usage
 
-The CLI provides two main commands:
-
-#### 1. Dry Run - Preview Meetup Data
-
-Display meetup data from Google Sheets without generating any files:
-
-```bash
-uv run pyldz dry-run
-```
-
-This command will:
-
-- Fetch all enabled meetups from Google Sheets
-- Display meetup information including talks, speakers, and sponsors
-- Show language information for English talks
-- Useful for verifying data before generating Hugo content
-
-#### 2. Fill Hugo - Generate Hugo Content
+The CLI provides single command to generate Hugo content:
 
 Generate Hugo markdown files for meetups:
 
 ```bash
-# Generate to default directory (page/)
-uv run pyldz fill-hugo
+# Generate single meetup
+uv run pyldz -m 61
 
-# Generate to custom directory
-uv run pyldz fill-hugo --output-dir /path/to/hugo/site
+# Generate all meetups data (not sure if it works correctly)
+uv run pyldz
 ```
 
 This command will:
@@ -102,12 +85,7 @@ This command will:
 Get help for any command:
 
 ```bash
-# General help
 uv run pyldz --help
-
-# Command-specific help
-uv run pyldz dry-run --help
-uv run pyldz fill-hugo --help
 ```
 
 ### Development
@@ -115,14 +93,7 @@ uv run pyldz fill-hugo --help
 #### Running Tests
 
 ```bash
-# Run all tests
 uv run pytest
-
-# Run CLI tests only
-uv run pytest tests/test_cli.py
-
-# Run with verbose output
-uv run pytest -v
 ```
 
 #### Code Quality
@@ -153,19 +124,3 @@ uv run mypy src/
 │   └── assets/          # Static assets
 └── pyproject.toml       # Project configuration
 ```
-
-### Featured Images
-
-The CLI generates featured images for meetups using the Hugo template located at:
-`page/layouts/partials/infographic-image-duo.html`
-
-These images are automatically created when running the `fill-hugo` command and saved as `featured.png` in each meetup's directory.
-
-### Optional Fields
-
-The meetup data supports optional fields:
-
-- `feedback_url`: URL for meetup feedback (optional)
-- `livestream_id`: ID for livestream integration (optional)
-
-When these fields are provided in the Google Sheets data, they will be included in the generated Hugo content.

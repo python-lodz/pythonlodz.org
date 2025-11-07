@@ -1,9 +1,5 @@
-#!/usr/bin/env python3
-"""Tests for image generation functionality."""
-
 import datetime
-from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from PIL import Image
@@ -14,7 +10,6 @@ from pyldz.models import File, Language, Meetup, Speaker, Talk
 
 @pytest.fixture
 def temp_assets_dir(tmp_path):
-    """Create a temporary assets directory with test files."""
     assets_dir = tmp_path / "assets"
     assets_dir.mkdir()
 
@@ -47,13 +42,13 @@ def temp_assets_dir(tmp_path):
 
 @pytest.fixture
 def sample_meetup():
-    """Create a sample meetup for testing."""
     return Meetup(
         meetup_id="42",
         title="Meetup #42",
         date=datetime.date(2024, 6, 27),
         time="18:00",
         location="Test Venue, Test Street 123",
+        language=Language.PL,
         talks=[
             Talk(
                 speaker_id="john-doe",
@@ -69,13 +64,13 @@ def sample_meetup():
 
 @pytest.fixture
 def sample_duo_meetup():
-    """Create a sample meetup with two talks."""
     return Meetup(
         meetup_id="43",
         title="Meetup #43",
         date=datetime.date(2024, 7, 25),
         time="18:00",
         location="Test Venue, Test Street 123",
+        language=Language.PL,
         talks=[
             Talk(
                 speaker_id="john-doe",
@@ -98,7 +93,6 @@ def sample_duo_meetup():
 
 @pytest.fixture
 def sample_speaker():
-    """Create a sample speaker for testing."""
     return Speaker(
         id="john-doe",
         name="John Doe",
@@ -110,7 +104,6 @@ def sample_speaker():
 
 @pytest.fixture
 def sample_speakers():
-    """Create sample speakers for testing."""
     return [
         Speaker(
             id="john-doe",
@@ -129,196 +122,162 @@ def sample_speakers():
     ]
 
 
-class TestMeetupImageGenerator:
-    """Test the MeetupImageGenerator class."""
+def test_init(temp_assets_dir, tmp_path):
+    cache_dir = tmp_path / "cache"
+    generator = MeetupImageGenerator(temp_assets_dir, cache_dir)
 
-    def test_init(self, temp_assets_dir, tmp_path):
-        """Test generator initialization."""
-        cache_dir = tmp_path / "cache"
-        generator = MeetupImageGenerator(temp_assets_dir, cache_dir)
+    assert generator.assets_dir == temp_assets_dir
+    assert generator.cache_dir == cache_dir
+    assert cache_dir.exists()
 
-        assert generator.assets_dir == temp_assets_dir
-        assert generator.cache_dir == cache_dir
-        assert cache_dir.exists()
 
-    def test_init_with_default_cache(self, temp_assets_dir):
-        """Test generator initialization with default cache directory."""
-        generator = MeetupImageGenerator(temp_assets_dir)
+def test_init_with_default_cache(temp_assets_dir):
+    generator = MeetupImageGenerator(temp_assets_dir)
 
-        expected_cache = temp_assets_dir / "images" / "avatars"
-        assert generator.cache_dir == expected_cache
-        assert expected_cache.exists()
+    expected_cache = temp_assets_dir / "images" / "avatars"
+    assert generator.cache_dir == expected_cache
+    assert expected_cache.exists()
 
-    def test_generate_featured_image_no_talks(self, temp_assets_dir, tmp_path):
-        """Test generating image for meetup with no talks."""
-        generator = MeetupImageGenerator(temp_assets_dir)
 
-        meetup = Meetup(
-            meetup_id="44",
-            title="Meetup #44",
-            date=datetime.date(2024, 8, 29),
-            time="18:00",
-            location="Test Venue",
-            talks=[],
-            sponsors=[],
+def test_generate_featured_image_no_talks(temp_assets_dir, tmp_path):
+    generator = MeetupImageGenerator(temp_assets_dir)
+
+    meetup = Meetup(
+        meetup_id="44",
+        title="Meetup #44",
+        date=datetime.date(2024, 8, 29),
+        time="18:00",
+        location="Test Venue",
+        talks=[],
+        sponsors=[],
+        language=Language.PL,
+    )
+
+    output_path = tmp_path / "featured.png"
+
+    # Use the default font loading which will fall back to default font
+    result = generator.generate_featured_image(meetup, [], output_path)
+
+    assert result == output_path
+    assert output_path.exists()
+
+
+def test_generate_featured_image_solo(
+    temp_assets_dir, tmp_path, sample_meetup, sample_speaker
+):
+    generator = MeetupImageGenerator(temp_assets_dir)
+    output_path = tmp_path / "featured.png"
+
+    with patch.object(generator, "_get_speaker_avatar") as mock_get_avatar:
+        mock_get_avatar.return_value = Image.new("RGBA", (300, 300), (255, 0, 0, 255))
+
+        result = generator.generate_featured_image(
+            sample_meetup, [sample_speaker], output_path
         )
 
-        output_path = tmp_path / "featured.png"
+    assert result == output_path
+    assert output_path.exists()
 
-        # Use the default font loading which will fall back to default font
-        result = generator.generate_featured_image(meetup, [], output_path)
 
-        assert result == output_path
-        assert output_path.exists()
+def test_generate_featured_image_duo(
+    temp_assets_dir, tmp_path, sample_duo_meetup, sample_speakers
+):
+    generator = MeetupImageGenerator(temp_assets_dir)
+    output_path = tmp_path / "featured.png"
 
-    def test_generate_featured_image_solo(
-        self, temp_assets_dir, tmp_path, sample_meetup, sample_speaker
-    ):
-        """Test generating image for meetup with one talk."""
-        generator = MeetupImageGenerator(temp_assets_dir)
-        output_path = tmp_path / "featured.png"
+    with patch.object(generator, "_get_speaker_avatar") as mock_get_avatar:
+        mock_get_avatar.return_value = Image.new("RGBA", (240, 240), (255, 0, 0, 255))
 
-        with patch.object(generator, "_get_speaker_avatar") as mock_get_avatar:
-            mock_get_avatar.return_value = Image.new(
-                "RGBA", (300, 300), (255, 0, 0, 255)
-            )
-
-            result = generator.generate_featured_image(
-                sample_meetup, [sample_speaker], output_path
-            )
-
-        assert result == output_path
-        assert output_path.exists()
-
-    def test_generate_featured_image_duo(
-        self, temp_assets_dir, tmp_path, sample_duo_meetup, sample_speakers
-    ):
-        """Test generating image for meetup with two talks."""
-        generator = MeetupImageGenerator(temp_assets_dir)
-        output_path = tmp_path / "featured.png"
-
-        with patch.object(generator, "_get_speaker_avatar") as mock_get_avatar:
-            mock_get_avatar.return_value = Image.new(
-                "RGBA", (240, 240), (255, 0, 0, 255)
-            )
-
-            result = generator.generate_featured_image(
-                sample_duo_meetup, sample_speakers, output_path
-            )
-
-        assert result == output_path
-        assert output_path.exists()
-
-    def test_generate_featured_image_missing_template(
-        self, temp_assets_dir, tmp_path, sample_meetup
-    ):
-        """Test error handling when template is missing."""
-        # Remove the template
-        (temp_assets_dir / "images" / "infographic_template.png").unlink()
-
-        generator = MeetupImageGenerator(temp_assets_dir)
-        output_path = tmp_path / "featured.png"
-
-        with pytest.raises(ImageGenerationError, match="Solo template not found"):
-            generator.generate_featured_image(sample_meetup, [], output_path)
-
-    def test_find_speaker_by_id(self, temp_assets_dir, sample_speakers):
-        """Test finding speaker by ID."""
-        generator = MeetupImageGenerator(temp_assets_dir)
-
-        speaker = generator._find_speaker_by_id(sample_speakers, "john-doe")
-        assert speaker is not None
-        assert speaker.name == "John Doe"
-
-        speaker = generator._find_speaker_by_id(sample_speakers, "nonexistent")
-        assert speaker is None
-
-    def test_get_speaker_avatar_download(self, temp_assets_dir):
-        """Test loading and caching speaker avatar from provided bytes."""
-        generator = MeetupImageGenerator(temp_assets_dir)
-
-        # Create a test image in memory
-        test_image = Image.new("RGB", (100, 100), (255, 0, 0))
-        from io import BytesIO
-
-        img_bytes = BytesIO()
-        test_image.save(img_bytes, format="PNG")
-        img_bytes.seek(0)
-
-        speaker = Speaker(
-            id="john-doe",
-            name="John Doe",
-            bio="A developer",
-            avatar=File(name="avatar.png", content=img_bytes.getvalue()),
-            social_links=[],
+        result = generator.generate_featured_image(
+            sample_duo_meetup, sample_speakers, output_path
         )
 
-        avatar = generator._get_speaker_avatar(speaker, (50, 50))
+    assert result == output_path
+    assert output_path.exists()
 
-        assert avatar is not None
-        assert avatar.size == (50, 50)
 
-        # Check that avatar was cached
-        cache_file = generator.cache_dir / f"{speaker.id}.png"
-        assert cache_file.exists()
+def test_find_speaker_by_id(temp_assets_dir, sample_speakers):
+    """Test finding speaker by ID."""
+    generator = MeetupImageGenerator(temp_assets_dir)
 
-    def test_get_speaker_avatar_from_cache(self, temp_assets_dir, sample_speaker):
-        """Test loading speaker avatar from cache."""
-        generator = MeetupImageGenerator(temp_assets_dir)
+    speaker = generator._find_speaker_by_id(sample_speakers, "john-doe")
+    assert speaker is not None
+    assert speaker.name == "John Doe"
 
-        # Create cached avatar
-        cache_file = generator.cache_dir / f"{sample_speaker.id}.png"
-        test_image = Image.new("RGBA", (100, 100), (0, 255, 0, 255))
-        test_image.save(cache_file)
+    speaker = generator._find_speaker_by_id(sample_speakers, "nonexistent")
+    assert speaker is None
 
-        avatar = generator._get_speaker_avatar(sample_speaker, (50, 50))
 
-        assert avatar is not None
-        assert avatar.size == (50, 50)
+def test_get_speaker_avatar_download(temp_assets_dir):
+    generator = MeetupImageGenerator(temp_assets_dir)
 
-    @patch("requests.get")
-    def test_get_speaker_avatar_download_error(
-        self, mock_get, temp_assets_dir, sample_speaker
-    ):
-        """Test handling download errors for speaker avatar."""
-        generator = MeetupImageGenerator(temp_assets_dir)
+    # Create a test image in memory
+    test_image = Image.new("RGB", (100, 100), (255, 0, 0))
+    from io import BytesIO
 
-        # Mock failed download
-        mock_get.side_effect = Exception("Network error")
+    img_bytes = BytesIO()
+    test_image.save(img_bytes, format="PNG")
+    img_bytes.seek(0)
 
-        avatar = generator._get_speaker_avatar(sample_speaker, (50, 50))
+    speaker = Speaker(
+        id="john-doe",
+        name="John Doe",
+        bio="A developer",
+        avatar=File(name="avatar.png", content=img_bytes.getvalue()),
+        social_links=[],
+    )
 
-        assert avatar is None
+    avatar = generator._get_speaker_avatar(speaker, (50, 50))
 
-    def test_apply_circular_mask(self, temp_assets_dir):
-        """Test applying circular mask to image."""
-        generator = MeetupImageGenerator(temp_assets_dir)
+    assert avatar is not None
+    assert avatar.size == (50, 50)
 
-        test_image = Image.new("RGBA", (100, 100), (255, 0, 0, 255))
-        masked = generator._apply_circular_mask(test_image)
+    # Check that avatar was cached
+    cache_file = generator.cache_dir / f"{speaker.id}.png"
+    assert cache_file.exists()
 
-        assert masked.size == test_image.size
-        assert masked.mode == "RGBA"
 
-    def test_apply_circular_mask_missing_mask_file(self, temp_assets_dir):
-        """Test applying circular mask when mask file is missing."""
-        # Remove the mask file
-        (temp_assets_dir / "images" / "avatars" / "mask.png").unlink()
+def test_get_speaker_avatar_from_cache(temp_assets_dir, sample_speaker):
+    generator = MeetupImageGenerator(temp_assets_dir)
 
-        generator = MeetupImageGenerator(temp_assets_dir)
+    # Create cached avatar
+    cache_file = generator.cache_dir / f"{sample_speaker.id}.png"
+    test_image = Image.new("RGBA", (100, 100), (0, 255, 0, 255))
+    test_image.save(cache_file)
 
-        test_image = Image.new("RGBA", (100, 100), (255, 0, 0, 255))
-        masked = generator._apply_circular_mask(test_image)
+    avatar = generator._get_speaker_avatar(sample_speaker, (50, 50))
 
-        assert masked.size == test_image.size
-        assert masked.mode == "RGBA"
+    assert avatar is not None
+    assert avatar.size == (50, 50)
 
-    def test_create_circular_mask(self, temp_assets_dir):
-        """Test creating circular mask."""
-        generator = MeetupImageGenerator(temp_assets_dir)
 
-        test_image = Image.new("RGBA", (100, 100), (255, 0, 0, 255))
-        masked = generator._create_circular_mask(test_image)
+def test_apply_circular_mask(temp_assets_dir):
+    generator = MeetupImageGenerator(temp_assets_dir)
 
-        assert masked.size == test_image.size
-        assert masked.mode == "RGBA"
+    test_image = Image.new("RGBA", (100, 100), (255, 0, 0, 255))
+    masked = generator._apply_circular_mask(test_image)
+
+    assert masked.size == test_image.size
+    assert masked.mode == "RGBA"
+
+
+def test_apply_circular_mask_missing_mask_file(temp_assets_dir):
+    (temp_assets_dir / "images" / "avatars" / "mask.png").unlink()
+
+    generator = MeetupImageGenerator(temp_assets_dir)
+
+    test_image = Image.new("RGBA", (100, 100), (255, 0, 0, 255))
+    masked = generator._apply_circular_mask(test_image)
+
+    assert masked.size == test_image.size
+    assert masked.mode == "RGBA"
+
+
+def test_create_circular_mask(temp_assets_dir):
+    generator = MeetupImageGenerator(temp_assets_dir)
+
+    test_image = Image.new("RGBA", (100, 100), (255, 0, 0, 255))
+    masked = generator._create_circular_mask(test_image)
+
+    assert masked.size == test_image.size
+    assert masked.mode == "RGBA"

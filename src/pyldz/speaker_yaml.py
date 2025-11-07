@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Iterable
 
@@ -61,15 +59,15 @@ def write_speaker_yaml(speaker: Speaker, page_dir: Path = Path("page")) -> Path:
 
     Returns the path to the written YAML file.
     """
-    # Prepare directories
-    avatars_dir = page_dir / "assets" / "images" / "avatars"
     data_speakers_dir = page_dir / "data" / "speakers"
-    # avatars_dir.mkdir(parents=True, exist_ok=True)
     data_speakers_dir.mkdir(parents=True, exist_ok=True)
 
-    # Determine avatar filename and save
     ext = speaker.avatar.extension.lower() if speaker.avatar.extension else ""
     avatar_filename = f"{speaker.id}{ext}"
+
+    # TODO: should I generate images here or only when meetup page is generated?
+    # avatars_dir = page_dir / "assets" / "images" / "avatars"
+    # avatars_dir.mkdir(parents=True, exist_ok=True)
     # avatar_path = avatars_dir / avatar_filename
     # avatar_path.write_bytes(speaker.avatar.content)
 
@@ -85,7 +83,6 @@ def write_speaker_yaml(speaker: Speaker, page_dir: Path = Path("page")) -> Path:
 def write_speakers_yaml(
     speakers: Iterable[Speaker], page_dir: Path = Path("page")
 ) -> list[Path]:
-    """Write YAML files for multiple speakers. Returns list of paths written."""
     written: list[Path] = []
     for speaker in speakers:
         written.append(write_speaker_yaml(speaker, page_dir))

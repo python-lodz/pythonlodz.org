@@ -14,7 +14,6 @@ from pyldz.models import (
 
 
 def test_meetup_properties():
-    """Test meetup computed properties."""
     talk = Talk(
         speaker_id="john-doe",
         title="Test Talk",
@@ -30,8 +29,9 @@ def test_meetup_properties():
         location="Test Venue",
         talks=[talk],
         sponsors=[],
+        language=Language.PL,
     )
-    assert meetup.has_talks is True
+    assert meetup.is_to_be_announced is False
     assert meetup.talk_count == 1
 
     empty_meetup = Meetup(
@@ -42,13 +42,13 @@ def test_meetup_properties():
         location="Test Venue",
         talks=[],
         sponsors=[],
+        language=Language.PL,
     )
-    assert empty_meetup.has_talks is False
+    assert empty_meetup.is_to_be_announced is True
     assert empty_meetup.talk_count == 0
 
 
 def test_parse_enabled_meetup():
-    """Test parsing enabled meetup from sheet."""
     data = {
         "meetup_id": "42",
         "type": "talks",
@@ -60,6 +60,7 @@ def test_parse_enabled_meetup():
         "feedback_url": "https://forms.gle/123",
         "livestream_id": "youtube123",
         "sponsors": "sponsor1,sponsor2",
+        "language": "PL",
     }
 
     row = _MeetupSheetRow.model_validate(data)
@@ -73,7 +74,6 @@ def test_parse_enabled_meetup():
 
 
 def test_parse_disabled_meetup():
-    """Test parsing disabled meetup from sheet."""
     data = {
         "meetup_id": "43",
         "type": "talks",
@@ -85,6 +85,7 @@ def test_parse_disabled_meetup():
         "meetup_url": "",
         "feedback_url": "",
         "livestream_id": "",
+        "language": "PL",
     }
 
     row = _MeetupSheetRow.model_validate(data)
@@ -92,7 +93,6 @@ def test_parse_disabled_meetup():
 
 
 def test_filter_enabled_meetups():
-    """Test filtering only enabled meetups."""
     enabled_data = {
         "meetup_id": "42",
         "type": "talks",
@@ -104,6 +104,7 @@ def test_filter_enabled_meetups():
         "feedback_url": "",
         "livestream_id": "",
         "sponsors": "",
+        "language": "PL",
     }
 
     disabled_data = {
@@ -117,6 +118,7 @@ def test_filter_enabled_meetups():
         "feedback_url": "",
         "livestream_id": "",
         "sponsors": "",
+        "language": "PL",
     }
 
     enabled_row = _MeetupSheetRow.model_validate(enabled_data)
@@ -130,7 +132,6 @@ def test_filter_enabled_meetups():
 
 
 def test_parse_talk_from_sheet():
-    """Test parsing talk from main sheet."""
     data = {
         "meetup_id": "42",
         "first_name": "John",
@@ -139,7 +140,7 @@ def test_parse_talk_from_sheet():
         "photo_url": "https://example.com/photo.jpg",
         "talk_title": "Introduction to Python",
         "talk_description": "Learn Python basics",
-        "language": "en",
+        "language": "EN",
         "linkedin_url": "https://linkedin.com/in/johndoe",
         "github_url": "https://github.com/johndoe",
         "talk_title_en": "",
@@ -156,12 +157,11 @@ def test_parse_talk_from_sheet():
     assert str(row.photo_url) == "https://example.com/photo.jpg"
     assert row.talk_title == "Introduction to Python"
     assert row.talk_description == "Learn Python basics"
-    assert row.language == "en"
+    assert row.language == Language.EN
     assert str(row.linkedin_url) == "https://linkedin.com/in/johndoe"
 
 
 def test_parse_talk_minimal_data():
-    """Test parsing talk with minimal required data."""
     data = {
         "meetup_id": "42",
         "first_name": "John",
@@ -170,7 +170,7 @@ def test_parse_talk_minimal_data():
         "bio": "",
         "photo_url": "https://example.com/photo.jpg",
         "talk_description": "",
-        "language": "pl",
+        "language": "PL",
         "talk_title_en": "",
         "facebook_url": "",
         "linkedin_url": "",
@@ -184,4 +184,4 @@ def test_parse_talk_minimal_data():
     assert row.last_name == "Doe"
     assert row.talk_title == "Introduction to Python"
     assert row.bio == ""
-    assert row.language == "pl"  # default
+    assert row.language == Language.PL
