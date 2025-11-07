@@ -18,12 +18,9 @@ def temp_assets_dir(tmp_path):
     (assets_dir / "images" / "avatars").mkdir()
     (assets_dir / "fonts").mkdir()
 
-    # Create test template images
-    template_solo = Image.new("RGBA", (1920, 1080), (255, 255, 255, 255))
-    template_solo.save(assets_dir / "images" / "infographic_template.png")
-
-    template_duo = Image.new("RGBA", (1920, 1080), (255, 255, 255, 255))
-    template_duo.save(assets_dir / "images" / "infographic_template_duo.png")
+    # Create test template image
+    template = Image.new("RGBA", (1920, 1080), (255, 255, 255, 255))
+    template.save(assets_dir / "images" / "infographic_template.png")
 
     # Create test mask
     mask = Image.new("L", (300, 300), 255)

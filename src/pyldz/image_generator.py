@@ -31,8 +31,7 @@ class MeetupImageGenerator:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Template paths
-        self.solo_template = assets_dir / "images" / "infographic_template.png"
-        self.duo_template = assets_dir / "images" / "infographic_template.png"
+        self.template = assets_dir / "images" / "infographic_template.png"
         self.avatar_mask = assets_dir / "images" / "avatars" / "mask.png"
         self.tba_avatar = assets_dir / "images" / "avatars" / "tba.png"
 
@@ -96,7 +95,7 @@ class MeetupImageGenerator:
         self, meetup: Meetup, speaker: Speaker | None
     ) -> Image.Image:
         # Load template
-        image = Image.open(self.solo_template).convert("RGBA")
+        image = Image.open(self.template).convert("RGBA")
         draw = ImageDraw.Draw(image)
 
         # Add "ZAPRASZA" text
@@ -155,12 +154,9 @@ class MeetupImageGenerator:
     def _generate_duo_image(
         self, meetup: Meetup, speaker1: Speaker, speaker2: Speaker
     ) -> Image.Image:
-        """Generate a duo meetup image."""
-        if not self.duo_template.exists():
-            raise ImageGenerationError(f"Duo template not found: {self.duo_template}")
-
+        """Generate a duo meetup image using the universal template."""
         # Load template
-        image = Image.open(self.duo_template).convert("RGBA")
+        image = Image.open(self.template).convert("RGBA")
         draw = ImageDraw.Draw(image)
 
         # Add main date text (centered)
@@ -175,6 +171,9 @@ class MeetupImageGenerator:
         font_32 = self._load_font(self.font_normal, 32)
         draw.text((157, 1010.3), date_text, fill=self.text_color, font=font_32)
 
+        # Add bottom place text
+        draw.text((1156, 1010.3), meetup.location, fill=self.text_color, font=font_32)
+
         # First speaker (left side)
         talk1 = meetup.talks[0]
 
@@ -185,11 +184,22 @@ class MeetupImageGenerator:
         font_32_bold = self._load_font(self.font_bold, 32)
         draw.text((428.7, 592.1), talk1.title, fill=self.text_color, font=font_32_bold)
 
-        # Speaker 1 avatar
-        tba_bg = Image.open(self.tba_avatar).convert("RGBA")
-        image.paste(tba_bg, (122, 490), tba_bg)
+        # Speaker 1 avatar with rounded corners and TBA background
         avatar1 = self._get_speaker_avatar(speaker1, (240, 240))
         masked_avatar1 = self._apply_circular_mask(avatar1)
+
+        # TBA background sized to avatar + 15% padding
+        tba_bg = Image.open(self.tba_avatar).convert("RGBA")
+        tba_size = int(240 * 1.15)  # 15% larger than avatar
+        tba_bg_resized = tba_bg.resize((tba_size, tba_size), Image.Resampling.LANCZOS)
+
+        # Center TBA background behind avatar
+        tba_offset = (tba_size - 240) // 2
+        tba_x = 122 - tba_offset
+        tba_y = 490 - tba_offset
+        image.paste(tba_bg_resized, (tba_x, tba_y), tba_bg_resized)
+
+        # Paste avatar on top
         image.paste(masked_avatar1, (122, 490), masked_avatar1)
 
         # Second speaker (right side)
@@ -206,9 +216,22 @@ class MeetupImageGenerator:
             draw, talk2.title, 1495.8, 704.9, font_32_bold, self.text_color
         )
 
-        # Speaker 2 avatar
+        # Speaker 2 avatar with rounded corners and TBA background
         avatar2 = self._get_speaker_avatar(speaker2, (240, 240))
         masked_avatar2 = self._apply_circular_mask(avatar2)
+
+        # TBA background sized to avatar + 15% padding
+        tba_bg2 = Image.open(self.tba_avatar).convert("RGBA")
+        tba_size = int(240 * 1.15)  # 15% larger than avatar
+        tba_bg_resized2 = tba_bg2.resize((tba_size, tba_size), Image.Resampling.LANCZOS)
+
+        # Center TBA background behind avatar
+        tba_offset = (tba_size - 240) // 2
+        tba_x2 = 1537 - tba_offset
+        tba_y2 = 585 - tba_offset
+        image.paste(tba_bg_resized2, (tba_x2, tba_y2), tba_bg_resized2)
+
+        # Paste avatar on top
         image.paste(masked_avatar2, (1537, 585), masked_avatar2)
 
         return image

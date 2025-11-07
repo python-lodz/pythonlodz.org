@@ -71,12 +71,9 @@ class TestImageGeneratorFaceCentering:
         (assets_dir / "images").mkdir(exist_ok=True)
         (assets_dir / "fonts").mkdir(exist_ok=True)
 
-        # Minimal templates and fonts required by generator
+        # Minimal template and fonts required by generator
         Image.new("RGBA", (1920, 1080), (255, 255, 255, 255)).save(
             assets_dir / "images" / "infographic_template.png"
-        )
-        Image.new("RGBA", (1920, 1080), (255, 255, 255, 255)).save(
-            assets_dir / "images" / "infographic_template_duo.png"
         )
         (assets_dir / "images" / "avatars" / "mask.png").touch()
         (assets_dir / "images" / "avatars" / "tba.png").touch()
@@ -127,12 +124,9 @@ class TestImageGeneratorFaceCentering:
         (assets_dir / "images").mkdir(exist_ok=True)
         (assets_dir / "fonts").mkdir(exist_ok=True)
 
-        # Minimal templates and fonts required by generator
+        # Minimal template and fonts required by generator
         Image.new("RGBA", (1920, 1080), (255, 255, 255, 255)).save(
             assets_dir / "images" / "infographic_template.png"
-        )
-        Image.new("RGBA", (1920, 1080), (255, 255, 255, 255)).save(
-            assets_dir / "images" / "infographic_template_duo.png"
         )
         (assets_dir / "images" / "avatars" / "mask.png").touch()
         (assets_dir / "images" / "avatars" / "tba.png").touch()
