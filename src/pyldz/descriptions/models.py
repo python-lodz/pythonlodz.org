@@ -10,6 +10,13 @@ class AgendaItem(BaseModel):
     title: str
 
 
+class YouTubeRecordingDescription(BaseModel):
+    """YouTube recording description for a single talk."""
+
+    title: str
+    description: str
+
+
 class MeetupDescriptions(BaseModel):
     """All descriptions for a meetup."""
 
@@ -17,5 +24,5 @@ class MeetupDescriptions(BaseModel):
     meetup_com: str
     youtube_live: str
     youtube_recording: str
+    youtube_recording_talks: list[YouTubeRecordingDescription]
     chatgpt_prompt: str
-

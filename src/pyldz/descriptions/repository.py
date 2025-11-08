@@ -56,6 +56,16 @@ class DescriptionRepository:
         log.info(f"Saved YouTube recording description: {youtube_recording_file}")
         created_files.append(youtube_recording_file)
 
+        # Save YouTube recording descriptions for each talk
+        talks_dir = descriptions_dir / "youtube-talks"
+        talks_dir.mkdir(parents=True, exist_ok=True)
+        for i, talk_desc in enumerate(descriptions.youtube_recording_talks, 1):
+            talk_file = talks_dir / f"talk-{i}.md"
+            content = f"# {talk_desc.title}\n\n{talk_desc.description}"
+            talk_file.write_text(content, encoding="utf-8")
+            log.info(f"Saved YouTube talk {i} description: {talk_file}")
+            created_files.append(talk_file)
+
         # Save ChatGPT prompt
         chatgpt_prompt_file = descriptions_dir / "chatgpt-prompt.md"
         chatgpt_prompt_file.write_text(descriptions.chatgpt_prompt, encoding="utf-8")
@@ -63,4 +73,3 @@ class DescriptionRepository:
         created_files.append(chatgpt_prompt_file)
 
         return created_files
-

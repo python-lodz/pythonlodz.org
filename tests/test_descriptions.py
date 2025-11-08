@@ -195,6 +195,24 @@ def test_generate_youtube_recording(sample_meetup_two_talks, sample_speaker, tmp
     assert SocialMediaLinks.OFFICIAL_WEBSITE in description
 
 
+def test_generate_youtube_recording_talks(
+    sample_meetup_two_talks, sample_speaker, tmp_path
+):
+    """Test generating YouTube recording descriptions for each talk."""
+    generator = MeetupDescriptionGenerator(
+        sample_meetup_two_talks, [sample_speaker], tmp_path
+    )
+
+    talks = generator.generate_youtube_recording_talks()
+
+    assert len(talks) == 2
+    assert talks[0].title == "Python Łódź #59 - Clean Architecture"
+    assert talks[1].title == "Python Łódź #59 - Python Visualization"
+    assert "Agenda:" in talks[0].description
+    assert "Linki do społeczności:" in talks[0].description
+    assert "John Doe" in talks[0].description
+
+
 def test_generate_chatgpt_prompt(sample_meetup_two_talks, sample_speaker, tmp_path):
     """Test ChatGPT prompt generation."""
     generator = MeetupDescriptionGenerator(
@@ -226,6 +244,7 @@ def test_generate_all(sample_meetup_two_talks, sample_speaker, tmp_path):
     assert len(descriptions.meetup_com) > 0
     assert len(descriptions.youtube_live) > 0
     assert len(descriptions.youtube_recording) > 0
+    assert len(descriptions.youtube_recording_talks) == 2
     assert len(descriptions.chatgpt_prompt) > 0
 
 
@@ -241,7 +260,8 @@ def test_description_repository_save_all(
     repo = DescriptionRepository(tmp_path)
     created_files = repo.save_all("59", descriptions)
 
-    assert len(created_files) == 4
+    # 4 main files + 2 talk files = 6 files
+    assert len(created_files) == 6
     assert all(f.exists() for f in created_files)
 
     descriptions_dir = tmp_path / "59" / "descriptions"
@@ -249,6 +269,12 @@ def test_description_repository_save_all(
     assert (descriptions_dir / "youtube-live.md").exists()
     assert (descriptions_dir / "youtube-recording.md").exists()
     assert (descriptions_dir / "chatgpt-prompt.md").exists()
+
+    # Check talk files
+    talks_dir = descriptions_dir / "youtube-talks"
+    assert talks_dir.exists()
+    assert (talks_dir / "talk-1.md").exists()
+    assert (talks_dir / "talk-2.md").exists()
 
     # Verify content
     meetup_com_content = (descriptions_dir / "meetup-com.md").read_text()

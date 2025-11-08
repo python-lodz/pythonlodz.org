@@ -6,7 +6,11 @@ from pathlib import Path
 
 from ruamel.yaml import YAML
 
-from pyldz.descriptions.models import AgendaItem, MeetupDescriptions
+from pyldz.descriptions.models import (
+    AgendaItem,
+    MeetupDescriptions,
+    YouTubeRecordingDescription,
+)
 from pyldz.models import Language, Meetup, Speaker
 
 log = logging.getLogger(__name__)
@@ -163,7 +167,7 @@ class MeetupDescriptionGenerator:
         location_name = self.meetup.location_name()
 
         parts = [
-            f"Cześć!",
+            "Cześć!",
             "",
             f"Zapraszamy Was na spotkanie, które odbędzie się {self._format_date_long()} roku o godzinie {self.meetup.time} w {location_name}.",
             "",
@@ -238,6 +242,42 @@ class MeetupDescriptionGenerator:
         ]
 
         return "\n".join(parts)
+
+    def generate_youtube_recording_talks(self) -> list[YouTubeRecordingDescription]:
+        """Generate descriptions for each talk recording."""
+        if self.meetup.is_to_be_announced:
+            return []
+
+        descriptions = []
+        for i, talk in enumerate(self.meetup.talks, 1):
+            speaker = self._get_speaker_by_id(talk.speaker_id)
+            speaker_name = speaker.name if speaker else "Unknown"
+
+            title = f"Python Łódź #{self.meetup.meetup_id} - {talk.title}"
+
+            parts = [
+                self._build_agenda_section(),
+                "",
+                "Linki do społeczności:",
+                f"➡️ Oficjalna strona: {SocialMediaLinks.OFFICIAL_WEBSITE}",
+                f"➡️ Meetup: {SocialMediaLinks.MEETUP}",
+                f"➡️ Discord: {SocialMediaLinks.DISCORD}",
+                f"➡️ Facebook: {SocialMediaLinks.FACEBOOK}",
+                f"➡️ LinkedIn: {SocialMediaLinks.LINKEDIN}",
+                f"➡️ Instagram: {SocialMediaLinks.INSTAGRAM}",
+                f"➡️ YouTube: {SocialMediaLinks.YOUTUBE}",
+                "",
+                f"Prelegent: {speaker_name}",
+                "",
+                talk.description,
+            ]
+
+            description = "\n".join(parts)
+            descriptions.append(
+                YouTubeRecordingDescription(title=title, description=description)
+            )
+
+        return descriptions
 
     def generate_chatgpt_prompt(self) -> str:
         """Generate super prompt for ChatGPT to create social media posts."""
@@ -374,6 +414,6 @@ class MeetupDescriptionGenerator:
             meetup_com=self.generate_meetup_com(),
             youtube_live=self.generate_youtube_live(),
             youtube_recording=self.generate_youtube_recording(),
+            youtube_recording_talks=self.generate_youtube_recording_talks(),
             chatgpt_prompt=self.generate_chatgpt_prompt(),
         )
-
