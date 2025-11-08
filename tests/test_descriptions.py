@@ -133,7 +133,7 @@ def test_description_generator_two_talks(
 
     assert generator.meetup == sample_meetup_two_talks
     assert len(generator.speakers) == 1
-    assert generator.agenda == AGENDA_TWO_TALKS
+    assert generator._get_agenda() == AGENDA_TWO_TALKS
 
 
 def test_description_generator_one_talk(
@@ -144,7 +144,7 @@ def test_description_generator_one_talk(
         sample_meetup_one_talk, [sample_speaker], tmp_path
     )
 
-    assert generator.agenda == AGENDA_ONE_TALK
+    assert generator._get_agenda() == AGENDA_ONE_TALK
 
 
 def test_generate_meetup_com(sample_meetup_two_talks, sample_speaker, tmp_path):
