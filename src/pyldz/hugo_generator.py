@@ -2,6 +2,8 @@ import logging
 import shutil
 from pathlib import Path
 
+from pyldz.descriptions.generators import MeetupDescriptionGenerator
+from pyldz.descriptions.repository import DescriptionRepository
 from pyldz.image_generator import MeetupImageGenerator
 from pyldz.models import GoogleSheetsRepository, Language, Meetup
 from pyldz.speaker_yaml import write_speakers_yaml
@@ -13,11 +15,15 @@ class HugoMeetupGenerator:
     def __init__(self, output_dir: Path):
         self.output_dir = output_dir
         self.meetups_dir = output_dir / "content" / "spotkania"
+        self.data_dir = output_dir / "data"
 
         # Initialize image generator
         assets_dir = output_dir / "assets"
         avatars_dir = assets_dir / "images" / "avatars"
         self.image_generator = MeetupImageGenerator(assets_dir, avatars_dir)
+
+        # Initialize description repository
+        self.description_repo = DescriptionRepository(self.meetups_dir)
 
     def generate_meetup_markdown(self, meetup: Meetup) -> str:
         """Generate markdown content for a meetup."""
@@ -174,7 +180,20 @@ class HugoMeetupGenerator:
         full_content = frontmatter + content
         markdown_file.write_text(full_content, encoding="utf-8")
 
+        # Generate descriptions
+        self._generate_descriptions(meetup, speakers)
+
         return markdown_file
+
+    def _generate_descriptions(self, meetup: Meetup, speakers: list) -> None:
+        """Generate all descriptions for a meetup."""
+        sponsors_dir = self.data_dir / "sponsors"
+        description_generator = MeetupDescriptionGenerator(
+            meetup, speakers, sponsors_dir
+        )
+        descriptions = description_generator.generate_all()
+        self.description_repo.save_all(meetup.meetup_id, descriptions)
+        log.info(f"Generated descriptions for meetup {meetup.meetup_id}")
 
     def generate_meetup(
         self, meetup_id: str, repository: GoogleSheetsRepository

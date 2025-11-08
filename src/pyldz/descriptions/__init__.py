@@ -1,0 +1,2 @@
+"""Meetup descriptions generation module."""
+
