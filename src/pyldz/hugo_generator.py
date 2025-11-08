@@ -38,7 +38,7 @@ class HugoMeetupGenerator:
         content_parts.append("")
         content_parts.append(f"**📅 data:** {meetup.date}</br>")
         content_parts.append(f"**🕕 godzina:** {meetup.time}</br>")
-        content_parts.append(f"**📍 miejsce:** {meetup.location_name}</br>")
+        content_parts.append(f"**📍 miejsce:** {meetup.location_name()}</br>")
 
         # Add meetup link if available
         if meetup.meetup_url:
@@ -113,7 +113,7 @@ class HugoMeetupGenerator:
             f'title: "{meetup.title}"',
             f"date: {meetup.date}T{meetup.time}:00+02:00",
             f'time: "{meetup.time}"',
-            f'place: "{meetup.location_name}"',
+            f'place: "{meetup.location_name()}"',
             "---",
             "",
         ]
@@ -132,16 +132,17 @@ class HugoMeetupGenerator:
             Path to the featured.png (matching meetup language)
         """
         featured_image_path = meetup_dir / "featured.png"
-        pl_image_path = meetup_dir / "featured-pl.png"
-        en_image_path = meetup_dir / "featured-en.png"
+        meetup_images_dir = meetup_dir / "images"
+        pl_image_path = meetup_images_dir / "featured-pl.png"
+        en_image_path = meetup_images_dir / "featured-en.png"
 
         images_variants: list[tuple[Path, Language, str]] = [
-            (meetup_dir / "featured-pl.png", Language.PL, "16x9"),
-            (meetup_dir / "featured-en.png", Language.EN, "16x9"),
-            (meetup_dir / "featured-pl-4x5.png", Language.PL, "4x5"),
-            (meetup_dir / "featured-en-4x5.png", Language.EN, "4x5"),
-            (meetup_dir / "featured-pl-1x1.png", Language.PL, "1x1"),
-            (meetup_dir / "featured-en-1x1.png", Language.EN, "1x1"),
+            (pl_image_path, Language.PL, "16x9"),
+            (en_image_path, Language.EN, "16x9"),
+            (meetup_images_dir / "featured-pl-4x5.png", Language.PL, "4x5"),
+            (meetup_images_dir / "featured-en-4x5.png", Language.EN, "4x5"),
+            (meetup_images_dir / "featured-pl-1x1.png", Language.PL, "1x1"),
+            (meetup_images_dir / "featured-en-1x1.png", Language.EN, "1x1"),
         ]
 
         for variant in images_variants:
