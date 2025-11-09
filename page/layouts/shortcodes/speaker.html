@@ -1,26 +1,21 @@
 {{- $speaker_id := .Get "speaker_id" -}}
 
-{{ $speaker := index site.Data.speakers $speaker_id  }}
+{{ $speaker := index site.Data.speakers $speaker_id }}
 {{ $speakerAvatar := resources.Get $speaker.avatar }}
 
 <div class="flex items-center space-x-3 mt-2">
-  <img src="{{ $speakerAvatar.Permalink }}" alt="{{ $speaker.name }}" class="w-24 h-24 rounded-full object-cover" >
+  <img src="{{ $speakerAvatar.Permalink }}" alt="{{ $speaker.name }}" class="w-24 h-24 rounded-full object-cover">
   <div>
-    <p class="text-sm text-gray-500">Prelegent: <strong>{{ $speaker.name }}</strong></p>
+    <p class="text-sm text-gray-500"><strong>{{ $speaker.name }}</strong></p>
 
-      <div class="flex flex-wrap text-neutral-400 dark:text-neutral-500">
-        {{ range $links := $speaker.social }}  
-          {{ range $name, $url := $links }}
-            <a
-              class="px-1 hover:text-primary-700 dark:hover:text-primary-400"
-              href="{{ $url | safeURL }}"
-              target="_blank"
-              aria-label="{{ $name | title }}"
-              rel="me noopener noreferrer"
-              ><span class="inline-block align-text-bottom">{{ partial "icon.html" $name }}</span></a
-            >
-          {{ end }}
-        {{ end }}
+    <div class="flex flex-wrap text-neutral-400 dark:text-neutral-500">
+      {{ range $links := $speaker.social }}
+      {{ range $name, $url := $links }}
+      <a class="px-1 hover:text-primary-700 dark:hover:text-primary-400" href="{{ $url | safeURL }}" target="_blank"
+        aria-label="{{ $name | title }}" rel="me noopener noreferrer"><span class="inline-block align-text-bottom">{{
+          partial "icon.html" $name }}</span></a>
+      {{ end }}
+      {{ end }}
     </div>
   </div>
 </div>

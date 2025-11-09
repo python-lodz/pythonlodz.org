@@ -1,4 +1,5 @@
 import logging
+import math
 from datetime import date as date_cls
 from datetime import datetime
 from io import BytesIO
@@ -27,7 +28,6 @@ class MeetupImageGenerator:
       a pierwsza linia tytułu startuje dokładnie na wysokości środka awatara
     - stopka bez paska:
         * lewy dół: skośny blok CG (większy) z "Meetup #<id>" i "pythonlodz.org"
-          (szerokość dopasowana; napis Meetup nie dłuższy niż link)
         * środek: sama lokalizacja (z pinem)
         * prawy dół: #PythonLodz w kolorze CG + lekki biały cień
     """
@@ -51,8 +51,9 @@ class MeetupImageGenerator:
         # ikony
         self.icon_link = assets_dir / "icons" / "link.png"
         self.icon_pin = assets_dir / "icons" / "pin.png"
+        self.icon_flag_gb = assets_dir / "icons" / "flag_gb.png"  # NEW
 
-        # fonty (możesz podmienić na Inter/Manrope jeśli masz)
+        # fonty
         self.font_normal = assets_dir / "fonts" / "OpenSans-Medium.ttf"
         self.font_bold = assets_dir / "fonts" / "OpenSans-Bold.ttf"
 
@@ -107,11 +108,14 @@ class MeetupImageGenerator:
             header = f"PYTHON ŁÓDŹ #{meetup_id}".strip()
             self._draw_header_centered(img, draw, header, opt)
 
+            # wstęga EN w prawym górnym rogu (równoległa do trójkąta, krawędź->krawędź)
+            if language == Language.EN:
+                self._draw_top_right_ribbon_en(img, opt)
+
             # data / godzina
             day_name, date_label, time_label = self._resolve_date_parts(
                 meetup, language
             )
-            # 1) sama data (bez dnia)
             font_date = self._autoscale_font(
                 draw,
                 date_label,
@@ -124,7 +128,6 @@ class MeetupImageGenerator:
                 draw, date_label, img.width // 2, date_y, font_date, self.YA
             )
 
-            # 2) dzień tygodnia + godzina, poniżej
             if time_label or day_name:
                 combo = f"{day_name}, {time_label}" if day_name else time_label
                 time_font = self._load_font(
@@ -142,7 +145,7 @@ class MeetupImageGenerator:
                     date_y + draw.textbbox((0, 0), date_label, font=font_date)[3]
                 )
 
-            # cienki separator
+            # separator – wyliczony stałe, NIE rysujemy już żadnego napisu pod datą
             sep_w = int(img.width * opt["sep_width_ratio"])
             sep_x = (img.width - sep_w) // 2
             sep_y = block_bottom + 12
@@ -253,7 +256,6 @@ class MeetupImageGenerator:
     def _draw_header_centered(
         self, img: Image.Image, draw: ImageDraw.ImageDraw, title: str, opt: dict
     ):
-        """Logo + nagłówek wyśrodkowany, z cieniem pod tekstem."""
         font_title = self._load_font(self.font_bold, 70)
         title_w = draw.textbbox((0, 0), title, font=font_title)[2]
 
@@ -290,6 +292,118 @@ class MeetupImageGenerator:
             shadow_color=(0, 0, 0, 90),
         )
 
+    def _draw_top_right_ribbon_en(
+        self, img: Image.Image, opt: dict, label: str = "ENGLISH EDITION"
+    ):
+        """
+        Ukośna wstęga w prawym górnym rogu:
+        - równoległa do krawędzi trójkąta (atan2(0.26*H, 0.36*W)),
+        - od krawędzi do krawędzi z nadmiarem (brak szczelin),
+        - flaga + napis wycentrowane na osi wstęgi.
+        """
+        W, H = img.width, img.height
+
+        # kąt jak krawędź trójkąta z lewego dołu
+        theta = math.atan2(0.26 * H, 0.36 * W)
+        cos_t, sin_t = math.cos(theta), math.sin(theta)
+
+        # odległości punktów końcowych na krawędziach
+        m = int(0.28 * W)  # po górnej krawędzi od prawej
+        n = int(m * math.tan(theta))  # w dół po prawej krawędzi
+
+        # overshoot – rysujemy nieco poza płótnem, by zniknęły szczeliny na rogach
+        thickness = 72
+        overshoot = thickness * 2
+
+        # baza odcinka (z nadmiarem poza obraz)
+        A = (
+            W - m - int(overshoot * cos_t),
+            0 - int(overshoot * sin_t),
+        )  # powyżej górnej krawędzi
+        B = (
+            W + int(overshoot * cos_t),
+            n + int(overshoot * sin_t),
+        )  # za prawą krawędzią
+
+        # wektory jednostkowe
+        ux, uy = (cos_t, sin_t)
+        nx, ny = (-uy, ux)  # prostopadły
+
+        half_t = thickness / 2.0
+
+        def add(p, dx, dy):
+            return (int(p[0] + dx), int(p[1] + dy))
+
+        # narożniki wstęgi (paralelogram)
+        p1 = add(A, nx * half_t, ny * half_t)
+        p2 = add(B, nx * half_t, ny * half_t)
+        p3 = add(B, -nx * half_t, -ny * half_t)
+        p4 = add(A, -nx * half_t, -ny * half_t)
+
+        # cień
+        shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(shadow)
+        sd.polygon([p1, p2, p3, p4], fill=(0, 0, 0, 80))
+        shadow = shadow.filter(ImageFilter.GaussianBlur(6))
+        img.alpha_composite(shadow)
+
+        # wstęga
+        ribbon = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        rd = ImageDraw.Draw(ribbon)
+        rd.polygon([p1, p2, p3, p4], fill=self.CG)
+
+        # treść (flaga + napis) – osobna warstwa obracana o -theta
+        axis_len = math.hypot(B[0] - A[0], B[1] - A[1])
+        txt_pad = 32
+        box_w = int(axis_len - 2 * txt_pad)
+        box_h = int(thickness - 16)
+        if box_w < 120 or box_h < 30:
+            img.alpha_composite(ribbon)
+            return
+
+        content = Image.new("RGBA", (box_w, box_h), (0, 0, 0, 0))
+        cd = ImageDraw.Draw(content)
+
+        # flaga
+        flag_img = None
+        flag_h = min(box_h - 10, 40)
+        flag_w = flag_h
+        if self.icon_flag_gb and self.icon_flag_gb.exists():
+            try:
+                flag_img = (
+                    Image.open(self.icon_flag_gb)
+                    .convert("RGBA")
+                    .resize((flag_w, flag_h), Image.Resampling.LANCZOS)
+                )
+            except Exception:
+                flag_img = None
+
+        font = self._load_font(self.font_bold, 34)
+        label_w = cd.textbbox((0, 0), label, font=font)[2]
+        gap = 12 if flag_img else 0
+        total_w = label_w + (flag_w + gap if flag_img else 0)
+
+        x0 = max(0, (box_w - total_w) // 2)
+        y0 = (box_h - cd.textbbox((0, 0), label, font=font)[3]) // 2
+
+        if flag_img:
+            content.alpha_composite(flag_img, (x0, (box_h - flag_h) // 2))
+            x0 += flag_w + gap
+
+        # lekki biały cień plus biały tekst
+        cd.text((x0, y0 + 2), label, font=font, fill=(255, 255, 255, 90))
+        cd.text((x0, y0), label, font=font, fill="#FFFFFF")
+
+        content_rot = content.rotate(-math.degrees(theta), expand=True)
+
+        # środek odcinka A–B (po overshoot nadal OK)
+        mid = ((A[0] + B[0]) // 2, (A[1] + B[1]) // 2)
+        cx = mid[0] - content_rot.width // 2
+        cy = mid[1] - content_rot.height // 2
+
+        img.alpha_composite(ribbon)
+        img.alpha_composite(content_rot, (cx, cy))
+
     def _draw_corner_footer(
         self,
         img: Image.Image,
@@ -302,20 +416,17 @@ class MeetupImageGenerator:
         W, H = img.width, img.height
         pad = opt["safe_margin"]
 
-        # --- 1) Mniejszy trójkąt (~15%)
-        base_block_w = int(W * 0.36 * 0.85)  # było 0.36
-        base_block_h = int(H * 0.26 * 0.85)  # było 0.26
+        # mniejszy trójkąt (~15%)
+        base_block_w = int(W * 0.36 * 0.85)
+        base_block_h = int(H * 0.26 * 0.85)
 
-        # --- 2) Fonty i dopasowanie szerokości
         font_site = self._load_font(self.font_normal, opt["footer_font"])
         meet_text = f"Meetup #{meetup_id}"
         link_w = draw.textbbox((0, 0), site_text, font=font_site)[2]
 
-        # Dopasuj "Meetup #.." tak, by miał ~98% szerokości linku (maksymalnie)
         target_w = int(link_w)
 
         def fit_meet_font_for_width(target_width: int) -> ImageFont.FreeTypeFont:
-            # start wyżej, żeby powiększyć napis
             size = int(opt["footer_font"] * 1.05)
             best = self._load_font(self.font_bold, size)
             while size >= 10:
@@ -329,7 +440,6 @@ class MeetupImageGenerator:
 
         font_meet = fit_meet_font_for_width(target_w)
 
-        # oblicz potrzebne wymiary środka tekstowego
         meet_bbox = draw.textbbox((0, 0), meet_text, font=font_meet)
         site_bbox = draw.textbbox((0, 0), site_text, font=font_site)
         meet_w, meet_h = meet_bbox[2], meet_bbox[3]
@@ -345,11 +455,9 @@ class MeetupImageGenerator:
         block_w = max(base_block_w, req_w)
         block_h = max(base_block_h, req_h)
 
-        # rysuj trójkąt (0,H)->(0,H-block_h)->(block_w,H)
         poly = [(0, H), (0, H - block_h), (block_w, H)]
         draw.polygon(poly, fill=self.CG)
 
-        # równanie krawędzi skośnej i bezpieczne kotwiczenie do dołu
         m = block_h / float(block_w) if block_w else 0.0
         total_text_h = meet_h + text_gap + site_h
         bottom_anchor_y = H - inner_pad - total_text_h
@@ -357,7 +465,6 @@ class MeetupImageGenerator:
         start_y = int(max(y_top_inside, bottom_anchor_y))
         start_x = text_margin_x
 
-        # napisy w trójkącie
         draw.text((start_x, start_y), meet_text, fill="#FFFFFF", font=font_meet)
         draw.text(
             (start_x, start_y + meet_h + text_gap),
@@ -408,15 +515,12 @@ class MeetupImageGenerator:
         box_y = base_y
 
         size = opt["single_avatar"]
-        # większe napisy (nazwisko + tytuł 20% większy)
         name_f = self._load_font(self.font_bold, 44)
         title_f = self._load_font(self.font_bold, int(26 * 1.2))
 
         av = self._apply_circular_mask(self._avatar(sp, (size, size)))
         lines = self._wrap_unbounded(draw, title, title_f, int(box_w * 0.9))
-        # nazwisko nad środkiem, tytuł startuje na środku awatara
         name_h = draw.textbbox((0, 0), sp.name, font=name_f)[3]
-        title_line_h = draw.textbbox((0, 0), lines[0] if lines else "", font=title_f)[3]
 
         self._overlay(
             img,
@@ -426,16 +530,14 @@ class MeetupImageGenerator:
         av_x = img.width // 2 - size // 2
         self._paste_with_ring_thin(img, av, (av_x, box_y))
 
-        # pozycje
         name_y = box_y + size // 2 - (name_h + 20)
-        title_y = box_y + size // 2  # góra pierwszej linii = środek avatara
+        title_y = box_y + size // 2
 
         self._text_center(draw, sp.name, img.width // 2, name_y, name_f, self.CT)
         self._text_center_multiline(
             draw, lines, img.width // 2, title_y, title_f, self.SS
         )
 
-    # duo columns
     def _layout_duo_columns(
         self,
         img: Image.Image,
@@ -455,15 +557,12 @@ class MeetupImageGenerator:
         col_w = (box_w - col_gap) // 2
         size = opt["duo_avatar"]
         name_f = self._load_font(self.font_bold, 42)
-        title_f = self._load_font(self.font_bold, int(24 * 1.2))  # +20%
+        title_f = self._load_font(self.font_bold, int(24 * 1.2))
 
-        # wrap
         lines1 = self._wrap_unbounded(draw, t1, title_f, col_w - size - 46)
         lines2 = self._wrap_unbounded(draw, t2, title_f, col_w - size - 46)
         name_h1 = draw.textbbox((0, 0), sp1.name, font=name_f)[3]
         name_h2 = draw.textbbox((0, 0), sp2.name, font=name_f)[3]
-        first_h1 = draw.textbbox((0, 0), lines1[0] if lines1 else "", font=title_f)[3]
-        first_h2 = draw.textbbox((0, 0), lines2[0] if lines2 else "", font=title_f)[3]
 
         self._overlay(
             img,
@@ -471,18 +570,16 @@ class MeetupImageGenerator:
             opt["overlay_opacity"],
         )
 
-        # lewa kolumna
         left_x = box_x
         av1 = self._apply_circular_mask(self._avatar(sp1, (size, size)))
         self._paste_with_ring_thin(img, av1, (left_x, box_y))
         name1_y = box_y + size // 2 - (name_h1 + 20)
-        title1_y = box_y + size // 2  # top pierwszej linii = środek avatara
+        title1_y = box_y + size // 2
         draw.text((left_x + size + 30, name1_y), sp1.name, fill=self.CT, font=name_f)
         self._text_multiline(
             draw, lines1, left_x + size + 30, title1_y, title_f, self.SS, gap=8
         )
 
-        # prawa kolumna
         right_x = box_x + col_w + col_gap
         av2 = self._apply_circular_mask(self._avatar(sp2, (size, size)))
         self._paste_with_ring_thin(img, av2, (right_x + col_w - size, box_y))
@@ -495,7 +592,6 @@ class MeetupImageGenerator:
             draw, lines2, right_x + col_w - size - 30, title2_y, title_f, self.SS, gap=8
         )
 
-    # duo stack
     def _layout_duo_stack(
         self,
         img: Image.Image,
@@ -513,7 +609,6 @@ class MeetupImageGenerator:
         name_f = self._load_font(self.font_bold, 42)
         title_f = self._load_font(self.font_bold, int(24 * 1.2))
 
-        # A
         lines1 = self._wrap_unbounded(draw, t1, title_f, int(box_w * 0.9))
         name_h1 = draw.textbbox((0, 0), sp1.name, font=name_f)[3]
         self._overlay(
@@ -531,7 +626,6 @@ class MeetupImageGenerator:
             draw, lines1, box_x + box_w // 2, title1_y, title_f, self.SS
         )
 
-        # B
         off_y = base_y + size + 240
         lines2 = self._wrap_unbounded(draw, t2, title_f, int(box_w * 0.9))
         name_h2 = draw.textbbox((0, 0), sp2.name, font=name_f)[3]
@@ -559,7 +653,6 @@ class MeetupImageGenerator:
         return Image.new("RGBA", (1920, 1080), (245, 245, 245, 255))
 
     def _composite_background(self, canvas: Image.Image, fade: float = 0.05):
-        """Wstaw tło i rozjaśnij do ~5% krycia."""
         if not self.background_path.exists():
             return
         try:
@@ -580,11 +673,6 @@ class MeetupImageGenerator:
     def _resolve_date_parts(
         self, meetup: Meetup, lang: Language
     ) -> Tuple[str, str, str]:
-        """
-        Zwraca (DAY_NAME, DATE_LABEL, TIME_LABEL).
-        DATE_LABEL = "YYYY MM DD"
-        DAY_NAME = pl/eng uppercase zależnie od language
-        """
         dt: Optional[datetime] = None
         for attr in ("starts_at", "start", "datetime", "date"):
             val = getattr(meetup, attr, None)
@@ -595,7 +683,6 @@ class MeetupImageGenerator:
                 dt = datetime(val.year, val.month, val.day, 18, 0)
                 break
 
-        # domyślnie bez dnia
         day_name = ""
         date_label = ""
         time_label = ""
@@ -634,13 +721,11 @@ class MeetupImageGenerator:
             )
             return day_name, date_label, time_label
 
-        # fallback – formatted_date
         try:
             fd = meetup.formatted_date(lang).strip()
         except Exception:
             fd = ""
 
-        # spróbuj usunąć godzinę na końcu
         if " " in fd:
             left, right = fd.rsplit(" ", 1)
             if ":" in right and len(right) in (4, 5):
@@ -663,7 +748,6 @@ class MeetupImageGenerator:
         font: ImageFont.FreeTypeFont,
         color: str,
     ):
-        """Rysuje wycentrowany tekst z cieniem na bazowym obrazie."""
         img = getattr(draw, "_image", None)
         if img is None:
             core = getattr(draw, "im", None)
@@ -687,7 +771,6 @@ class MeetupImageGenerator:
         font: ImageFont.FreeTypeFont,
         color: str,
     ):
-        """Rysuje tekst wyrównany do prawej z cieniem na bazowym obrazie."""
         img = getattr(draw, "_image", None)
         if img is None:
             core = getattr(draw, "im", None)
@@ -715,11 +798,9 @@ class MeetupImageGenerator:
         blur: int = 2,
         offset: tuple[int, int] = (0, 2),
     ):
-        """Renderuje cień przez rozmycie maski tekstu i kompozycję."""
         if not hasattr(base_img, "alpha_composite"):
             raise RuntimeError("Expected PIL.Image.Image as base_img")
 
-        # warstwa cienia
         shadow_layer = Image.new("RGBA", base_img.size, (0, 0, 0, 0))
         sd = ImageDraw.Draw(shadow_layer)
         x, y = pos
@@ -728,7 +809,6 @@ class MeetupImageGenerator:
             shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(blur))
         base_img.alpha_composite(shadow_layer)
 
-        # warstwa tekstu
         text_layer = Image.new("RGBA", base_img.size, (0, 0, 0, 0))
         td = ImageDraw.Draw(text_layer)
         td.text((x, y), text, font=font, fill=fill)
@@ -902,21 +982,17 @@ class MeetupImageGenerator:
         w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
         return ((diameter - w) // 2, (diameter - h) // 2)
 
-    # cienka ramka 3 px YA
     def _paste_with_ring_thin(
         self, img: Image.Image, avatar: Image.Image, topleft: tuple[int, int]
     ):
         size = avatar.width
-        # cień
         shadow = Image.new("RGBA", (size + 24, size + 24), (0, 0, 0, 0))
         d = ImageDraw.Draw(shadow)
         d.ellipse((8, 8, size + 16, size + 16), fill=(0, 0, 0, 50))
         shadow = shadow.filter(ImageFilter.GaussianBlur(6))
         img.alpha_composite(shadow, (topleft[0] - 10, topleft[1] - 10))
-        # ring
         ring = Image.new("RGBA", (size + 12, size + 12), (0, 0, 0, 0))
         dr = ImageDraw.Draw(ring)
         dr.ellipse((0, 0, size + 12, size + 12), outline=self.YA, width=3)
         img.alpha_composite(ring, (topleft[0] - 6, topleft[1] - 6))
-        # avatar
         img.paste(avatar, topleft, avatar)

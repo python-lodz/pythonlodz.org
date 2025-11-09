@@ -34,73 +34,148 @@ class HugoMeetupGenerator:
         content_parts.append("")
 
         # Add information section
-        content_parts.append("## Informacje")
-        content_parts.append("")
-        content_parts.append(f"**📅 data:** {meetup.date}</br>")
-        content_parts.append(f"**🕕 godzina:** {meetup.time}</br>")
-        content_parts.append(f"**📍 miejsce:** {meetup.location_name()}</br>")
-
-        # Add meetup link if available
-        if meetup.meetup_url:
-            content_parts.append(f" ➡️ [**LINK DO ZAPISÓW**]({meetup.meetup_url}) ⬅️")
-
-        # Add feedback link if available (TODO: Add feedback_url to Google Sheets)
-        if meetup.feedback_url:
-            content_parts.append(
-                f" </br></br> 📝 [**ANKIETA** - oceń spotkanie oraz prelekcje]({meetup.feedback_url})"
-            )
-
-        content_parts.append("")
-
-        # Add live stream if available (TODO: Add livestream_id to Google Sheets)
-        if meetup.livestream_id:
-            content_parts.append("## Live Stream")
-            content_parts.append(
-                f'{{{{< youtubeLite id="{meetup.livestream_id}" label="Label" >}}}}'
-            )
+        if meetup.language == Language.EN:
+            content_parts.append("## Information")
             content_parts.append("")
-
-        # Add talks section
-        content_parts.append("## Prelekcje")
-        content_parts.append("")
-
-        if not meetup.talks:
-            # No talks yet message
+            content_parts.append(f"**📅 date:** {meetup.date}</br>")
+            content_parts.append(f"**🕕 time:** {meetup.time}</br>")
             content_parts.append(
-                "Już wkrótce ogłosimy oficjalną agendę naszego najnowszego spotkania Python Łódź. "
-                "Bądźcie czujni, bo szykujemy naprawdę interesujące prezentacje.\n\n"
-                "Niezależnie od tematu, każde spotkanie to świetna okazja, by poszerzyć swoją wiedzę, "
-                "poznać nowych ludzi i razem budować silną społeczność miłośników Pythona.\n\n"
-                "Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z pełną informacją o wydarzeniu."
+                f"**📍 location:** {meetup.location_name(meetup.language)}</br>"
             )
-        else:
-            # Add each talk
-            for talk in meetup.talks:
-                # Clean title (remove newlines and extra spaces)
-                clean_title = " ".join(talk.title.split())
-                content_parts.append(f"### {clean_title}")
+
+            # Add meetup link if available
+            if meetup.meetup_url:
+                content_parts.append(f" ➡️ [**SIGN UP LINK**]({meetup.meetup_url}) ⬅️")
+
+            # Add feedback link if available (TODO: Add feedback_url to Google Sheets)
+            if meetup.feedback_url:
                 content_parts.append(
-                    f'{{{{< speaker speaker_id="{talk.speaker_id}" >}}}}'
+                    f" </br></br> 📝 [**SURVEY** - rate the meeting and presentations]({meetup.feedback_url})"
                 )
 
-                if talk.description:
-                    # Convert newlines to markdown line breaks
-                    description = talk.description.replace("\n", "  \n")
-                    content_parts.append(description)
+            content_parts.append("")
 
-                if talk.youtube_id:
-                    content_parts.append("#### Nagranie")
-                    content_parts.append(
-                        f'{{{{< youtubeLite id="{talk.youtube_id}" label="Label" >}}}}'
-                    )
-
+            # Add live stream if available (TODO: Add livestream_id to Google Sheets)
+            if meetup.livestream_id:
+                content_parts.append("## Live Stream")
+                content_parts.append(
+                    f'{{{{< youtubeLite id="{meetup.livestream_id}" label="Label" >}}}}'
+                )
                 content_parts.append("")
 
-        # Add sponsors section
-        content_parts.append("## Sponsorzy")
-        for sponsor in meetup.sponsors:
-            content_parts.append(f'{{{{< article link="/sponsorzy/{sponsor}/" >}}}}')
+            # Add talks section
+            content_parts.append("## Presentations")
             content_parts.append("")
+
+            if not meetup.talks:
+                # No talks yet message
+                content_parts.append(
+                    "Soon we will announce the official agenda of our latest Python Łódź meetup. "
+                    "Stay tuned, because we are preparing really interesting presentations.\n\n"
+                    "Regardless of the topic, every meeting is a great opportunity to expand your knowledge, "
+                    "meet new people and together build a strong community of Python enthusiasts.\n\n"
+                    "Reserve your spot now – don't be surprised when we launch with full event information."
+                )
+            else:
+                # Add each talk
+                for talk in meetup.talks:
+                    # Clean title (remove newlines and extra spaces)
+                    clean_title = " ".join(talk.title.split())
+                    content_parts.append(f"### {clean_title}")
+                    content_parts.append(
+                        f'{{{{< speaker speaker_id="{talk.speaker_id}" >}}}}'
+                    )
+
+                    if talk.description:
+                        # Convert newlines to markdown line breaks
+                        description = talk.description.replace("\n", "  \n")
+                        content_parts.append(description)
+
+                    if talk.youtube_id:
+                        content_parts.append("#### Recording")
+                        content_parts.append(
+                            f'{{{{< youtubeLite id="{talk.youtube_id}" label="Label" >}}}}'
+                        )
+
+                    content_parts.append("")
+
+            # Add sponsors section
+            content_parts.append("## Sponsors")
+            for sponsor in meetup.sponsors:
+                content_parts.append(
+                    f'{{{{< article link="/sponsorzy/{sponsor}/" >}}}}'
+                )
+                content_parts.append("")
+        else:
+            content_parts.append("## Informacje")
+            content_parts.append("")
+            content_parts.append(f"**📅 data:** {meetup.date}</br>")
+            content_parts.append(f"**🕕 godzina:** {meetup.time}</br>")
+            content_parts.append(f"**📍 miejsce:** {meetup.location_name()}</br>")
+
+            # Add meetup link if available
+            if meetup.meetup_url:
+                content_parts.append(f" ➡️ [**LINK DO ZAPISÓW**]({meetup.meetup_url}) ⬅️")
+
+            # Add feedback link if available (TODO: Add feedback_url to Google Sheets)
+            if meetup.feedback_url:
+                content_parts.append(
+                    f" </br></br> 📝 [**ANKIETA** - oceń spotkanie oraz prelekcje]({meetup.feedback_url})"
+                )
+
+            content_parts.append("")
+
+            # Add live stream if available (TODO: Add livestream_id to Google Sheets)
+            if meetup.livestream_id:
+                content_parts.append("## Live Stream")
+                content_parts.append(
+                    f'{{{{< youtubeLite id="{meetup.livestream_id}" label="Label" >}}}}'
+                )
+                content_parts.append("")
+
+            # Add talks section
+            content_parts.append("## Prelekcje")
+            content_parts.append("")
+
+            if not meetup.talks:
+                # No talks yet message
+                content_parts.append(
+                    "Już wkrótce ogłosimy oficjalną agendę naszego najnowszego spotkania Python Łódź. "
+                    "Bądźcie czujni, bo szykujemy naprawdę interesujące prezentacje.\n\n"
+                    "Niezależnie od tematu, każde spotkanie to świetna okazja, by poszerzyć swoją wiedzę, "
+                    "poznać nowych ludzi i razem budować silną społeczność miłośników Pythona.\n\n"
+                    "Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z pełną informacją o wydarzeniu."
+                )
+            else:
+                # Add each talk
+                for talk in meetup.talks:
+                    # Clean title (remove newlines and extra spaces)
+                    clean_title = " ".join(talk.title.split())
+                    content_parts.append(f"### {clean_title}")
+                    content_parts.append(
+                        f'{{{{< speaker speaker_id="{talk.speaker_id}" >}}}}'
+                    )
+
+                    if talk.description:
+                        # Convert newlines to markdown line breaks
+                        description = talk.description.replace("\n", "  \n")
+                        content_parts.append(description)
+
+                    if talk.youtube_id:
+                        content_parts.append("#### Nagranie")
+                        content_parts.append(
+                            f'{{{{< youtubeLite id="{talk.youtube_id}" label="Label" >}}}}'
+                        )
+
+                    content_parts.append("")
+
+            # Add sponsors section
+            content_parts.append("## Sponsorzy")
+            for sponsor in meetup.sponsors:
+                content_parts.append(
+                    f'{{{{< article link="/sponsorzy/{sponsor}/" >}}}}'
+                )
+                content_parts.append("")
 
         # TODO: Add photos section (will need to check for images in resources)
 
@@ -113,7 +188,7 @@ class HugoMeetupGenerator:
             f'title: "{meetup.title}"',
             f"date: {meetup.date}T{meetup.time}:00+02:00",
             f'time: "{meetup.time}"',
-            f'place: "{meetup.location_name()}"',
+            f'place: "{meetup.location_name(meetup.language)}"',
             "---",
             "",
         ]
