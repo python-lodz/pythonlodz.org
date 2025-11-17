@@ -24,12 +24,10 @@ class MeetupImageGenerator:
     - jasne tło z mocno rozjaśnioną geometrią
     - nagłówek: "PYTHON ŁÓDŹ #<id>" wyśrodkowany
     - data (YYYY MM DD) w żółtym akcencie + poniżej "DZIEŃ, HH:MM"
-    - prelegenci: okrągłe avatary z cienkim ringiem; nazwisko nad środkiem awatara,
-      a pierwsza linia tytułu startuje dokładnie na wysokości środka awatara
+    - prelegenci: okrągłe avatary z cienkim ringiem; nazwisko + tytuł POD avatarem
     - stopka bez paska:
-        * lewy dół: skośny blok CG (większy) z "Meetup #<id>" i "pythonlodz.org"
-        * środek: sama lokalizacja (z pinem)
-        * prawy dół: #PythonLodz w kolorze CG + lekki biały cień
+        * lewy dół: skośny blok CG tylko z adresem "pythonlodz.org"
+        * środek: lokalizacja (z pinem)
     """
 
     # ---------------- init ----------------
@@ -51,7 +49,7 @@ class MeetupImageGenerator:
         # ikony
         self.icon_link = assets_dir / "icons" / "link.png"
         self.icon_pin = assets_dir / "icons" / "pin.png"
-        self.icon_flag_gb = assets_dir / "icons" / "flag_gb.png"  # NEW
+        self.icon_flag_gb = assets_dir / "icons" / "flag_gb.png"
 
         # fonty
         self.font_normal = assets_dir / "fonts" / "OpenSans-Medium.ttf"
@@ -108,7 +106,7 @@ class MeetupImageGenerator:
             header = f"PYTHON ŁÓDŹ #{meetup_id}".strip()
             self._draw_header_centered(img, draw, header, opt)
 
-            # wstęga EN w prawym górnym rogu (równoległa do trójkąta, krawędź->krawędź)
+            # wstęga EN w prawym górnym rogu
             if language == Language.EN:
                 self._draw_top_right_ribbon_en(img, opt)
 
@@ -145,7 +143,7 @@ class MeetupImageGenerator:
                     date_y + draw.textbbox((0, 0), date_label, font=font_date)[3]
                 )
 
-            # separator – wyliczony stałe, NIE rysujemy już żadnego napisu pod datą
+            # separator (brak tekstu pod datą)
             sep_w = int(img.width * opt["sep_width_ratio"])
             sep_x = (img.width - sep_w) // 2
             sep_y = block_bottom + 12
@@ -196,6 +194,7 @@ class MeetupImageGenerator:
             return output_path
 
         except Exception as e:
+            raise e
             raise ImageGenerationError(
                 f"Failed to generate image for meetup {getattr(meetup, 'meetup_id', '?')}: {e}"
             ) from e
@@ -208,12 +207,12 @@ class MeetupImageGenerator:
                 "max_content_width": 1500,
                 "date_block_max_width_ratio": 0.84,
                 "duo_mode": "columns",
-                "single_avatar": 330,
+                "single_avatar": 260,  # mniejszy avatar
                 "duo_avatar": 280,
                 "date_start_px": 136,
                 "date_y_ratio": 0.23,
                 "sep_width_ratio": 0.66,
-                "base_y_gap": 68,
+                "base_y_gap": 48,
                 "footer_font": 30,
                 "icon_link": 56,
                 "icon_pin": 50,
@@ -224,7 +223,7 @@ class MeetupImageGenerator:
                 "max_content_width": 980,
                 "date_block_max_width_ratio": 0.90,
                 "duo_mode": "stack",
-                "single_avatar": 330,
+                "single_avatar": 300,
                 "duo_avatar": 288,
                 "date_start_px": 122,
                 "date_y_ratio": 0.21,
@@ -236,16 +235,16 @@ class MeetupImageGenerator:
             }
         if aspect == "1x1":
             return {
-                "safe_margin": 64,
+                "safe_margin": 120,  # więcej miejsca od góry (nagłówek dalej od wstęgi)
                 "max_content_width": 980,
                 "date_block_max_width_ratio": 0.90,
                 "duo_mode": "stack",
-                "single_avatar": 330,
+                "single_avatar": 240,  # mniejszy avatar
                 "duo_avatar": 288,
                 "date_start_px": 118,
                 "date_y_ratio": 0.20,
                 "sep_width_ratio": 0.74,
-                "base_y_gap": 72,
+                "base_y_gap": 56,  # sekcja prelegenta wyżej nad trójkątem
                 "footer_font": 30,
                 "icon_link": 52,
                 "icon_pin": 48,
@@ -292,49 +291,45 @@ class MeetupImageGenerator:
             shadow_color=(0, 0, 0, 90),
         )
 
+    # ---------------- ribbon ----------------
     def _draw_top_right_ribbon_en(
         self, img: Image.Image, opt: dict, label: str = "ENGLISH EDITION"
     ):
         """
         Ukośna wstęga w prawym górnym rogu:
-        - równoległa do krawędzi trójkąta (atan2(0.26*H, 0.36*W)),
-        - od krawędzi do krawędzi z nadmiarem (brak szczelin),
+        - kąt zgodny z dolnym trójkątem (stałe nachylenie ~0.406),
+        - od krawędzi do krawędzi z nadmiarem,
         - flaga + napis wycentrowane na osi wstęgi.
         """
         W, H = img.width, img.height
 
-        # kąt jak krawędź trójkąta z lewego dołu
-        theta = math.atan2(0.26 * H, 0.36 * W)
+        tri_slope = 0.406  # ten sam, co w trójkącie stopki
+        theta = math.atan(tri_slope)
         cos_t, sin_t = math.cos(theta), math.sin(theta)
 
         # odległości punktów końcowych na krawędziach
         m = int(0.28 * W)  # po górnej krawędzi od prawej
         n = int(m * math.tan(theta))  # w dół po prawej krawędzi
 
-        # overshoot – rysujemy nieco poza płótnem, by zniknęły szczeliny na rogach
         thickness = 72
         overshoot = thickness * 2
 
-        # baza odcinka (z nadmiarem poza obraz)
         A = (
             W - m - int(overshoot * cos_t),
             0 - int(overshoot * sin_t),
-        )  # powyżej górnej krawędzi
+        )
         B = (
             W + int(overshoot * cos_t),
             n + int(overshoot * sin_t),
-        )  # za prawą krawędzią
+        )
 
-        # wektory jednostkowe
         ux, uy = (cos_t, sin_t)
-        nx, ny = (-uy, ux)  # prostopadły
-
+        nx, ny = (-uy, ux)
         half_t = thickness / 2.0
 
         def add(p, dx, dy):
             return (int(p[0] + dx), int(p[1] + dy))
 
-        # narożniki wstęgi (paralelogram)
         p1 = add(A, nx * half_t, ny * half_t)
         p2 = add(B, nx * half_t, ny * half_t)
         p3 = add(B, -nx * half_t, -ny * half_t)
@@ -352,7 +347,7 @@ class MeetupImageGenerator:
         rd = ImageDraw.Draw(ribbon)
         rd.polygon([p1, p2, p3, p4], fill=self.CG)
 
-        # treść (flaga + napis) – osobna warstwa obracana o -theta
+        # treść – flaga + napis
         axis_len = math.hypot(B[0] - A[0], B[1] - A[1])
         txt_pad = 32
         box_w = int(axis_len - 2 * txt_pad)
@@ -364,7 +359,6 @@ class MeetupImageGenerator:
         content = Image.new("RGBA", (box_w, box_h), (0, 0, 0, 0))
         cd = ImageDraw.Draw(content)
 
-        # flaga
         flag_img = None
         flag_h = min(box_h - 10, 40)
         flag_w = flag_h
@@ -390,13 +384,11 @@ class MeetupImageGenerator:
             content.alpha_composite(flag_img, (x0, (box_h - flag_h) // 2))
             x0 += flag_w + gap
 
-        # lekki biały cień plus biały tekst
         cd.text((x0, y0 + 2), label, font=font, fill=(255, 255, 255, 90))
         cd.text((x0, y0), label, font=font, fill="#FFFFFF")
 
         content_rot = content.rotate(-math.degrees(theta), expand=True)
 
-        # środek odcinka A–B (po overshoot nadal OK)
         mid = ((A[0] + B[0]) // 2, (A[1] + B[1]) // 2)
         cx = mid[0] - content_rot.width // 2
         cy = mid[1] - content_rot.height // 2
@@ -404,6 +396,7 @@ class MeetupImageGenerator:
         img.alpha_composite(ribbon)
         img.alpha_composite(content_rot, (cx, cy))
 
+    # ---------------- footer ----------------
     def _draw_corner_footer(
         self,
         img: Image.Image,
@@ -413,61 +406,41 @@ class MeetupImageGenerator:
         meetup_id: str | int,
         opt: dict,
     ):
+        """
+        Skośny trójkąt w lewym dolnym rogu + lokalizacja na środku.
+        - trójkąt zawiera tylko adres strony (bez "Meetup #<id>" i bez ikony linku)
+        - kąt trójkąta stały, zgodny z wstęgą EN
+        """
         W, H = img.width, img.height
         pad = opt["safe_margin"]
 
-        # mniejszy trójkąt (~15%)
-        base_block_w = int(W * 0.36 * 0.85)
-        base_block_h = int(H * 0.26 * 0.85)
-
+        tri_slope = 0.406  # spójny z wstęgą
         font_site = self._load_font(self.font_normal, opt["footer_font"])
-        meet_text = f"Meetup #{meetup_id}"
-        link_w = draw.textbbox((0, 0), site_text, font=font_site)[2]
 
-        target_w = int(link_w)
-
-        def fit_meet_font_for_width(target_width: int) -> ImageFont.FreeTypeFont:
-            size = int(opt["footer_font"] * 1.05)
-            best = self._load_font(self.font_bold, size)
-            while size >= 10:
-                f = self._load_font(self.font_bold, size)
-                w = draw.textbbox((0, 0), meet_text, font=f)[2]
-                if w <= target_width:
-                    best = f
-                    break
-                size -= 1
-            return best
-
-        font_meet = fit_meet_font_for_width(target_w)
-
-        meet_bbox = draw.textbbox((0, 0), meet_text, font=font_meet)
         site_bbox = draw.textbbox((0, 0), site_text, font=font_site)
-        meet_w, meet_h = meet_bbox[2], meet_bbox[3]
         site_w, site_h = site_bbox[2], site_bbox[3]
 
-        text_gap = 8
         text_margin_x = 74
         inner_pad = 30
 
-        req_w = max(meet_w, site_w) + text_margin_x * 2
-        req_h = meet_h + text_gap + site_h + inner_pad * 2
-
+        base_block_w = int(W * 0.36 * 0.85)
+        req_w = site_w + text_margin_x * 2
         block_w = max(base_block_w, req_w)
-        block_h = max(base_block_h, req_h)
+        block_h = int(block_w * tri_slope)
 
         poly = [(0, H), (0, H - block_h), (block_w, H)]
         draw.polygon(poly, fill=self.CG)
 
         m = block_h / float(block_w) if block_w else 0.0
-        total_text_h = meet_h + text_gap + site_h
+
+        total_text_h = site_h
         bottom_anchor_y = H - inner_pad - total_text_h
         y_top_inside = (H - block_h) + m * text_margin_x + inner_pad
         start_y = int(max(y_top_inside, bottom_anchor_y))
         start_x = text_margin_x
 
-        draw.text((start_x, start_y), meet_text, fill="#FFFFFF", font=font_meet)
         draw.text(
-            (start_x, start_y + meet_h + text_gap),
+            (start_x, start_y),
             site_text,
             fill="#E8EEF5",
             font=font_site,
@@ -509,6 +482,11 @@ class MeetupImageGenerator:
     def _layout_single(
         self, img: Image.Image, sp: Speaker, title: str, opt: dict, base_y: int
     ):
+        """
+        Jedna prelekcja:
+        - avatar wycentrowany
+        - nazwisko i tytuł POD avatarem (nie zachodzą na twarz)
+        """
         draw = ImageDraw.Draw(img)
         box_w = min(opt["max_content_width"], img.width - 2 * opt["safe_margin"])
         box_x = (img.width - box_w) // 2
@@ -521,21 +499,24 @@ class MeetupImageGenerator:
         av = self._apply_circular_mask(self._avatar(sp, (size, size)))
         lines = self._wrap_unbounded(draw, title, title_f, int(box_w * 0.9))
         name_h = draw.textbbox((0, 0), sp.name, font=name_f)[3]
+        title_h = self._multiline_height(draw, lines, title_f, gap=8)
 
+        overlay_bottom = box_y + size + 32 + name_h + 8 + title_h + 24
         self._overlay(
             img,
-            (box_x, box_y, box_x + box_w, box_y + size + 160),
+            (box_x, box_y, box_x + box_w, overlay_bottom),
             opt["overlay_opacity"],
         )
+
         av_x = img.width // 2 - size // 2
         self._paste_with_ring_thin(img, av, (av_x, box_y))
 
-        name_y = box_y + size // 2 - (name_h + 20)
-        title_y = box_y + size // 2
+        name_y = box_y + size + 24
+        title_y = name_y + name_h + 8
 
         self._text_center(draw, sp.name, img.width // 2, name_y, name_f, self.CT)
         self._text_center_multiline(
-            draw, lines, img.width // 2, title_y, title_f, self.SS
+            draw, lines, img.width // 2, title_y, title_f, self.SS, gap=8
         )
 
     def _layout_duo_columns(
