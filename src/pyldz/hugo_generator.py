@@ -5,7 +5,7 @@ from pathlib import Path
 from pyldz.descriptions.generators import MeetupDescriptionGenerator
 from pyldz.descriptions.repository import DescriptionRepository
 from pyldz.image_generator import MeetupImageGenerator
-from pyldz.models import GoogleSheetsRepository, Language, Meetup
+from pyldz.models import GoogleSheetsRepository, Language, Meetup, Speaker
 from pyldz.speaker_yaml import write_speakers_yaml
 
 log = logging.getLogger(__name__)
@@ -211,20 +211,79 @@ class HugoMeetupGenerator:
         pl_image_path = meetup_images_dir / "featured-pl.png"
         en_image_path = meetup_images_dir / "featured-en.png"
 
-        images_variants: list[tuple[Path, Language, str]] = [
-            (pl_image_path, Language.PL, "16x9"),
-            (en_image_path, Language.EN, "16x9"),
-            (meetup_images_dir / "featured-pl-4x5.png", Language.PL, "4x5"),
-            (meetup_images_dir / "featured-en-4x5.png", Language.EN, "4x5"),
-            (meetup_images_dir / "featured-pl-1x1.png", Language.PL, "1x1"),
-            (meetup_images_dir / "featured-en-1x1.png", Language.EN, "1x1"),
+        meetup_speaker_0 = meetup.model_copy(update={"talks": [meetup.talks[0]]})
+        meetup_speaker_1 = meetup.model_copy(update={"talks": [meetup.talks[1]]})
+
+        images_variants: list[tuple[Path, Language, str, list[Speaker], Meetup]] = [
+            (pl_image_path, Language.PL, "16x9", speakers, meetup),
+            (en_image_path, Language.EN, "16x9", speakers, meetup),
+            (
+                meetup_images_dir / "featured-pl-4x5.png",
+                Language.PL,
+                "4x5",
+                speakers,
+                meetup,
+            ),
+            (
+                meetup_images_dir / "featured-en-4x5.png",
+                Language.EN,
+                "4x5",
+                speakers,
+                meetup,
+            ),
+            (
+                meetup_images_dir / "featured-pl-1x1.png",
+                Language.PL,
+                "1x1",
+                speakers,
+                meetup,
+            ),
+            (
+                meetup_images_dir / "featured-en-1x1.png",
+                Language.EN,
+                "1x1",
+                speakers,
+                meetup,
+            ),
+            (
+                meetup_images_dir / "speaker_0-en-1x1.png",
+                Language.EN,
+                "1x1",
+                [speakers[0]],
+                meetup_speaker_0,
+            ),
+            (
+                meetup_images_dir / "speaker_1-en-1x1.png",
+                Language.EN,
+                "1x1",
+                [speakers[1]],
+                meetup_speaker_1,
+            ),
+            (
+                meetup_images_dir / "speaker_0-en-16x9.png",
+                Language.EN,
+                "16x9",
+                [speakers[0]],
+                meetup_speaker_0,
+            ),
+            (
+                meetup_images_dir / "speaker_1-en-16x9.png",
+                Language.EN,
+                "16x9",
+                [speakers[1]],
+                meetup_speaker_1,
+            ),
         ]
 
         for variant in images_variants:
-            image_path, language, aspect_ratio = variant
+            image_path, language, aspect_ratio, image_speakers, image_meetup = variant
             log.info(f"Generating featured image {image_path.name}")
             self.image_generator.generate_featured_image(
-                meetup, speakers, image_path, language, aspect_ratio=aspect_ratio
+                image_meetup,
+                image_speakers,
+                image_path,
+                language,
+                aspect_ratio=aspect_ratio,
             )
 
         if meetup.language == Language.PL:
