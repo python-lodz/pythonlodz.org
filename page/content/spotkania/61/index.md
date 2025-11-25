@@ -11,7 +11,14 @@ place: "IndieBI, Piotrkowska 157A, Hi Piotrkowska"
 **📅 date:** 2025-11-26</br>
 **🕕 time:** 18:00</br>
 **📍 location:** IndieBI, Piotrkowska 157A, Hi Piotrkowska</br>
- ➡️ [**SIGN UP LINK**](https://www.meetup.com/python-lodz/events/311933962/) ⬅️
+
+{{< button href="https://www.meetup.com/python-lodz/events/311933962/" target="\_blank">}}
+➡️ [REQUIRED] SIGN UP LINK ⬅️
+{{< /button >}}
+</br></br>
+{{< button href="https://forms.gle/24WkLYe3xzMdU5Za6" target="\_blank" >}}
+Feedback form
+{{< /button >}}
 
 ## Live Stream
 {{< youtubeLite id="ChnoEuB4-kQ" label="Label" >}}
