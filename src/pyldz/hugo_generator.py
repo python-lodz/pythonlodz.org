@@ -245,35 +245,19 @@ class HugoMeetupGenerator:
                 speakers,
                 meetup,
             ),
-            (
-                meetup_images_dir / "speaker_0-en-1x1.png",
-                Language.EN,
-                "1x1",
-                [speakers[0]],
-                meetup_speaker_0,
-            ),
-            (
-                meetup_images_dir / "speaker_1-en-1x1.png",
-                Language.EN,
-                "1x1",
-                [speakers[1]],
-                meetup_speaker_1,
-            ),
-            (
-                meetup_images_dir / "speaker_0-en-16x9.png",
-                Language.EN,
-                "16x9",
-                [speakers[0]],
-                meetup_speaker_0,
-            ),
-            (
-                meetup_images_dir / "speaker_1-en-16x9.png",
-                Language.EN,
-                "16x9",
-                [speakers[1]],
-                meetup_speaker_1,
-            ),
         ]
+        for ration in ["16x9", "4x5", "1x1"]:
+            for x in range(len(meetup.talks)):
+                lang = meetup.language
+                images_variants.append(
+                    (
+                        meetup_images_dir / f"speaker_{x}-{lang.value}-{ration}.png",
+                        lang,
+                        ration,
+                        [speakers[x]],
+                        meetup.model_copy(update={"talks": [meetup.talks[x]]}),
+                    )
+                )
 
         for variant in images_variants:
             image_path, language, aspect_ratio, image_speakers, image_meetup = variant
