@@ -12,16 +12,9 @@ place: "IndieBI, Piotrkowska 157A, Hi Piotrkowska"
 **🕕 time:** 18:00</br>
 **📍 location:** IndieBI, Piotrkowska 157A, Hi Piotrkowska</br>
 
-{{< button href="https://www.meetup.com/python-lodz/events/311933962/" target="\_blank">}}
-➡️ [REQUIRED] SIGN UP LINK ⬅️
-{{< /button >}}
-</br></br>
 {{< button href="https://forms.gle/24WkLYe3xzMdU5Za6" target="\_blank" >}}
 Feedback form
 {{< /button >}}
-
-## Live Stream
-{{< youtubeLite id="ChnoEuB4-kQ" label="Label" >}}
 
 ## Presentations
 
