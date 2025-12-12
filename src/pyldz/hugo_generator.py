@@ -211,9 +211,6 @@ class HugoMeetupGenerator:
         pl_image_path = meetup_images_dir / "featured-pl.png"
         en_image_path = meetup_images_dir / "featured-en.png"
 
-        meetup_speaker_0 = meetup.model_copy(update={"talks": [meetup.talks[0]]})
-        meetup_speaker_1 = meetup.model_copy(update={"talks": [meetup.talks[1]]})
-
         images_variants: list[tuple[Path, Language, str, list[Speaker], Meetup]] = [
             (pl_image_path, Language.PL, "16x9", speakers, meetup),
             (en_image_path, Language.EN, "16x9", speakers, meetup),

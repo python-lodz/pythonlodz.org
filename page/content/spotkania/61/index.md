@@ -12,10 +12,6 @@ place: "IndieBI, Piotrkowska 157A, Hi Piotrkowska"
 **🕕 time:** 18:00</br>
 **📍 location:** IndieBI, Piotrkowska 157A, Hi Piotrkowska</br>
 
-{{< button href="https://forms.gle/24WkLYe3xzMdU5Za6" target="\_blank" >}}
-Feedback form
-{{< /button >}}
-
 ## Presentations
 
 ### Airflow 3, and the boring, production AI plumbing, that nobody talks about
