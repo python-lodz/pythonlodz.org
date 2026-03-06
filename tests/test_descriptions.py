@@ -1,7 +1,6 @@
 """Tests for meetup descriptions generation."""
 
 from datetime import date
-from pathlib import Path
 
 import pytest
 
@@ -99,6 +98,20 @@ def sample_meetup_one_talk(sample_location):
     )
 
 
+@pytest.fixture
+def sample_meetup_tba(sample_location):
+    return Meetup(
+        meetup_id="61",
+        title="Meetup #61",
+        date=date(2025, 11, 26),
+        time="18:00",
+        location=sample_location,
+        language=Language.PL,
+        talks=[],
+        sponsors=["indiebi"],
+    )
+
+
 def test_agenda_two_talks():
     """Test agenda for two talks."""
     assert len(AGENDA_TWO_TALKS) == 5
@@ -155,13 +168,37 @@ def test_generate_meetup_com(sample_meetup_two_talks, sample_speaker, tmp_path):
 
     description = generator.generate_meetup_com()
 
-    assert "Cześć!" in description
     assert "24 września 2025" in description
     assert "18:00" in description
     assert "IndieBI" in description
+    assert "🗓️ Jak wygląda ten wieczór?" in description
+    assert "👋 Dla kogo jest to spotkanie?" in description
+    assert "🎤 Prelekcje" in description
+    assert "🕒 Agenda" in description
+    assert "🔗 Gdzie nas znaleźć?" in description
+    assert "przerwie" in description
+    assert "po części oficjalnej" in description
     assert "Clean Architecture" in description
-    assert "Dołącz do nas na Discordzie!" in description
+    assert "Learn clean architecture." in description
     assert SocialMediaLinks.DISCORD in description
+    assert "Cześć!" not in description
+    assert "Podczas spotkania odbędą się niezwykle ciekawe prezentacje:" not in description
+    assert "Zaproś innych!" not in description
+
+
+def test_generate_meetup_com_to_be_announced(
+    sample_meetup_tba, sample_speaker, tmp_path
+):
+    """Test meetup.com description generation for a meetup without talks."""
+    generator = MeetupDescriptionGenerator(sample_meetup_tba, [sample_speaker], tmp_path)
+
+    description = generator.generate_meetup_com()
+
+    assert "👋 Dla kogo jest to spotkanie?" in description
+    assert "🎤 Prelekcje" in description
+    assert "Prezentacje będą wkrótce ogłoszone!" in description
+    assert "🕒 Agenda" in description
+    assert "🔗 Gdzie nas znaleźć?" in description
 
 
 def test_generate_youtube_live(sample_meetup_two_talks, sample_speaker, tmp_path):
@@ -278,4 +315,4 @@ def test_description_repository_save_all(
 
     # Verify content
     meetup_com_content = (descriptions_dir / "meetup-com.md").read_text()
-    assert "Cześć!" in meetup_com_content
+    assert "👋 Dla kogo jest to spotkanie?" in meetup_com_content

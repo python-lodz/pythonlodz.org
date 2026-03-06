@@ -27,6 +27,47 @@ class HugoMeetupGenerator:
 
     def generate_meetup_markdown(self, meetup: Meetup) -> str:
         """Generate markdown content for a meetup."""
+        # Language-specific text mapping
+        texts = {
+            Language.EN: {
+                "information": "Information",
+                "date": "date",
+                "time": "time",
+                "location": "location",
+                "signup_button": "➡️ SIGN UP LINK",
+                "feedback_button": "📝 SURVEY - rate the meeting and presentations",
+                "presentations": "Presentations",
+                "recording": "Recording",
+                "sponsors": "Sponsors",
+                "no_talks_message": (
+                    "Soon we will announce the official agenda of our latest Python Łódź meetup. "
+                    "Stay tuned, because we are preparing really interesting presentations.\n\n"
+                    "Regardless of the topic, every meeting is a great opportunity to expand your knowledge, "
+                    "meet new people and together build a strong community of Python enthusiasts.\n\n"
+                    "Reserve your spot now – don't be surprised when we launch with full event information."
+                ),
+            },
+            Language.PL: {
+                "information": "Informacje",
+                "date": "data",
+                "time": "godzina",
+                "location": "miejsce",
+                "signup_button": "➡️ LINK DO ZAPISÓW",
+                "feedback_button": "📝 ANKIETA - oceń spotkanie oraz prelekcje",
+                "presentations": "Prelekcje",
+                "recording": "Nagranie",
+                "sponsors": "Sponsorzy",
+                "no_talks_message": (
+                    "Już wkrótce ogłosimy oficjalną agendę naszego najnowszego spotkania Python Łódź. "
+                    "Bądźcie czujni, bo szykujemy naprawdę interesujące prezentacje.\n\n"
+                    "Niezależnie od tematu, każde spotkanie to świetna okazja, by poszerzyć swoją wiedzę, "
+                    "poznać nowych ludzi i razem budować silną społeczność miłośników Pythona.\n\n"
+                    "Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z pełną informacją o wydarzeniu."
+                ),
+            },
+        }
+
+        lang_texts = texts[meetup.language]
         content_parts = []
 
         # Add featured image
@@ -34,148 +75,76 @@ class HugoMeetupGenerator:
         content_parts.append("")
 
         # Add information section
-        if meetup.language == Language.EN:
-            content_parts.append("## Information")
+        content_parts.append(f"## {lang_texts['information']}")
+        content_parts.append("")
+        content_parts.append(f"**📅 {lang_texts['date']}:** {meetup.date}</br>")
+        content_parts.append(f"**🕕 {lang_texts['time']}:** {meetup.time}</br>")
+        content_parts.append(
+            f"**📍 {lang_texts['location']}:** {meetup.location_name(meetup.language)}</br>"
+        )
+
+        # Add meetup link if available
+        if meetup.meetup_url:
             content_parts.append("")
-            content_parts.append(f"**📅 date:** {meetup.date}</br>")
-            content_parts.append(f"**🕕 time:** {meetup.time}</br>")
             content_parts.append(
-                f"**📍 location:** {meetup.location_name(meetup.language)}</br>"
+                f'{{{{< button href="{meetup.meetup_url}" target="_blank" >}}}}'
             )
+            content_parts.append(lang_texts["signup_button"])
+            content_parts.append("{{< /button >}}")
 
-            # Add meetup link if available
-            if meetup.meetup_url:
-                content_parts.append(f" ➡️ [**SIGN UP LINK**]({meetup.meetup_url}) ⬅️")
+        # Add feedback link if available
+        if meetup.feedback_url:
+            content_parts.append("")
+            content_parts.append(
+                f'{{{{< button href="{meetup.feedback_url}" target="_blank" >}}}}'
+            )
+            content_parts.append(lang_texts["feedback_button"])
+            content_parts.append("{{< /button >}}")
 
-            # Add feedback link if available (TODO: Add feedback_url to Google Sheets)
-            if meetup.feedback_url:
-                content_parts.append(
-                    f" </br></br> 📝 [**SURVEY** - rate the meeting and presentations]({meetup.feedback_url})"
-                )
+        content_parts.append("")
 
+        # Add live stream if available
+        if meetup.livestream_id:
+            content_parts.append("## Live Stream")
+            content_parts.append(
+                f'{{{{< youtubeLite id="{meetup.livestream_id}" label="Label" >}}}}'
+            )
             content_parts.append("")
 
-            # Add live stream if available (TODO: Add livestream_id to Google Sheets)
-            if meetup.livestream_id:
-                content_parts.append("## Live Stream")
-                content_parts.append(
-                    f'{{{{< youtubeLite id="{meetup.livestream_id}" label="Label" >}}}}'
-                )
-                content_parts.append("")
+        # Add talks section
+        content_parts.append(f"## {lang_texts['presentations']}")
+        content_parts.append("")
 
-            # Add talks section
-            content_parts.append("## Presentations")
-            content_parts.append("")
-
-            if not meetup.talks:
-                # No talks yet message
-                content_parts.append(
-                    "Soon we will announce the official agenda of our latest Python Łódź meetup. "
-                    "Stay tuned, because we are preparing really interesting presentations.\n\n"
-                    "Regardless of the topic, every meeting is a great opportunity to expand your knowledge, "
-                    "meet new people and together build a strong community of Python enthusiasts.\n\n"
-                    "Reserve your spot now – don't be surprised when we launch with full event information."
-                )
-            else:
-                # Add each talk
-                for talk in meetup.talks:
-                    # Clean title (remove newlines and extra spaces)
-                    clean_title = " ".join(talk.title.split())
-                    content_parts.append(f"### {clean_title}")
-                    content_parts.append(
-                        f'{{{{< speaker speaker_id="{talk.speaker_id}" >}}}}'
-                    )
-
-                    if talk.description:
-                        # Convert newlines to markdown line breaks
-                        description = talk.description.replace("\n", "  \n")
-                        content_parts.append(description)
-
-                    if talk.youtube_id:
-                        content_parts.append("#### Recording")
-                        content_parts.append(
-                            f'{{{{< youtubeLite id="{talk.youtube_id}" label="Label" >}}}}'
-                        )
-
-                    content_parts.append("")
-
-            # Add sponsors section
-            content_parts.append("## Sponsors")
-            for sponsor in meetup.sponsors:
-                content_parts.append(
-                    f'{{{{< article link="/sponsorzy/{sponsor}/" >}}}}'
-                )
-                content_parts.append("")
+        if not meetup.talks:
+            content_parts.append(lang_texts["no_talks_message"])
         else:
-            content_parts.append("## Informacje")
-            content_parts.append("")
-            content_parts.append(f"**📅 data:** {meetup.date}</br>")
-            content_parts.append(f"**🕕 godzina:** {meetup.time}</br>")
-            content_parts.append(f"**📍 miejsce:** {meetup.location_name()}</br>")
-
-            # Add meetup link if available
-            if meetup.meetup_url:
-                content_parts.append(f" ➡️ [**LINK DO ZAPISÓW**]({meetup.meetup_url}) ⬅️")
-
-            # Add feedback link if available (TODO: Add feedback_url to Google Sheets)
-            if meetup.feedback_url:
+            # Add each talk
+            for talk in meetup.talks:
+                # Clean title (remove newlines and extra spaces)
+                clean_title = " ".join(talk.title.split())
+                content_parts.append(f"### {clean_title}")
                 content_parts.append(
-                    f" </br></br> 📝 [**ANKIETA** - oceń spotkanie oraz prelekcje]({meetup.feedback_url})"
+                    f'{{{{< speaker speaker_id="{talk.speaker_id}" >}}}}'
                 )
 
-            content_parts.append("")
+                if talk.description:
+                    # Convert newlines to markdown line breaks
+                    description = talk.description.replace("\n", "  \n")
+                    content_parts.append(description)
 
-            # Add live stream if available (TODO: Add livestream_id to Google Sheets)
-            if meetup.livestream_id:
-                content_parts.append("## Live Stream")
-                content_parts.append(
-                    f'{{{{< youtubeLite id="{meetup.livestream_id}" label="Label" >}}}}'
-                )
-                content_parts.append("")
-
-            # Add talks section
-            content_parts.append("## Prelekcje")
-            content_parts.append("")
-
-            if not meetup.talks:
-                # No talks yet message
-                content_parts.append(
-                    "Już wkrótce ogłosimy oficjalną agendę naszego najnowszego spotkania Python Łódź. "
-                    "Bądźcie czujni, bo szykujemy naprawdę interesujące prezentacje.\n\n"
-                    "Niezależnie od tematu, każde spotkanie to świetna okazja, by poszerzyć swoją wiedzę, "
-                    "poznać nowych ludzi i razem budować silną społeczność miłośników Pythona.\n\n"
-                    "Zarezerwuj swoje miejsce już teraz – nie daj się zaskoczyć, gdy ruszymy z pełną informacją o wydarzeniu."
-                )
-            else:
-                # Add each talk
-                for talk in meetup.talks:
-                    # Clean title (remove newlines and extra spaces)
-                    clean_title = " ".join(talk.title.split())
-                    content_parts.append(f"### {clean_title}")
+                if talk.youtube_id:
+                    content_parts.append(f"#### {lang_texts['recording']}")
                     content_parts.append(
-                        f'{{{{< speaker speaker_id="{talk.speaker_id}" >}}}}'
+                        f'{{{{< youtubeLite id="{talk.youtube_id}" label="Label" >}}}}'
                     )
 
-                    if talk.description:
-                        # Convert newlines to markdown line breaks
-                        description = talk.description.replace("\n", "  \n")
-                        content_parts.append(description)
-
-                    if talk.youtube_id:
-                        content_parts.append("#### Nagranie")
-                        content_parts.append(
-                            f'{{{{< youtubeLite id="{talk.youtube_id}" label="Label" >}}}}'
-                        )
-
-                    content_parts.append("")
-
-            # Add sponsors section
-            content_parts.append("## Sponsorzy")
-            for sponsor in meetup.sponsors:
-                content_parts.append(
-                    f'{{{{< article link="/sponsorzy/{sponsor}/" >}}}}'
-                )
                 content_parts.append("")
+
+        # Add sponsors section
+        content_parts.append(f"## {lang_texts['sponsors']}")
+        for sponsor in meetup.sponsors:
+            content_parts.append(f'{{{{< article link="/sponsorzy/{sponsor}/" >}}}}')
+            content_parts.append("")
 
         # TODO: Add photos section (will need to check for images in resources)
 
@@ -246,13 +215,16 @@ class HugoMeetupGenerator:
         for ration in ["16x9", "4x5", "1x1"]:
             for x in range(len(meetup.talks)):
                 lang = meetup.language
+                talk = meetup.talks[x]
+                # Find the speaker for this talk by speaker_id
+                speaker = next(s for s in speakers if s.id == talk.speaker_id)
                 images_variants.append(
                     (
                         meetup_images_dir / f"speaker_{x}-{lang.value}-{ration}.png",
                         lang,
                         ration,
-                        [speakers[x]],
-                        meetup.model_copy(update={"talks": [meetup.talks[x]]}),
+                        [speaker],
+                        meetup.model_copy(update={"talks": [talk]}),
                     )
                 )
 

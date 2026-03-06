@@ -205,6 +205,7 @@ class _TalkRow(BaseModel):
     linkedin_url: AnyHttpUrl | None
     youtube_url: AnyHttpUrl | None
     other_urls: list[AnyHttpUrl] = []
+    order: int | None = None
 
     @field_validator("photo_url", mode="before")
     @classmethod
@@ -225,6 +226,15 @@ class _TalkRow(BaseModel):
         if isinstance(v, str) and v.strip() == "":
             return None
         return v
+
+    @field_validator("order", mode="before")
+    @classmethod
+    def convert_empty_order_to_none(cls, v) -> int | None:
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        if v is None:
+            return None
+        return int(v)
 
     @field_validator("other_urls", mode="before")
     @classmethod
@@ -392,11 +402,28 @@ class GoogleSheetsRepository:
     def _get_talks_for_meetup(
         self, meetup_id: str, talks_data: list[_TalkRow]
     ) -> list[Talk]:
-        return [
-            talk_row.to_talk()
-            for talk_row in talks_data
+        # Filter talks for this meetup and preserve original order with enumeration
+        meetup_talks = [
+            (idx, talk_row)
+            for idx, talk_row in enumerate(talks_data)
             if talk_row.meetup_id == meetup_id
         ]
+
+        # Sort by order column:
+        # - Talks with numeric order values come first (sorted ascending by order)
+        # - Talks with None order values come after (sorted by original row index)
+        def sort_key(item):
+            idx, talk_row = item
+            if talk_row.order is not None:
+                # Numeric order: use (0, order_value) to sort before None values
+                return (0, talk_row.order, idx)
+            else:
+                # None order: use (1, original_index) to sort after numeric values
+                return (1, idx, idx)
+
+        sorted_talks = sorted(meetup_talks, key=sort_key)
+
+        return [talk_row.to_talk() for _, talk_row in sorted_talks]
 
     def get_speakers_for_meetup(
         self, meetup_id: str, talks_data: list[_TalkRow]

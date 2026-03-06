@@ -6,9 +6,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal, Optional, Tuple
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
-from pyldz.i18n import get_text
 from pyldz.models import Language, Meetup, Speaker
 
 log = logging.getLogger(__name__)
@@ -84,6 +83,12 @@ class MeetupImageGenerator:
             "duo_mode": preset["duo_mode"],
             "single_avatar": preset["single_avatar"],
             "duo_avatar": preset["duo_avatar"],
+            "duo_compact_gap": preset["duo_compact_gap"],
+            "duo_compact_top_pad": preset["duo_compact_top_pad"],
+            "duo_compact_bottom_pad": preset["duo_compact_bottom_pad"],
+            "duo_name_font": preset["duo_name_font"],
+            "duo_title_font": preset["duo_title_font"],
+            "duo_title_lines": preset["duo_title_lines"],
             "date_start_px": preset["date_start_px"],
             "date_y_ratio": preset["date_y_ratio"],
             "sep_width_ratio": preset["sep_width_ratio"],
@@ -171,6 +176,16 @@ class MeetupImageGenerator:
                         opt,
                         base_y,
                     )
+                elif opt["duo_mode"] == "compact_columns":
+                    self._layout_duo_compact_columns(
+                        img,
+                        sp1,
+                        meetup.talks[0].title,
+                        sp2,
+                        meetup.talks[1].title,
+                        opt,
+                        base_y,
+                    )
                 else:
                     self._layout_duo_stack(
                         img,
@@ -210,6 +225,12 @@ class MeetupImageGenerator:
                 "duo_mode": "columns",
                 "single_avatar": 260,  # mniejszy avatar
                 "duo_avatar": 280,
+                "duo_compact_gap": 40,
+                "duo_compact_top_pad": 20,
+                "duo_compact_bottom_pad": 24,
+                "duo_name_font": 32,
+                "duo_title_font": 24,
+                "duo_title_lines": 3,
                 "date_start_px": 136,
                 "date_y_ratio": 0.23,
                 "sep_width_ratio": 0.66,
@@ -223,13 +244,19 @@ class MeetupImageGenerator:
                 "safe_margin": 72,
                 "max_content_width": 980,
                 "date_block_max_width_ratio": 0.90,
-                "duo_mode": "stack",
+                "duo_mode": "compact_columns",
                 "single_avatar": 300,
-                "duo_avatar": 288,
+                "duo_avatar": 216,
+                "duo_compact_gap": 36,
+                "duo_compact_top_pad": 20,
+                "duo_compact_bottom_pad": 28,
+                "duo_name_font": 34,
+                "duo_title_font": 22,
+                "duo_title_lines": 3,
                 "date_start_px": 122,
                 "date_y_ratio": 0.21,
                 "sep_width_ratio": 0.74,
-                "base_y_gap": 76,
+                "base_y_gap": 56,
                 "footer_font": 30,
                 "icon_link": 52,
                 "icon_pin": 48,
@@ -239,13 +266,19 @@ class MeetupImageGenerator:
                 "safe_margin": 90,  # więcej miejsca od góry i od dołu
                 "max_content_width": 980,
                 "date_block_max_width_ratio": 0.90,
-                "duo_mode": "stack",
+                "duo_mode": "compact_columns",
                 "single_avatar": 240,  # mniejszy avatar
-                "duo_avatar": 288,
+                "duo_avatar": 188,
+                "duo_compact_gap": 28,
+                "duo_compact_top_pad": 18,
+                "duo_compact_bottom_pad": 20,
+                "duo_name_font": 28,
+                "duo_title_font": 20,
+                "duo_title_lines": 2,
                 "date_start_px": 118,
                 "date_y_ratio": 0.20,
                 "sep_width_ratio": 0.74,
-                "base_y_gap": 56,  # sekcja prelegenta wyżej nad trójkątem
+                "base_y_gap": 30,  # sekcja prelegenta wyżej nad trójkątem
                 "footer_font": 30,
                 "icon_link": 52,
                 "icon_pin": 48,
@@ -301,25 +334,25 @@ class MeetupImageGenerator:
         - od krawędzi do krawędzi z nadmiarem (brak szczelin),
         - flaga + napis wycentrowane na osi wstęgi.
         """
-        W, H = img.width, img.height
+        width = img.width
 
         tri_slope = 0.406  # ten sam, co w trójkącie stopki
         theta = math.atan(tri_slope)
         cos_t, sin_t = math.cos(theta), math.sin(theta)
 
         # odległości punktów końcowych na krawędziach
-        m = int(0.33 * W)  # po górnej krawędzi od prawej
+        m = int(0.33 * width)  # po górnej krawędzi od prawej
         n = int(m * math.tan(theta))  # w dół po prawej krawędzi
 
         thickness = 72
         overshoot = thickness * 2
 
-        A = (
-            W - m - int(overshoot * cos_t),
+        point_a = (
+            width - m - int(overshoot * cos_t),
             0 - int(overshoot * sin_t),
         )
-        B = (
-            W + int(overshoot * cos_t),
+        point_b = (
+            width + int(overshoot * cos_t),
             n + int(overshoot * sin_t),
         )
 
@@ -330,25 +363,28 @@ class MeetupImageGenerator:
         def add(p, dx, dy):
             return (int(p[0] + dx), int(p[1] + dy))
 
-        p1 = add(A, nx * half_t, ny * half_t)
-        p2 = add(B, nx * half_t, ny * half_t)
-        p3 = add(B, -nx * half_t, -ny * half_t)
-        p4 = add(A, -nx * half_t, -ny * half_t)
+        p1 = add(point_a, nx * half_t, ny * half_t)
+        p2 = add(point_b, nx * half_t, ny * half_t)
+        p3 = add(point_b, -nx * half_t, -ny * half_t)
+        p4 = add(point_a, -nx * half_t, -ny * half_t)
 
         # cień
-        shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        shadow = Image.new("RGBA", img.size, (0, 0, 0, 0))
         sd = ImageDraw.Draw(shadow)
         sd.polygon([p1, p2, p3, p4], fill=(0, 0, 0, 80))
         shadow = shadow.filter(ImageFilter.GaussianBlur(6))
         img.alpha_composite(shadow)
 
         # wstęga
-        ribbon = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ribbon = Image.new("RGBA", img.size, (0, 0, 0, 0))
         rd = ImageDraw.Draw(ribbon)
         rd.polygon([p1, p2, p3, p4], fill=self.CG)
 
         # treść – flaga + napis
-        axis_len = math.hypot(B[0] - A[0], B[1] - A[1])
+        axis_len = math.hypot(
+            point_b[0] - point_a[0],
+            point_b[1] - point_a[1],
+        )
         txt_pad = 32
         box_w = int(axis_len - 2 * txt_pad)
         box_h = int(thickness - 16)
@@ -389,7 +425,10 @@ class MeetupImageGenerator:
 
         content_rot = content.rotate(-math.degrees(theta), expand=True)
 
-        mid = ((A[0] + B[0]) // 2, (A[1] + B[1]) // 2)
+        mid = (
+            (point_a[0] + point_b[0]) // 2,
+            (point_a[1] + point_b[1]) // 2,
+        )
         cx = mid[0] - content_rot.width // 2
         cy = mid[1] - content_rot.height // 2
 
@@ -408,11 +447,11 @@ class MeetupImageGenerator:
         Skośny trójkąt w lewym dolnym rogu + lokalizacja na środku.
         Kąt trójkąta jest zgodny z 16x9 niezależnie od proporcji.
         """
-        W, H = img.width, img.height
+        width, height = img.width, img.height
         pad = opt["safe_margin"]
 
         # bazowa szerokość, wysokość wynikająca ze stałego nachylenia ~0.406
-        base_block_w = int(W * 0.36 * 0.85)
+        base_block_w = int(width * 0.36 * 0.85)
         tri_slope = 0.406  # pochylanie dopasowane do projektu 16x9
         base_block_h = int(base_block_w * tri_slope)
 
@@ -433,13 +472,13 @@ class MeetupImageGenerator:
         block_w = max(base_block_w, req_w)
         block_h = max(base_block_h, req_h)
 
-        poly = [(0, H), (0, H - block_h), (block_w, H)]
+        poly = [(0, height), (0, height - block_h), (block_w, height)]
         draw.polygon(poly, fill=self.CG)
 
         m = block_h / float(block_w) if block_w else 0.0
         total_text_h = meet_h + text_gap + site_h
-        bottom_anchor_y = H - inner_pad - total_text_h
-        y_top_inside = (H - block_h) + m * text_margin_x + inner_pad
+        bottom_anchor_y = height - inner_pad - total_text_h
+        y_top_inside = (height - block_h) + m * text_margin_x + inner_pad
         start_y = int(max(y_top_inside, bottom_anchor_y))
         start_x = text_margin_x
 
@@ -458,8 +497,8 @@ class MeetupImageGenerator:
         small_font = self._load_font(self.font_normal, max(22, opt["footer_font"]))
         place_w = draw.textbbox((0, 0), place_text, font=small_font)[2]
         pin_sz = min(opt["icon_pin"], 28)
-        pin_x = (W // 2) - (place_w // 2) - pin_sz - 10
-        pin_y = H - pad - (small_font.size // 2) - 2
+        pin_x = (width // 2) - (place_w // 2) - pin_sz - 10
+        pin_y = height - pad - (small_font.size // 2) - 2
         if self.icon_pin.exists():
             try:
                 pin = (
@@ -473,8 +512,8 @@ class MeetupImageGenerator:
         self._text_center(
             draw,
             place_text,
-            W // 2,
-            H - pad - small_font.size // 2 - 2,
+            width // 2,
+            height - pad - small_font.size // 2 - 2,
             small_font,
             self.SS,
         )
@@ -634,6 +673,110 @@ class MeetupImageGenerator:
         self._text_center(draw, sp2.name, box_x + box_w // 2, name2_y, name_f, self.CT)
         self._text_center_multiline(
             draw, lines2, box_x + box_w // 2, title2_y, title_f, self.SS
+        )
+
+    def _layout_duo_compact_columns(
+        self,
+        img: Image.Image,
+        sp1: Speaker,
+        t1: str,
+        sp2: Speaker,
+        t2: str,
+        opt: dict,
+        base_y: int,
+    ):
+        draw = ImageDraw.Draw(img)
+        box_w = min(opt["max_content_width"], img.width - 2 * opt["safe_margin"])
+        box_x = (img.width - box_w) // 2
+        box_y = base_y
+
+        col_gap = opt["duo_compact_gap"]
+        col_w = (box_w - col_gap) // 2
+        size = opt["duo_avatar"]
+        col_inner_pad = 16
+        top_pad = opt["duo_compact_top_pad"]
+        bottom_pad = opt["duo_compact_bottom_pad"]
+        name_gap = 16
+        title_gap = 10
+        text_max_w = col_w - col_inner_pad * 2
+
+        name_f1 = self._fit_font(
+            draw,
+            sp1.name,
+            self.font_bold,
+            opt["duo_name_font"],
+            text_max_w,
+            min_size=22,
+        )
+        name_f2 = self._fit_font(
+            draw,
+            sp2.name,
+            self.font_bold,
+            opt["duo_name_font"],
+            text_max_w,
+            min_size=22,
+        )
+        title_f = self._load_font(self.font_bold, opt["duo_title_font"])
+
+        lines1 = self._wrap_limited(
+            draw,
+            t1,
+            title_f,
+            text_max_w,
+            opt["duo_title_lines"],
+        )
+        lines2 = self._wrap_limited(
+            draw,
+            t2,
+            title_f,
+            text_max_w,
+            opt["duo_title_lines"],
+        )
+
+        name_h1 = draw.textbbox((0, 0), sp1.name, font=name_f1)[3]
+        name_h2 = draw.textbbox((0, 0), sp2.name, font=name_f2)[3]
+        title_h1 = self._multiline_height(draw, lines1, title_f, gap=6)
+        title_h2 = self._multiline_height(draw, lines2, title_f, gap=6)
+
+        avatar_y = box_y + top_pad
+        name_y = avatar_y + size + name_gap
+        title_y = name_y + max(name_h1, name_h2) + title_gap
+        overlay_bottom = title_y + max(title_h1, title_h2) + bottom_pad
+
+        self._overlay(
+            img,
+            (box_x, box_y, box_x + box_w, overlay_bottom),
+            opt["overlay_opacity"],
+        )
+
+        left_center_x = box_x + col_w // 2
+        right_center_x = box_x + col_w + col_gap + col_w // 2
+
+        av1 = self._apply_circular_mask(self._avatar(sp1, (size, size)))
+        av2 = self._apply_circular_mask(self._avatar(sp2, (size, size)))
+
+        self._paste_with_ring_thin(img, av1, (left_center_x - size // 2, avatar_y))
+        self._paste_with_ring_thin(img, av2, (right_center_x - size // 2, avatar_y))
+
+        self._text_center(draw, sp1.name, left_center_x, name_y, name_f1, self.CT)
+        self._text_center(draw, sp2.name, right_center_x, name_y, name_f2, self.CT)
+        self._text_center_multiline(
+            draw,
+            lines1,
+            left_center_x,
+            title_y,
+            title_f,
+            self.SS,
+            gap=6,
+        )
+        self._text_center_multiline(
+            draw,
+            lines2,
+            right_center_x,
+            title_y,
+            title_f,
+            self.SS,
+            gap=6,
         )
 
     # ---------------- canvas/bg ----------------
@@ -824,6 +967,23 @@ class MeetupImageGenerator:
             size -= 2
         return self._load_font(font_path, 40)
 
+    def _fit_font(
+        self,
+        draw,
+        text: str,
+        font_path: Path,
+        start: int,
+        max_width: int,
+        min_size: int = 18,
+    ):
+        size = start
+        while size >= min_size:
+            font = self._load_font(font_path, size)
+            if draw.textbbox((0, 0), text, font=font)[2] <= max_width:
+                return font
+            size -= 1
+        return self._load_font(font_path, min_size)
+
     def _wrap_unbounded(self, draw, text, font, max_w):
         words, lines, cur = text.split(), [], []
         for w in words:
@@ -837,6 +997,26 @@ class MeetupImageGenerator:
         if cur:
             lines.append(" ".join(cur))
         return lines
+
+    def _wrap_limited(self, draw, text, font, max_w, max_lines):
+        lines = self._wrap_unbounded(draw, text, font, max_w)
+        if len(lines) <= max_lines:
+            return lines
+
+        truncated = lines[: max_lines - 1]
+        last_line = " ".join(lines[max_lines - 1 :]).strip()
+
+        while (
+            last_line
+            and draw.textbbox((0, 0), f"{last_line}…", font=font)[2] > max_w
+        ):
+            if " " in last_line:
+                last_line = last_line.rsplit(" ", 1)[0]
+            else:
+                last_line = last_line[:-1]
+
+        truncated.append(f"{last_line.rstrip()}…" if last_line else "…")
+        return truncated
 
     def _multiline_height(self, draw, lines, font, gap=6):
         if not lines:
@@ -908,7 +1088,11 @@ class MeetupImageGenerator:
                 except face_centering.FaceDetectionError:
                     original.save(processed, "PNG")
                     img = original
-            return img.resize(size, Image.Resampling.LANCZOS)
+            return ImageOps.fit(
+                img,
+                size,
+                method=Image.Resampling.LANCZOS,
+            )
         except Exception as e:
             raise ImageGenerationError(
                 f"Failed to load avatar for {speaker.name}: {e}"

@@ -1,0 +1,5 @@
+name: "Jarek Śmietanka"
+avatar: "images/avatars/jarek-smietanka.png"
+bio: "Senior Software Engineer in the Commodities Risk Technology team at Balyasny Asset Management, working on large-scale, long-lived Python systems in a high-stakes financial environment.  Previously a Technical Team Lead at Growbots, where I spent nearly a decade designing and evolving microservice-based data platforms, leading engineering teams, and improving the maintainability of complex production codebases.  With over ten years of professional experience across finance, data engineering, and backend architecture, my work focuses on reducing system complexity, improving changeability, and helping teams deliver faster in real-world Python environments."
+social:
+  - linkedin: https://www.linkedin.com/in/jsmietanka/

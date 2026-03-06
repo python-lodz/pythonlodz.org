@@ -54,7 +54,7 @@ def build_speaker_yaml_content(speaker: Speaker, avatar_rel_path: Path) -> str:
 def write_speaker_yaml(speaker: Speaker, page_dir: Path = Path("page")) -> Path:
     """Write speaker avatar and YAML file under the Hugo page directory.
 
-    - Avatar: page/assets/images/avatars/{speaker.id}{ext}
+    - Avatar: page/assets/images/avatars/{speaker.id}.png
     - YAML:   page/data/speakers/{speaker.id}.yaml
 
     Returns the path to the written YAML file.
@@ -62,8 +62,9 @@ def write_speaker_yaml(speaker: Speaker, page_dir: Path = Path("page")) -> Path:
     data_speakers_dir = page_dir / "data" / "speakers"
     data_speakers_dir.mkdir(parents=True, exist_ok=True)
 
-    ext = speaker.avatar.extension.lower() if speaker.avatar.extension else ""
-    avatar_filename = f"{speaker.id}{ext}"
+    # Hugo data files point at the processed avatar asset produced by
+    # MeetupImageGenerator, which always persists speaker avatars as PNG.
+    avatar_filename = f"{speaker.id}.png"
 
     # TODO: should I generate images here or only when meetup page is generated?
     # avatars_dir = page_dir / "assets" / "images" / "avatars"
