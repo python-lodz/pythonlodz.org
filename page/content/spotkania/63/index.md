@@ -16,9 +16,6 @@ place: "IndieBI, Piotrkowska 157A, Hi Piotrkowska"
 ➡️ LINK DO ZAPISÓW
 {{< /button >}}
 
-## Live Stream
-{{< youtubeLite id="U5-p4X1lIz0" label="Label" >}}
-
 ## Prelekcje
 
 ### Logging Module Adventures

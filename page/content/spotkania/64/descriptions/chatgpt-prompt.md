@@ -9,18 +9,15 @@
 
 ## Prezentacje
 
-1.  Python at scale - Rafał Kowalski
-
+ Python at scale — Rafał Kowalski
 Czy serwis napisany w Pythonie jest w stanie działać pod dużym obciążeniem? Gdzie najczęściej pojawiają się bottlenecki? Czy Python potrafi przetwarzać wiele requestów jednocześnie? I czy async naprawdę jest koniecznością przy dużym ruchu?
 
 Wokół wydajności Pythona narosło wiele mitów. W trakcie prezentacji sprawdzimy, gdzie najczęściej leżą realne problemy oraz jak projektować i skalować usługi Pythonowe w praktyce.
 
-2. Anegdoty z Pythona 3.15 - Bartosz Sławecki
-
+Anegdoty z Pythona 3.15 — Bartosz Sławecki
 Różne ciekawostki z pracy nad najnowszą wersją języka Python (3.15) opowiedziane w przystępnym języku.
 
 Various interesting tidbits from working on the latest version of the Python language (3.15), told in plain language.
-
 ## Agenda
 
 Agenda:
