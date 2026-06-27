@@ -17,7 +17,7 @@ aliases:
 
 Wakacyjna edycja Python Łódź wraca! Tak jak rok temu, zamiast klasycznych prelekcji stawiamy na luźny, energetyczny format: **Lightning Talki + Open Spaces**. To Wy jesteście programem tego wieczoru - krótkie wystąpienia, masa rozmów i nasza społeczność w najlepszym wydaniu.
 
-{{< button href="#" target="_blank" >}}
+{{< button href="https://www.meetup.com/python-lodz/events/315445931" target="_blank" >}}
 ➡️ LINK DO ZAPISÓW
 {{< /button >}}
 </br></br>
