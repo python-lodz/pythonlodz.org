@@ -78,6 +78,7 @@ class Speaker(BaseModel):
     bio: str
     avatar: File
     social_links: list[SocialLink]
+    instagram: str | None = None  # IG handle without @, used by gk-sm tagging
 
 
 class Talk(BaseModel):
