@@ -82,7 +82,7 @@ def test_fill_hugo_command(runner, mock_config, mock_repository, tmp_path):
     logo_file.write_bytes(b"fake image data")
 
     with patch("pyldz.main.GoogleSheetsAPI"):
-        result = runner.invoke(app, ["--output-dir", str(output_dir)])
+        result = runner.invoke(app, ["generate", "--output-dir", str(output_dir)])
 
         assert result.exit_code == 0
         assert "Generating Hugo meetup files..." in result.stdout
@@ -114,7 +114,7 @@ def test_fill_hugo_command_with_default_output_dir(
             Path("page/content/spotkania/58/index.md")
         ]
 
-        result = runner.invoke(app)
+        result = runner.invoke(app, ["generate"])
 
         assert result.exit_code == 0
 

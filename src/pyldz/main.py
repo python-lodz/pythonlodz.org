@@ -8,10 +8,12 @@ from pyldz.config import AppConfig
 from pyldz.hugo_generator import HugoMeetupGenerator
 from pyldz.logging_config import setup_logging
 from pyldz.models import GoogleSheetsAPI, GoogleSheetsRepository, LocationRepository
+from pyldz.social.cli import social_app
 
 log = logging.getLogger(__name__)
 
 app = typer.Typer(name="pyldz")
+app.add_typer(social_app)
 
 
 @app.command()
