@@ -259,24 +259,6 @@ def test_generate_youtube_recording_talks(
     assert "Python Visualization" not in talks[0].description
 
 
-def test_generate_chatgpt_prompt(sample_meetup_two_talks, sample_speaker, tmp_path):
-    """Test ChatGPT prompt generation."""
-    generator = MeetupDescriptionGenerator(
-        sample_meetup_two_talks, [sample_speaker], tmp_path
-    )
-
-    prompt = generator.generate_chatgpt_prompt()
-
-    assert "Super Prompt do Generowania Postów" in prompt
-    assert "Meetup #59" in prompt
-    assert "24 wrze\u015bnia 2025" in prompt
-    assert "Instrukcje do Generowania Postów" in prompt
-    assert "Posty o Prelegentach" in prompt
-    assert "Posty o Sponsorach" in prompt
-    assert "Posty Informacyjne" in prompt
-    assert SocialMediaLinks.OFFICIAL_WEBSITE in prompt
-
-
 def test_generate_all(sample_meetup_two_talks, sample_speaker, tmp_path):
     """Test generating all descriptions."""
     generator = MeetupDescriptionGenerator(
@@ -290,7 +272,6 @@ def test_generate_all(sample_meetup_two_talks, sample_speaker, tmp_path):
     assert len(descriptions.meetup_com) > 0
     assert len(descriptions.youtube_live) > 0
     assert len(descriptions.youtube_recording_talks) == 2
-    assert len(descriptions.chatgpt_prompt) > 0
 
 
 def test_description_repository_save_all(
@@ -305,14 +286,15 @@ def test_description_repository_save_all(
     repo = DescriptionRepository(tmp_path)
     created_files = repo.save_all("59", descriptions)
 
-    # 3 main files + 2 talk files = 5 files
-    assert len(created_files) == 5
+    # 2 main files + 2 talk files = 4 files
+    assert len(created_files) == 4
     assert all(f.exists() for f in created_files)
 
     descriptions_dir = tmp_path / "59" / "descriptions"
     assert (descriptions_dir / "meetup-com.md").exists()
     assert (descriptions_dir / "youtube-live.md").exists()
-    assert (descriptions_dir / "chatgpt-prompt.md").exists()
+    # ChatGPT prompt zastąpiony przez system gk-sm (social/)
+    assert not (descriptions_dir / "chatgpt-prompt.md").exists()
     # Old zbiorczy recording removed — per-talk videos cover this need
     assert not (descriptions_dir / "youtube-recording.md").exists()
 

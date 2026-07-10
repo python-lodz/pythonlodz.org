@@ -58,10 +58,4 @@ class DescriptionRepository:
             log.info(f"Saved YouTube talk {i} description: {talk_file}")
             created_files.append(talk_file)
 
-        # Save ChatGPT prompt
-        chatgpt_prompt_file = descriptions_dir / "chatgpt-prompt.md"
-        chatgpt_prompt_file.write_text(descriptions.chatgpt_prompt, encoding="utf-8")
-        log.info(f"Saved ChatGPT prompt: {chatgpt_prompt_file}")
-        created_files.append(chatgpt_prompt_file)
-
         return created_files
