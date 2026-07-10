@@ -42,3 +42,9 @@ env/
 # OS files
 .DS_Store
 Thumbs.db
+
+# YouTube OAuth token cache (gk-sm)
+.yt_token.json
+
+# Social graphics tooling
+tools/social/node_modules/
