@@ -228,6 +228,19 @@ class _TalkRow(BaseModel):
             return None
         return v
 
+    @field_validator(
+        "first_name",
+        "last_name",
+        "bio",
+        "talk_title",
+        "talk_description",
+        "talk_title_en",
+        mode="after",
+    )
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v
+
     @field_validator("order", mode="before")
     @classmethod
     def convert_empty_order_to_none(cls, v) -> int | None:

@@ -163,67 +163,41 @@ class MeetupDescriptionGenerator:
                 return speaker
         return None
 
-    def _format_talk_titles(self, language: Language | None = None) -> str:
-        """Format talk titles as a natural-language list."""
-        lang = language or self.meetup.language
-        titles = [f'"{talk.title}"' for talk in self.meetup.talks]
-
-        if not titles:
-            return ""
-        if len(titles) == 1:
-            return titles[0]
-        if len(titles) == 2:
-            connector = " oraz " if lang == Language.PL else " and "
-            return f"{titles[0]}{connector}{titles[1]}"
-
-        connector = " oraz " if lang == Language.PL else ", and "
-        return f"{', '.join(titles[:-1])}{connector}{titles[-1]}"
-
     def _build_meetup_lead(self, language: Language | None = None) -> str:
-        """Build the opening paragraph for meetup.com."""
+        """Build the opening hook for meetup.com (single line, scannable preview)."""
+        lang = language or self.meetup.language
+
+        if self.meetup.is_to_be_announced:
+            return self._get_text(
+                "🐍 Kolejny wieczór Python Łódź — szczegóły agendy ogłosimy wkrótce.",
+                "🐍 Another Python Łódź evening — agenda details coming soon.",
+                lang,
+            )
+
+        if self.meetup.has_single_talk:
+            return self._get_text(
+                "🐍 Konkretna prelekcja techniczna i wieczór rozmów z ludźmi z Python Łódź.",
+                "🐍 One solid technical talk and an evening of conversations with the Python Łódź crowd.",
+                lang,
+            )
+
+        return self._get_text(
+            "🐍 Dwie konkretne prelekcje techniczne i wieczór rozmów z ludźmi z Python Łódź.",
+            "🐍 Two solid technical talks and an evening of conversations with the Python Łódź crowd.",
+            lang,
+        )
+
+    def _build_meetup_metadata_block(self, language: Language | None = None) -> str:
+        """Build the scannable date/location block under the hook."""
         lang = language or self.meetup.language
         date = self._format_date_long(lang)
         location_name = self.meetup.location_name(lang)
 
-        if self.meetup.is_to_be_announced:
-            return self._get_text(
-                (
-                    f"{date} o {self.meetup.time} spotykamy się w {location_name} "
-                    "na kolejnym wieczorze Python Łódź. "
-                    "Szczegóły agendy ogłosimy wkrótce, ale już teraz warto wpisać "
-                    "ten termin do kalendarza, jeśli chcesz połączyć konkretną wiedzę "
-                    "z rozmowami z lokalną społecznością."
-                ),
-                (
-                    f"On {date} at {self.meetup.time} we meet at {location_name} "
-                    "for another Python Łódź evening. "
-                    "We will share the agenda soon, but it is already worth saving the date "
-                    "if you want a mix of practical knowledge and conversations with the local community."
-                ),
-                lang,
-            )
-
-        talks_label = self._get_text(
-            "prezentacji" if self.meetup.has_single_talk else "prezentacjach",
-            "presentation" if self.meetup.has_single_talk else "presentations",
-            lang,
-        )
-        talk_titles = self._format_talk_titles(lang)
-
-        return self._get_text(
-            (
-                f"{date} o {self.meetup.time} spotykamy się w {location_name} "
-                f"na {talks_label}: {talk_titles}. "
-                "To dobry moment, żeby wpaść po konkretną wiedzę techniczną, a przy okazji "
-                "poznać ludzi z lokalnej społeczności Python Łódź."
-            ),
-            (
-                f"On {date} at {self.meetup.time} we meet at {location_name} "
-                f"for {talks_label}: {talk_titles}. "
-                "It is a good evening to drop by for practical technical knowledge "
-                "and to meet people from the local Python Łódź community."
-            ),
-            lang,
+        return "\n".join(
+            [
+                f"📅 {date}, {self.meetup.time}",
+                f"📍 {location_name}",
+            ]
         )
 
     def _build_meetup_evening_section(self, language: Language | None = None) -> str:
@@ -231,14 +205,12 @@ class MeetupDescriptionGenerator:
         lang = language or self.meetup.language
         return self._get_text(
             (
-                "Zaczynamy od prezentacji i pytań do prelegentów, w przerwie szybko "
-                "przechodzimy do rozmów w mniejszych grupach, a po części oficjalnej "
-                "wiele osób zostaje jeszcze na dalszą integrację i techniczne dyskusje."
+                "Prezentacje, Q&A, przerwa na rozmowy, networking po oficjalnej części. "
+                "Wiele osób zostaje dłużej na dyskusje techniczne."
             ),
             (
-                "We start with presentations and questions for the speakers, move naturally "
-                "into smaller conversations during the break, and after the official part "
-                "many people stay longer for more technical discussion and informal networking."
+                "Talks, Q&A, a break for conversations, and networking after the official part. "
+                "Many people stay longer for technical discussions."
             ),
             lang,
         )
@@ -248,33 +220,12 @@ class MeetupDescriptionGenerator:
         lang = language or self.meetup.language
         return self._get_text(
             (
-                "To spotkanie jest dla osób technicznych z Łodzi, które chcą poznać Python Łódź "
-                "od środka, ale też dla tych, którzy dopiero sprawdzają, czy taki meetup jest dla nich. "
-                "Jeśli interesuje Cię Python, narzędzia developerskie albo po prostu chcesz posłuchać "
-                "konkretnych prezentacji i pogadać z ludźmi z branży, odnajdziesz się tutaj bez problemu."
+                "Dla pythonistów, devów i wszystkich, których interesuje Python i narzędzia developerskie "
+                "— niezależnie od stażu. Pierwszy raz na meetupie? Też dobrze trafiłeś."
             ),
             (
-                "This meetup is for technical people in Łódź who want to get to know Python Łódź better, "
-                "and also for those who are still figuring out whether this kind of meetup is for them. "
-                "If you are interested in Python, developer tooling, or simply want to hear practical talks "
-                "and chat with people from the industry, you should feel comfortable here."
-            ),
-            lang,
-        )
-
-    def _build_meetup_talks_intro(self, language: Language | None = None) -> str:
-        """Build a short sentence opening the talks section."""
-        lang = language or self.meetup.language
-        return self._get_text(
-            (
-                "Tego wieczoru skupiamy się na praktycznych tematach, które powinny zainteresować "
-                "zarówno osoby pracujące z Pythonem na co dzień, jak i tych, którzy chcą zobaczyć "
-                "realne przykłady z projektów i codziennej pracy."
-            ),
-            (
-                "This evening focuses on practical topics that should appeal both to people "
-                "who use Python every day and to those who want to see real examples from projects "
-                "and day-to-day engineering work."
+                "For Pythonistas, devs, and anyone interested in Python and developer tooling "
+                "— regardless of experience. First time at a meetup? You're in the right place too."
             ),
             lang,
         )
@@ -283,7 +234,36 @@ class MeetupDescriptionGenerator:
         """Build agenda lines without an extra heading."""
         lang = language or self.meetup.language
         agenda = self._get_agenda(lang)
-        return "\n".join(f"{item.time} - {item.title}" for item in agenda)
+        return "\n".join(f"{item.time} — {item.title}" for item in agenda)
+
+    def _build_youtube_agenda_lines(self, language: Language | None = None) -> str:
+        """Build agenda for YouTube live with concrete talk titles in presentation slots.
+
+        Helps viewers know exactly when each talk starts. For TBA meetups,
+        falls back to the generic agenda.
+        """
+        lang = language or self.meetup.language
+        agenda = self._get_agenda(lang)
+
+        if self.meetup.is_to_be_announced:
+            return "\n".join(f"{item.time} — {item.title}" for item in agenda)
+
+        presentation_labels_pl = {"Prezentacja", "Prezentacja 1", "Prezentacja 2"}
+        presentation_labels_en = {"Presentation", "Presentation 1", "Presentation 2"}
+        presentation_labels = (
+            presentation_labels_en if lang == Language.EN else presentation_labels_pl
+        )
+
+        talk_iter = iter(self.meetup.talks)
+        lines = []
+        for item in agenda:
+            if item.title in presentation_labels:
+                talk = next(talk_iter, None)
+                title = talk.title if talk else item.title
+                lines.append(f"{item.time} — {title}")
+            else:
+                lines.append(f"{item.time} — {item.title}")
+        return "\n".join(lines)
 
     def _build_meetup_links_footer(self, language: Language | None = None) -> str:
         """Build a compact links footer for meetup.com."""
@@ -313,7 +293,11 @@ class MeetupDescriptionGenerator:
         return "\n".join(lines)
 
     def _build_talks_section(self, language: Language | None = None) -> str:
-        """Build talks section with descriptions."""
+        """Build talks section with descriptions.
+
+        Unified format across platforms: "Title — Speaker" with em-dash,
+        no numbering, single blank line between talks.
+        """
         lang = language or self.meetup.language
         if self.meetup.is_to_be_announced:
             return self._get_text(
@@ -322,237 +306,133 @@ class MeetupDescriptionGenerator:
                 lang,
             )
 
-        lines = []
-        for i, talk in enumerate(self.meetup.talks, 1):
+        blocks = []
+        for talk in self.meetup.talks:
             speaker = self._get_speaker_by_id(talk.speaker_id)
             speaker_name = speaker.name if speaker else "Unknown"
+            blocks.append(f"{talk.title} — {speaker_name}\n{talk.description}")
 
-            lines.append(f"{i}. {talk.title} - {speaker_name}")
-            lines.append("")
-            lines.append(talk.description)
-            lines.append("")
-
-        return "\n".join(lines)
-
-    def _build_sponsors_section(self, language: Language | None = None) -> str:
-        """Build sponsors section."""
-        if not self.meetup.sponsors:
-            return ""
-
-        lang = language or self.meetup.language
-        sponsors_label = self._get_text("Sponsorzy:", "Sponsors:", lang)
-        lines = [sponsors_label]
-        for sponsor_id in self.meetup.sponsors:
-            sponsor = self.sponsor_repo.get_sponsor(sponsor_id)
-            if sponsor:
-                lines.append(f"- {sponsor.get('name', sponsor_id)}")
-
-        return "\n".join(lines)
+        return "\n\n".join(blocks)
 
     def generate_meetup_com(self) -> str:
-        """Generate description for meetup.com."""
+        """Generate description for meetup.com.
+
+        Structure: hook → metadata (date/location) → talks → audience → evening
+        → agenda → links footer. Section headers are followed directly by content
+        (single \\n), blocks are separated by blank lines (double \\n).
+        """
         lang = self.meetup.language
-        parts = [
+
+        sections = [
             self._build_meetup_lead(lang),
-            self._get_text(
-                "🗓️ Jak wygląda ten wieczór?",
-                "🗓️ What does the evening look like?",
-                lang,
-            ),
-            self._build_meetup_evening_section(lang),
-            self._get_text(
-                "👋 Dla kogo jest to spotkanie?",
-                "👋 Who is this meetup for?",
-                lang,
-            ),
-            self._build_meetup_audience_section(lang),
-            self._get_text("🎤 Prelekcje", "🎤 Presentations", lang),
-        ]
-
-        if not self.meetup.is_to_be_announced:
-            parts.append(self._build_meetup_talks_intro(lang))
-
-        parts.extend(
-            [
+            self._build_meetup_metadata_block(lang),
+            self._section(
+                self._get_text("🎤 Prelekcje", "🎤 Presentations", lang),
                 self._build_talks_section(lang),
+            ),
+            self._section(
+                self._get_text("👋 Dla kogo", "👋 Who is this for", lang),
+                self._build_meetup_audience_section(lang),
+            ),
+            self._section(
+                self._get_text(
+                    "🗓️ Jak to wygląda",
+                    "🗓️ How the evening looks",
+                    lang,
+                ),
+                self._build_meetup_evening_section(lang),
+            ),
+            self._section(
                 self._get_text("🕒 Agenda", "🕒 Agenda", lang),
                 self._build_meetup_agenda_lines(lang),
+            ),
+            self._section(
                 self._get_text(
-                    "🔗 Gdzie nas znaleźć?",
-                    "🔗 Where to find us?",
+                    "🔗 Python Łódź w sieci",
+                    "🔗 Python Łódź online",
                     lang,
                 ),
                 self._build_meetup_links_footer(lang),
-            ]
-        )
+                blank_line_after_header=True,
+            ),
+        ]
 
-        return "\n\n".join(parts)
+        return "\n\n".join(sections)
+
+    @staticmethod
+    def _section(header: str, body: str, blank_line_after_header: bool = False) -> str:
+        """Compose a section: header directly above body, separated by blank line if requested."""
+        separator = "\n\n" if blank_line_after_header else "\n"
+        return f"{header}{separator}{body}"
 
     def generate_youtube_live(self) -> str:
-        """Generate description for YouTube live stream."""
+        """Generate description for YouTube live stream.
+
+        Structure: live-tagged title → hook → metadata → talks → agenda → links.
+        Agenda includes concrete talk titles so viewers know when to tune in.
+        """
         lang = self.meetup.language
-        location_name = self.meetup.location_name(lang)
+        title_label = f"🔴 LIVE — Python Łódź #{self.meetup.meetup_id}"
 
-        if lang == Language.EN:
-            parts = [
-                f"🔴 LIVE: Python Łódź Meetup #{self.meetup.meetup_id}",
-                "",
-                f"📅 {self._format_date_long()}",
-                f"🕕 {self.meetup.time}",
-                f"📍 {location_name}",
-                "",
-                "Agenda:",
-                "",
-                self._build_agenda_section(lang),
-                "",
-                "Links to our community:",
-                f"➡️ Official website: {SocialMediaLinks.OFFICIAL_WEBSITE}",
-                f"➡️ Meetup: {SocialMediaLinks.MEETUP}",
-                f"➡️ Discord: {SocialMediaLinks.DISCORD}",
-                f"➡️ Facebook: {SocialMediaLinks.FACEBOOK}",
-                f"➡️ LinkedIn: {SocialMediaLinks.LINKEDIN}",
-                f"➡️ Instagram: {SocialMediaLinks.INSTAGRAM}",
-                f"➡️ YouTube: {SocialMediaLinks.YOUTUBE}",
-                "",
-                "Presentations:",
-                "",
+        sections = [
+            title_label,
+            self._build_meetup_lead(lang),
+            self._build_meetup_metadata_block(lang),
+            self._section(
+                self._get_text("🎤 Prelekcje", "🎤 Presentations", lang),
                 self._build_talks_section(lang),
-            ]
-        else:
-            parts = [
-                f"🔴 LIVE: Python Łódź Meetup #{self.meetup.meetup_id}",
-                "",
-                f"📅 {self._format_date_long()}",
-                f"🕕 {self.meetup.time}",
-                f"📍 {location_name}",
-                "",
-                "Agenda:",
-                "",
-                self._build_agenda_section(lang),
-                "",
-                "Linki do społeczności:",
-                f"➡️ Oficjalna strona: {SocialMediaLinks.OFFICIAL_WEBSITE}",
-                f"➡️ Meetup: {SocialMediaLinks.MEETUP}",
-                f"➡️ Discord: {SocialMediaLinks.DISCORD}",
-                f"➡️ Facebook: {SocialMediaLinks.FACEBOOK}",
-                f"➡️ LinkedIn: {SocialMediaLinks.LINKEDIN}",
-                f"➡️ Instagram: {SocialMediaLinks.INSTAGRAM}",
-                f"➡️ YouTube: {SocialMediaLinks.YOUTUBE}",
-                "",
-                "Prezentacje:",
-                "",
-                self._build_talks_section(lang),
-            ]
+            ),
+            self._section(
+                self._get_text("🕒 Agenda", "🕒 Agenda", lang),
+                self._build_youtube_agenda_lines(lang),
+            ),
+            self._section(
+                self._get_text(
+                    "🔗 Python Łódź w sieci",
+                    "🔗 Python Łódź online",
+                    lang,
+                ),
+                self._build_meetup_links_footer(lang),
+                blank_line_after_header=True,
+            ),
+        ]
 
-        return "\n".join(parts)
-
-    def generate_youtube_recording(self) -> str:
-        """Generate description for YouTube recording."""
-        lang = self.meetup.language
-        location_name = self.meetup.location_name(lang)
-
-        if lang == Language.EN:
-            parts = [
-                f"Python Łódź Meetup #{self.meetup.meetup_id}",
-                "",
-                f"📅 {self._format_date_long()}",
-                f"🕕 {self.meetup.time}",
-                f"📍 {location_name}",
-                "",
-                "Agenda:",
-                "",
-                self._build_agenda_section(lang),
-                "",
-                "Links to our community:",
-                f"➡️ Official website: {SocialMediaLinks.OFFICIAL_WEBSITE}",
-                f"➡️ Meetup: {SocialMediaLinks.MEETUP}",
-                f"➡️ Discord: {SocialMediaLinks.DISCORD}",
-                f"➡️ Facebook: {SocialMediaLinks.FACEBOOK}",
-                f"➡️ LinkedIn: {SocialMediaLinks.LINKEDIN}",
-                f"➡️ Instagram: {SocialMediaLinks.INSTAGRAM}",
-                f"➡️ YouTube: {SocialMediaLinks.YOUTUBE}",
-                "",
-                "Presentations:",
-                "",
-                self._build_talks_section(lang),
-            ]
-        else:
-            parts = [
-                f"Python Łódź Meetup #{self.meetup.meetup_id}",
-                "",
-                f"📅 {self._format_date_long()}",
-                f"🕕 {self.meetup.time}",
-                f"📍 {location_name}",
-                "",
-                "Agenda:",
-                "",
-                self._build_agenda_section(lang),
-                "",
-                "Linki do społeczności:",
-                f"➡️ Oficjalna strona: {SocialMediaLinks.OFFICIAL_WEBSITE}",
-                f"➡️ Meetup: {SocialMediaLinks.MEETUP}",
-                f"➡️ Discord: {SocialMediaLinks.DISCORD}",
-                f"➡️ Facebook: {SocialMediaLinks.FACEBOOK}",
-                f"➡️ LinkedIn: {SocialMediaLinks.LINKEDIN}",
-                f"➡️ Instagram: {SocialMediaLinks.INSTAGRAM}",
-                f"➡️ YouTube: {SocialMediaLinks.YOUTUBE}",
-                "",
-                "Prezentacje:",
-                "",
-                self._build_talks_section(lang),
-            ]
-
-        return "\n".join(parts)
+        return "\n\n".join(sections)
 
     def generate_youtube_recording_talks(self) -> list[YouTubeRecordingDescription]:
-        """Generate descriptions for each talk recording."""
+        """Generate descriptions for each talk recording (one video per talk).
+
+        Each per-talk description: title with talk name → speaker line → talk
+        description → metadata → links. No agenda, no list of other talks.
+        """
         if self.meetup.is_to_be_announced:
             return []
 
         lang = self.meetup.language
+        speaker_label = self._get_text("Prelegent", "Speaker", lang)
         descriptions = []
+
         for talk in self.meetup.talks:
             speaker = self._get_speaker_by_id(talk.speaker_id)
             speaker_name = speaker.name if speaker else "Unknown"
 
-            title = f"Python Łódź #{self.meetup.meetup_id} - {talk.title}"
+            title = f"Python Łódź #{self.meetup.meetup_id} — {talk.title}"
 
-            if lang == Language.EN:
-                parts = [
-                    self._build_agenda_section(lang),
-                    "",
-                    "Links to our community:",
-                    f"➡️ Official website: {SocialMediaLinks.OFFICIAL_WEBSITE}",
-                    f"➡️ Meetup: {SocialMediaLinks.MEETUP}",
-                    f"➡️ Discord: {SocialMediaLinks.DISCORD}",
-                    f"➡️ Facebook: {SocialMediaLinks.FACEBOOK}",
-                    f"➡️ LinkedIn: {SocialMediaLinks.LINKEDIN}",
-                    f"➡️ Instagram: {SocialMediaLinks.INSTAGRAM}",
-                    f"➡️ YouTube: {SocialMediaLinks.YOUTUBE}",
-                    "",
-                    f"Speaker: {speaker_name}",
-                    "",
-                    talk.description,
-                ]
-            else:
-                parts = [
-                    self._build_agenda_section(lang),
-                    "",
-                    "Linki do społeczności:",
-                    f"➡️ Oficjalna strona: {SocialMediaLinks.OFFICIAL_WEBSITE}",
-                    f"➡️ Meetup: {SocialMediaLinks.MEETUP}",
-                    f"➡️ Discord: {SocialMediaLinks.DISCORD}",
-                    f"➡️ Facebook: {SocialMediaLinks.FACEBOOK}",
-                    f"➡️ LinkedIn: {SocialMediaLinks.LINKEDIN}",
-                    f"➡️ Instagram: {SocialMediaLinks.INSTAGRAM}",
-                    f"➡️ YouTube: {SocialMediaLinks.YOUTUBE}",
-                    "",
-                    f"Prelegent: {speaker_name}",
-                    "",
-                    talk.description,
-                ]
-
-            description = "\n".join(parts)
+            sections = [
+                f"🎤 {speaker_label}: {speaker_name}",
+                talk.description,
+                self._build_meetup_metadata_block(lang),
+                self._section(
+                    self._get_text(
+                        "🔗 Python Łódź w sieci",
+                        "🔗 Python Łódź online",
+                        lang,
+                    ),
+                    self._build_meetup_links_footer(lang),
+                    blank_line_after_header=True,
+                ),
+            ]
+            description = "\n\n".join(sections)
             descriptions.append(
                 YouTubeRecordingDescription(title=title, description=description)
             )
@@ -821,7 +701,6 @@ class MeetupDescriptionGenerator:
             meetup_id=self.meetup.meetup_id,
             meetup_com=self.generate_meetup_com(),
             youtube_live=self.generate_youtube_live(),
-            youtube_recording=self.generate_youtube_recording(),
             youtube_recording_talks=self.generate_youtube_recording_talks(),
             chatgpt_prompt=self.generate_chatgpt_prompt(),
         )

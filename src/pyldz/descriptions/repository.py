@@ -48,14 +48,6 @@ class DescriptionRepository:
         log.info(f"Saved YouTube live description: {youtube_live_file}")
         created_files.append(youtube_live_file)
 
-        # Save YouTube recording description
-        youtube_recording_file = descriptions_dir / "youtube-recording.md"
-        youtube_recording_file.write_text(
-            descriptions.youtube_recording, encoding="utf-8"
-        )
-        log.info(f"Saved YouTube recording description: {youtube_recording_file}")
-        created_files.append(youtube_recording_file)
-
         # Save YouTube recording descriptions for each talk
         talks_dir = descriptions_dir / "youtube-talks"
         talks_dir.mkdir(parents=True, exist_ok=True)
