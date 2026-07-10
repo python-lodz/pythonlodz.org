@@ -66,6 +66,14 @@ Preset: P1|P2|P3 · Kanały: FB, IG, Discord (automat) + LinkedIn (wklejka) · Y
 ## Decyzje i odchyłki
 ```
 
+## Feedback loop (obowiązuje)
+
+- **Na starcie fazy**: przeczytaj `tasks/feedback.md` i zastosuj wpisy ze statusem
+  `nowy` dotyczące tej fazy, zanim cokolwiek wyprodukujesz.
+- **Po każdej korekcie usera** (zrobiłeś coś nie tak, jak chciał): dopisz wpis
+  `[data] | gk-sm-1-brief | co poszło nie tak | jak ma być | nowy`.
+- Wpisy do skilli promuje wyłącznie gk-sm-retro — nie edytuj SKILL.md w trakcie fazy.
+
 ## Definition of Done
 
 - `social/brief.md` istnieje: preset, etapy z celami, kanały, linki.

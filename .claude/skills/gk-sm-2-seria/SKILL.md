@@ -58,6 +58,14 @@ Id posta: `[a-z0-9][a-z0-9-]*` (np. `save-the-date`, `lightning-talk`,
 - Po akceptacji sprawdź parsowalność:
   `uv run python -c "from pathlib import Path; from pyldz.social.posts_md import parse_posts_md; print(list(parse_posts_md(Path('page/content/spotkania/<nr>/social/posts.md').read_text())))"`
 
+## Feedback loop (obowiązuje)
+
+- **Na starcie fazy**: przeczytaj `tasks/feedback.md` i zastosuj wpisy ze statusem
+  `nowy` dotyczące tej fazy, zanim cokolwiek wyprodukujesz.
+- **Po każdej korekcie usera** (zrobiłeś coś nie tak, jak chciał): dopisz wpis
+  `[data] | gk-sm-2-seria | co poszło nie tak | jak ma być | nowy`.
+- Wpisy do skilli promuje wyłącznie gk-sm-retro — nie edytuj SKILL.md w trakcie fazy.
+
 ## Definition of Done
 
 - `social/posts.md` w poprawnym formacie (parser zwraca wszystkie posty).

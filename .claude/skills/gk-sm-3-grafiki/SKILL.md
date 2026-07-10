@@ -53,6 +53,14 @@ Wyjście: `social/images/final/*.png`. Następny: **gk-sm-4-harmonogram**.
   = id posta z posts.md + format). Odrzucone + źródłowe job JSON →
   `social/images/archive/`.
 
+## Feedback loop (obowiązuje)
+
+- **Na starcie fazy**: przeczytaj `tasks/feedback.md` i zastosuj wpisy ze statusem
+  `nowy` dotyczące tej fazy, zanim cokolwiek wyprodukujesz.
+- **Po każdej korekcie usera** (zrobiłeś coś nie tak, jak chciał): dopisz wpis
+  `[data] | gk-sm-3-grafiki | co poszło nie tak | jak ma być | nowy`.
+- Wpisy do skilli promuje wyłącznie gk-sm-retro — nie edytuj SKILL.md w trakcie fazy.
+
 ## Definition of Done
 
 - Każdy post z serii ma grafikę w `social/images/final/` (min. 4:5),

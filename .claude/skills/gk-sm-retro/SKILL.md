@@ -27,14 +27,18 @@ opiera się na obserwacjach usera i przebiegu procesu.
    tekstów (call-to-action, explainery LT/OS, struktury postów), szablony
    grafik warte powtórzenia (wskaż plik w `tools/social/templates/`),
    działające sekwencje etapów. Klocek = plik z treścią + notka kiedy używać.
-4. **Lekcje** → `tasks/lessons.md` w formacie repo:
-   `[data] | co poszło nie tak | reguła na przyszłość`.
-5. Jeśli lekcja zmienia proces — zaproponuj edycję odpowiedniego
-   `gk-sm-*/SKILL.md` + podbij wersję w `.claude/skills/gk-sm-manifest.md`
-   (semver + wpis w changelogu).
+4. **Przegląd feedbacku** → `tasks/feedback.md`: przejdź wszystkie wpisy `nowy`.
+   Powtarzające się lub potwierdzone przez usera → wpisz na stałe do odpowiedniego
+   `gk-sm-*/SKILL.md`, podbij wersję w `.claude/skills/gk-sm-manifest.md`
+   (semver + wpis w CHANGELOG) i zmień status wpisu na `wdrożone`.
+   Jednorazowe/nieaktualne → status `odrzucone`. Każdą promocję pokaż userowi
+   do akceptacji przed edycją skilla.
+5. **Lekcje** → `tasks/lessons.md` w formacie repo:
+   `[data] | co poszło nie tak | reguła na przyszłość` (rzeczy spoza procesu gk-sm).
 
 ## Definition of Done
 
 - Klocki wielokrotnego użytku w `blocks/social/` (min. te wskazane przez usera).
+- `tasks/feedback.md` przejrzany: zero wpisów `nowy` (wszystkie `wdrożone` albo
+  `odrzucone`); wdrożone mają odzwierciedlenie w SKILL.md + manifeście.
 - Lekcje dopisane do `tasks/lessons.md`.
-- Ewentualne poprawki skilli zaproponowane (z podbiciem wersji w manifeście).

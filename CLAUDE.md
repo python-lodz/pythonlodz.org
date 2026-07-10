@@ -18,3 +18,9 @@ Publikacją steruje `.github/workflows/social-publish.yaml`
 (cron 9:00/17:00 Europe/Warsaw) przez `uv run pyldz social publish`.
 Silnik: `src/pyldz/social/`. Wersje skilli: `.claude/skills/gk-sm-manifest.md`.
 Konfiguracja sekretów: `docs/social/setup.md`.
+
+**Feedback loop (obowiązuje w każdej fazie gk-sm):** na starcie fazy przeczytaj
+`tasks/feedback.md` i zastosuj wpisy `nowy`; po każdej korekcie usera dopisz tam
+wpis `[data] | skill | co poszło nie tak | jak ma być | nowy`. Promocja wpisów
+do SKILL.md odbywa się wyłącznie w gk-sm-retro (za akceptacją usera, z podbiciem
+wersji w manifeście).

@@ -67,6 +67,14 @@ Zasady: IG wymaga `image`; `linkedin` w `channels` = tylko do pakietu wklejki
 (publisher pomija); posty przeszłe bez wpisu w `status.json` publikują się
 w najbliższym runie (świadomie — tak działa nadrabianie).
 
+## Feedback loop (obowiązuje)
+
+- **Na starcie fazy**: przeczytaj `tasks/feedback.md` i zastosuj wpisy ze statusem
+  `nowy` dotyczące tej fazy, zanim cokolwiek wyprodukujesz.
+- **Po każdej korekcie usera** (zrobiłeś coś nie tak, jak chciał): dopisz wpis
+  `[data] | gk-sm-4-harmonogram | co poszło nie tak | jak ma być | nowy`.
+- Wpisy do skilli promuje wyłącznie gk-sm-retro — nie edytuj SKILL.md w trakcie fazy.
+
 ## Definition of Done
 
 - `schedule.yaml` waliduje się (`uv run pyldz social dry-run --meetup <nr>`
