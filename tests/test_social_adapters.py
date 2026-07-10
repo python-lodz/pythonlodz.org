@@ -30,9 +30,11 @@ def posted(monkeypatch):
 
     import pyldz.social.adapters.discord as discord_module
     import pyldz.social.adapters.facebook as facebook_module
+    import pyldz.social.adapters.instagram as instagram_module
 
     monkeypatch.setattr(discord_module.requests, "post", fake_post)
     monkeypatch.setattr(facebook_module.requests, "post", fake_post)
+    monkeypatch.setattr(instagram_module.requests, "post", fake_post)
     return calls
 
 
@@ -84,3 +86,29 @@ def test_facebook_text_only_uses_feed_endpoint(posted):
     adapter.publish("sam tekst")
     assert posted[0]["url"] == "https://graph.facebook.com/v23.0/111/feed"
     assert posted[0]["data"] == {"message": "sam tekst", "access_token": "token"}
+
+
+def test_instagram_container_then_publish(posted):
+    from pyldz.social.adapters.instagram import InstagramAdapter
+
+    adapter = InstagramAdapter("222", "token")
+    media_id = adapter.publish(
+        "caption", image_url="https://pythonlodz.org/g.png", user_tags=["speaker1"]
+    )
+    assert media_id == "msg-2"
+    assert posted[0]["url"] == "https://graph.facebook.com/v23.0/222/media"
+    assert posted[0]["data"]["image_url"] == "https://pythonlodz.org/g.png"
+    assert posted[0]["data"]["caption"] == "caption"
+    assert json.loads(posted[0]["data"]["user_tags"]) == [
+        {"username": "speaker1", "x": 0.5, "y": 0.8}
+    ]
+    assert posted[1]["url"] == "https://graph.facebook.com/v23.0/222/media_publish"
+    assert posted[1]["data"] == {"creation_id": "msg-1", "access_token": "token"}
+
+
+def test_instagram_without_tags_omits_user_tags(posted):
+    from pyldz.social.adapters.instagram import InstagramAdapter
+
+    adapter = InstagramAdapter("222", "token")
+    adapter.publish("caption", image_url="https://pythonlodz.org/g.png")
+    assert "user_tags" not in posted[0]["data"]
