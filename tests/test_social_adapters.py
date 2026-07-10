@@ -29,8 +29,10 @@ def posted(monkeypatch):
         return FakeResponse({"id": f"msg-{len(calls)}", "post_id": f"fb-{len(calls)}"})
 
     import pyldz.social.adapters.discord as discord_module
+    import pyldz.social.adapters.facebook as facebook_module
 
     monkeypatch.setattr(discord_module.requests, "post", fake_post)
+    monkeypatch.setattr(facebook_module.requests, "post", fake_post)
     return calls
 
 
@@ -59,3 +61,26 @@ def test_discord_attaches_image_to_first_chunk(posted, tmp_path: Path):
     adapter.publish("cześć", image_path=image)
     assert "files" in posted[0]
     assert json.loads(posted[0]["data"]["payload_json"]) == {"content": "cześć"}
+
+
+def test_facebook_photo_post_uses_photos_endpoint(posted):
+    from pyldz.social.adapters.facebook import FacebookAdapter
+
+    adapter = FacebookAdapter("111", "token")
+    post_id = adapter.publish("tekst", image_url="https://pythonlodz.org/g.png")
+    assert post_id == "fb-1"
+    assert posted[0]["url"] == "https://graph.facebook.com/v23.0/111/photos"
+    assert posted[0]["data"] == {
+        "url": "https://pythonlodz.org/g.png",
+        "message": "tekst",
+        "access_token": "token",
+    }
+
+
+def test_facebook_text_only_uses_feed_endpoint(posted):
+    from pyldz.social.adapters.facebook import FacebookAdapter
+
+    adapter = FacebookAdapter("111", "token")
+    adapter.publish("sam tekst")
+    assert posted[0]["url"] == "https://graph.facebook.com/v23.0/111/feed"
+    assert posted[0]["data"] == {"message": "sam tekst", "access_token": "token"}
