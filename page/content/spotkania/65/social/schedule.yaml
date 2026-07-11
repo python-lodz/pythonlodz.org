@@ -1,0 +1,82 @@
+meetup: "65"
+timezone: Europe/Warsaw
+posts:
+  # 1 · save-the-date · pon 13.07
+  - post: save-the-date
+    channels: [facebook, linkedin]
+    scheduled: 2026-07-13 09:00:00
+    image: images/final/save-the-date-4x5.png
+  - post: save-the-date
+    channels: [discord, instagram]
+    scheduled: 2026-07-13 17:00:00
+    image: images/final/save-the-date-4x5.png
+
+  # 2 · lightning-talk · śr 15.07
+  - post: lightning-talk
+    channels: [facebook, linkedin]
+    scheduled: 2026-07-15 09:00:00
+    image: images/final/lightning-talk-4x5.png
+  - post: lightning-talk
+    channels: [discord, instagram]
+    scheduled: 2026-07-15 17:00:00
+    image: images/final/lightning-talk-4x5.png
+
+  # 3 · zero-spiny · pt 17.07
+  - post: zero-spiny
+    channels: [facebook, linkedin]
+    scheduled: 2026-07-17 09:00:00
+    image: images/final/zero-spiny-4x5.png
+  - post: zero-spiny
+    channels: [discord, instagram]
+    scheduled: 2026-07-17 17:00:00
+    image: images/final/zero-spiny-4x5.png
+
+  # 4 · open-spaces · wt 21.07
+  - post: open-spaces
+    channels: [facebook, linkedin]
+    scheduled: 2026-07-21 09:00:00
+    image: images/final/open-spaces-4x5.png
+  - post: open-spaces
+    channels: [discord, instagram]
+    scheduled: 2026-07-21 17:00:00
+    image: images/final/open-spaces-4x5.png
+
+  # 5 · lt-zgloszenia-update · czw 23.07
+  - post: lt-zgloszenia-update
+    channels: [facebook, linkedin]
+    scheduled: 2026-07-23 09:00:00
+    image: images/final/lt-zgloszenia-update-4x5.png
+  - post: lt-zgloszenia-update
+    channels: [discord, instagram]
+    scheduled: 2026-07-23 17:00:00
+    image: images/final/lt-zgloszenia-update-4x5.png
+
+  # 6 · reminder-agenda · pt 24.07
+  - post: reminder-agenda
+    channels: [facebook, linkedin]
+    scheduled: 2026-07-24 09:00:00
+    image: images/final/reminder-agenda-4x5.png
+  - post: reminder-agenda
+    channels: [discord, instagram]
+    scheduled: 2026-07-24 17:00:00
+    image: images/final/reminder-agenda-4x5.png
+
+  # 7 · last-call · pon 27.07
+  - post: last-call
+    channels: [facebook, linkedin]
+    scheduled: 2026-07-27 09:00:00
+    image: images/final/last-call-4x5.png
+  - post: last-call
+    channels: [discord, instagram]
+    scheduled: 2026-07-27 17:00:00
+    image: images/final/last-call-4x5.png
+
+  # 8 · dzien-spotkania · śr 29.07 (dzień meetupu, 18:00)
+  - post: dzien-spotkania
+    channels: [facebook, linkedin]
+    scheduled: 2026-07-29 09:00:00
+    image: images/final/dzien-spotkania-4x5.png
+  - post: dzien-spotkania
+    channels: [discord, instagram]
+    scheduled: 2026-07-29 17:00:00
+    image: images/final/dzien-spotkania-4x5.png
