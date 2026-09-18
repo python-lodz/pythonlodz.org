@@ -1,0 +1,100 @@
+{
+  "published": {
+    "save-the-date:facebook": {
+      "at": "2026-07-13T09:00:00+02:00",
+      "external_id": null
+    },
+    "save-the-date:discord": {
+      "at": "2026-07-13T17:00:00+02:00",
+      "external_id": null
+    },
+    "save-the-date:instagram": {
+      "at": "2026-07-13T17:00:00+02:00",
+      "external_id": null
+    },
+    "lightning-talk:facebook": {
+      "at": "2026-07-15T09:00:00+02:00",
+      "external_id": null
+    },
+    "lightning-talk:discord": {
+      "at": "2026-07-15T17:00:00+02:00",
+      "external_id": null
+    },
+    "lightning-talk:instagram": {
+      "at": "2026-07-15T17:00:00+02:00",
+      "external_id": null
+    },
+    "zero-spiny:facebook": {
+      "at": "2026-07-17T09:00:00+02:00",
+      "external_id": null
+    },
+    "zero-spiny:discord": {
+      "at": "2026-07-17T17:00:00+02:00",
+      "external_id": null
+    },
+    "zero-spiny:instagram": {
+      "at": "2026-07-17T17:00:00+02:00",
+      "external_id": null
+    },
+    "open-spaces:facebook": {
+      "at": "2026-07-21T09:00:00+02:00",
+      "external_id": null
+    },
+    "open-spaces:discord": {
+      "at": "2026-07-21T17:00:00+02:00",
+      "external_id": null
+    },
+    "open-spaces:instagram": {
+      "at": "2026-07-21T17:00:00+02:00",
+      "external_id": null
+    },
+    "lt-zgloszenia-update:facebook": {
+      "at": "2026-07-23T09:00:00+02:00",
+      "external_id": null
+    },
+    "lt-zgloszenia-update:discord": {
+      "at": "2026-07-23T17:00:00+02:00",
+      "external_id": null
+    },
+    "lt-zgloszenia-update:instagram": {
+      "at": "2026-07-23T17:00:00+02:00",
+      "external_id": null
+    },
+    "reminder-agenda:facebook": {
+      "at": "2026-07-24T09:00:00+02:00",
+      "external_id": null
+    },
+    "reminder-agenda:discord": {
+      "at": "2026-07-24T17:00:00+02:00",
+      "external_id": null
+    },
+    "reminder-agenda:instagram": {
+      "at": "2026-07-24T17:00:00+02:00",
+      "external_id": null
+    },
+    "last-call:facebook": {
+      "at": "2026-07-27T09:00:00+02:00",
+      "external_id": null
+    },
+    "last-call:discord": {
+      "at": "2026-07-27T17:00:00+02:00",
+      "external_id": null
+    },
+    "last-call:instagram": {
+      "at": "2026-07-27T17:00:00+02:00",
+      "external_id": null
+    },
+    "dzien-spotkania:facebook": {
+      "at": "2026-07-29T09:00:00+02:00",
+      "external_id": null
+    },
+    "dzien-spotkania:discord": {
+      "at": "2026-07-29T17:00:00+02:00",
+      "external_id": null
+    },
+    "dzien-spotkania:instagram": {
+      "at": "2026-07-29T17:00:00+02:00",
+      "external_id": null
+    }
+  }
+}
