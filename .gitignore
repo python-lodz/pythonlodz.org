@@ -48,3 +48,10 @@ Thumbs.db
 
 # Social graphics tooling
 tools/social/node_modules/
+
+# Superpowers local execution artifacts (specs are committed)
+docs/superpowers/plans/
+docs/superpowers/reviews/
+
+# Rejected graphic variants / intermediate renders (gk-sm-3)
+page/content/spotkania/*/social/images/archive/

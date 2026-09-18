@@ -120,7 +120,7 @@ A jeśli wolisz zdecydować na miejscu - też można! Zgłoszenia przyjmujemy te
 Wieczór Lightning Talków i Open Spaces - wpadaj posłuchać, wystąpić albo pogadać przy wakacyjnym luzie. Do zobaczenia na miejscu! 🐍☀️
 
 Nie możesz dotrzeć? Złap nas online:
-▶️ [LINK DO LIVE]
+▶️ https://www.youtube.com/live/mpfLr7t7mTM
 ➡️ Szczegóły: https://pythonlodz.org/spotkania/65/
 
 ### override: discord
@@ -129,4 +129,4 @@ Nie możesz dotrzeć? Złap nas online:
 
 Lightning Talki + Open Spaces. Bierzcie dobry humor i tematy do pogadania. Do zobaczenia na miejscu! 🐍☀️
 Nie dasz rady wpaść? Złap nas na live:
-▶️ [LINK DO LIVE]
+▶️ https://www.youtube.com/live/mpfLr7t7mTM

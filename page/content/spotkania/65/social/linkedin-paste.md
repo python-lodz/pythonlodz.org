@@ -13,7 +13,7 @@ LinkedIn (można planować do ~3 mies. w przód). Dla każdego posta:
 > ⚠️ Przed publikacją sprawdź dwa miejsca:
 > - **lt-zgloszenia-update (23.07):** liczba „3 osoby" — zaktualizuj do realnej
 >   liczby zgłoszeń albo zamień na „pierwsze zgłoszenia".
-> - **dzien-spotkania (29.07):** podmień `[LINK DO LIVE]` na link transmisji YT.
+> - **dzien-spotkania (29.07):** link transmisji YT już wstawiony (mpfLr7t7mTM).
 
 ---
 
@@ -141,7 +141,7 @@ A jeśli wolisz zdecydować na miejscu - też można! Zgłoszenia przyjmujemy te
 
 ## 8 · dzien-spotkania — 29.07 (śr) 9:00
 **Grafika:** `images/final/dzien-spotkania-4x5.png`
-> ⚠️ Podmień `[LINK DO LIVE]` na link transmisji YT przed publikacją.
+> ✅ Link transmisji YT już wstawiony: https://www.youtube.com/live/mpfLr7t7mTM
 
 🎉 Dziś się widzimy! Python Łódź · Summer Edition
 
@@ -151,5 +151,5 @@ A jeśli wolisz zdecydować na miejscu - też można! Zgłoszenia przyjmujemy te
 Wieczór Lightning Talków i Open Spaces - wpadaj posłuchać, wystąpić albo pogadać przy wakacyjnym luzie. Do zobaczenia na miejscu! 🐍☀️
 
 Nie możesz dotrzeć? Złap nas online:
-▶️ [LINK DO LIVE]
+▶️ https://www.youtube.com/live/mpfLr7t7mTM
 ➡️ Szczegóły: https://pythonlodz.org/spotkania/65/

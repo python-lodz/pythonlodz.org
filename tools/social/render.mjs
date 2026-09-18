@@ -41,6 +41,7 @@ const replacements = {
   BACKGROUND: job.background
     ? b64(path.resolve(ROOT, job.background), "image/jpeg")
     : "",
+  CUTOUT: job.cutout ? b64(path.resolve(ROOT, job.cutout), "image/png") : "",
 };
 
 function fill(html, extra) {
