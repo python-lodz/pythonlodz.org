@@ -200,10 +200,9 @@ def test_meetup_formatted_date_polish():
         language=Language.PL,
     )
 
-    formatted = meetup.formatted_date
-    assert "CZWARTEK" in formatted
-    assert "27.06.2024" in formatted
-    assert "18:00" in formatted
+    # Nazwa dnia i lokalizacja PL/EN przeniosły się do
+    # MeetupImageGenerator._resolve_date_parts; model zwraca surowy stempel.
+    assert meetup.formatted_date(Language.PL) == "2024.06.27 18:00"
 
 
 def test_meetup_formatted_date_english():
@@ -218,9 +217,5 @@ def test_meetup_formatted_date_english():
         language=Language.EN,
     )
 
-    formatted = meetup.formatted_date
-    assert "THURSDAY" in formatted
-    assert "June" in formatted
-    assert "27" in formatted
-    assert "2024" in formatted
-    assert "18:00" in formatted
+    # Stempel jest niezależny od języka — patrz test powyżej.
+    assert meetup.formatted_date(Language.EN) == "2024.06.27 18:00"

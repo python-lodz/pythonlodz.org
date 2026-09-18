@@ -12,7 +12,6 @@ from pyldz.models import (
     LocationRepository,
     MeetupStatus,
     MultiLanguage,
-    Speaker,
     _MeetupRow,
     _TalkRow,
 )
@@ -298,7 +297,9 @@ def test_complete_data_flow_single_meetup(
     assert meetup.title == "Meetup #58"
     assert meetup.date == date(2025, 5, 28)
     assert meetup.time == "18:00"
-    assert meetup.location_name == 'IndieBI, Piotrkowska 157A, budynek Hi Piotrkowska"'
+    assert (
+        meetup.location_name(Language.PL) == "IndieBI, Piotrkowska 157A, Hi Piotrkowska"
+    )
     # featured field removed in current model
     assert meetup.status == MeetupStatus.PUBLISHED
     assert (
@@ -689,7 +690,7 @@ def test_model_integration_and_validation():
     assert meetup.talks[0].speaker_id == speaker.id
     assert meetup.talks[0].language == Language.EN
     assert speaker.name == "John Doe"
-    assert meetup.location_name == "Test Venue EN"
+    assert meetup.location_name(Language.EN) == "Test Venue EN"
 
 
 def test_speaker_with_missing_photo_url_uses_fallback():

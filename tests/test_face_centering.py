@@ -62,9 +62,7 @@ def test_detect_and_center_square_multiple_faces(monkeypatch, sample_rect_image)
 
 
 class TestImageGeneratorFaceCentering:
-    def test_get_speaker_avatar_uses_centered_square_and_caching(
-        self, tmp_path, monkeypatch
-    ):
+    def test_avatar_uses_centered_square_and_caching(self, tmp_path, monkeypatch):
         # Prepare assets dir with minimal structure
         assets_dir = tmp_path / "assets"
         (assets_dir / "images" / "avatars").mkdir(parents=True)
@@ -105,7 +103,7 @@ class TestImageGeneratorFaceCentering:
 
         monkeypatch.setattr(face_centering, "detect_and_center_square", fake_center)
 
-        result = generator._get_speaker_avatar(speaker, (300, 300))
+        result = generator._avatar(speaker, (300, 300))
 
         assert result is not None
         assert result.size == (300, 300)
@@ -114,9 +112,7 @@ class TestImageGeneratorFaceCentering:
         processed_cache = generator.cache_dir / f"{speaker.id}.png"
         assert processed_cache.exists()
 
-    def test_get_speaker_avatar_no_face_detected_uses_fallback(
-        self, tmp_path, monkeypatch
-    ):
+    def test_avatar_no_face_detected_uses_fallback(self, tmp_path, monkeypatch):
         """Test that when face detection fails, avatar is used without face centering."""
         # Prepare assets dir with minimal structure
         assets_dir = tmp_path / "assets"
@@ -160,7 +156,7 @@ class TestImageGeneratorFaceCentering:
         )
 
         # Should not raise, should return the avatar without face centering
-        result = generator._get_speaker_avatar(speaker, (300, 300))
+        result = generator._avatar(speaker, (300, 300))
 
         assert result is not None
         assert result.size == (300, 300)

@@ -182,7 +182,9 @@ def test_generate_meetup_com(sample_meetup_two_talks, sample_speaker, tmp_path):
     assert "Learn clean architecture." in description
     assert SocialMediaLinks.DISCORD in description
     assert "Cześć!" not in description
-    assert "Podczas spotkania odbędą się niezwykle ciekawe prezentacje:" not in description
+    assert (
+        "Podczas spotkania odbędą się niezwykle ciekawe prezentacje:" not in description
+    )
     assert "Zaproś innych!" not in description
     # Talks unified format: no numbering, em-dash separator
     assert "Clean Architecture — John Doe" in description
@@ -197,7 +199,9 @@ def test_generate_meetup_com_to_be_announced(
     sample_meetup_tba, sample_speaker, tmp_path
 ):
     """Test meetup.com description generation for a meetup without talks."""
-    generator = MeetupDescriptionGenerator(sample_meetup_tba, [sample_speaker], tmp_path)
+    generator = MeetupDescriptionGenerator(
+        sample_meetup_tba, [sample_speaker], tmp_path
+    )
 
     description = generator.generate_meetup_com()
 
@@ -231,7 +235,9 @@ def test_generate_youtube_live(sample_meetup_two_talks, sample_speaker, tmp_path
 
 def test_youtube_live_agenda_tba_meetup(sample_meetup_tba, sample_speaker, tmp_path):
     """TBA meetups keep generic agenda slots in YouTube live description."""
-    generator = MeetupDescriptionGenerator(sample_meetup_tba, [sample_speaker], tmp_path)
+    generator = MeetupDescriptionGenerator(
+        sample_meetup_tba, [sample_speaker], tmp_path
+    )
 
     description = generator.generate_youtube_live()
 

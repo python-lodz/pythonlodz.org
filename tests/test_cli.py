@@ -1,12 +1,22 @@
 from datetime import date
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+from PIL import Image
 from typer.testing import CliRunner
 
 from pyldz.main import app
-from pyldz.models import Language, Meetup, MeetupStatus, MultiLanguage, Talk
+from pyldz.models import (
+    File,
+    Language,
+    Meetup,
+    MeetupStatus,
+    MultiLanguage,
+    Speaker,
+    Talk,
+)
 
 
 @pytest.fixture
@@ -27,7 +37,20 @@ def mock_config(tmp_path):
 
 
 @pytest.fixture
-def mock_repository():
+def sample_speaker():
+    buf = BytesIO()
+    Image.new("RGBA", (300, 300), (255, 0, 0, 255)).save(buf, format="PNG")
+    return Speaker(
+        id="john-doe",
+        name="John Doe",
+        bio="A developer",
+        avatar=File(name="avatar.png", content=buf.getvalue()),
+        social_links=[],
+    )
+
+
+@pytest.fixture
+def mock_repository(sample_speaker):
     with patch("pyldz.main.GoogleSheetsRepository") as mock_repo_class:
         repo_instance = Mock()
         mock_repo_class.return_value = repo_instance
@@ -60,6 +83,11 @@ def mock_repository():
         )
 
         repo_instance.get_all_enabled_meetups.return_value = [sample_meetup]
+        # HugoMeetupGenerator.generate_all_meetups sięga też po prelegentów
+        # (get_speakers_for_meetup + _fetch_talks_data) — bez tych stubów
+        # goły Mock trafia do create_meetup_file i wywala się na iteracji.
+        repo_instance._fetch_talks_data.return_value = []
+        repo_instance.get_speakers_for_meetup.return_value = [sample_speaker]
         yield repo_instance
 
 

@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from PIL import Image
 
-from pyldz.image_generator import ImageGenerationError, MeetupImageGenerator
+from pyldz.image_generator import MeetupImageGenerator
 from pyldz.models import File, Language, Meetup, MultiLanguage, Speaker, Talk
 
 
@@ -169,8 +169,8 @@ def test_generate_featured_image_solo(
     generator = MeetupImageGenerator(temp_assets_dir)
     output_path = tmp_path / "featured.png"
 
-    with patch.object(generator, "_get_speaker_avatar") as mock_get_avatar:
-        mock_get_avatar.return_value = Image.new("RGBA", (300, 300), (255, 0, 0, 255))
+    with patch.object(generator, "_avatar") as mock_avatar:
+        mock_avatar.return_value = Image.new("RGBA", (300, 300), (255, 0, 0, 255))
 
         result = generator.generate_featured_image(
             sample_meetup, [sample_speaker], output_path
@@ -186,8 +186,8 @@ def test_generate_featured_image_duo(
     generator = MeetupImageGenerator(temp_assets_dir)
     output_path = tmp_path / "featured.png"
 
-    with patch.object(generator, "_get_speaker_avatar") as mock_get_avatar:
-        mock_get_avatar.return_value = Image.new("RGBA", (240, 240), (255, 0, 0, 255))
+    with patch.object(generator, "_avatar") as mock_avatar:
+        mock_avatar.return_value = Image.new("RGBA", (240, 240), (255, 0, 0, 255))
 
         result = generator.generate_featured_image(
             sample_duo_meetup, sample_speakers, output_path
@@ -195,61 +195,6 @@ def test_generate_featured_image_duo(
 
     assert result == output_path
     assert output_path.exists()
-
-
-def test_find_speaker_by_id(temp_assets_dir, sample_speakers):
-    """Test finding speaker by ID."""
-    generator = MeetupImageGenerator(temp_assets_dir)
-
-    speaker = generator._find_speaker_by_id(sample_speakers, "john-doe")
-    assert speaker is not None
-    assert speaker.name == "John Doe"
-
-    speaker = generator._find_speaker_by_id(sample_speakers, "nonexistent")
-    assert speaker is None
-
-
-def test_get_speaker_avatar_download(temp_assets_dir):
-    generator = MeetupImageGenerator(temp_assets_dir)
-
-    # Create a test image in memory
-    test_image = Image.new("RGB", (100, 100), (255, 0, 0))
-    from io import BytesIO
-
-    img_bytes = BytesIO()
-    test_image.save(img_bytes, format="PNG")
-    img_bytes.seek(0)
-
-    speaker = Speaker(
-        id="john-doe",
-        name="John Doe",
-        bio="A developer",
-        avatar=File(name="avatar.png", content=img_bytes.getvalue()),
-        social_links=[],
-    )
-
-    avatar = generator._get_speaker_avatar(speaker, (50, 50))
-
-    assert avatar is not None
-    assert avatar.size == (50, 50)
-
-    # Check that avatar was cached
-    cache_file = generator.cache_dir / f"{speaker.id}.png"
-    assert cache_file.exists()
-
-
-def test_get_speaker_avatar_from_cache(temp_assets_dir, sample_speaker):
-    generator = MeetupImageGenerator(temp_assets_dir)
-
-    # Create cached avatar
-    cache_file = generator.cache_dir / f"{sample_speaker.id}.png"
-    test_image = Image.new("RGBA", (100, 100), (0, 255, 0, 255))
-    test_image.save(cache_file)
-
-    avatar = generator._get_speaker_avatar(sample_speaker, (50, 50))
-
-    assert avatar is not None
-    assert avatar.size == (50, 50)
 
 
 def test_apply_circular_mask(temp_assets_dir):
@@ -274,59 +219,61 @@ def test_apply_circular_mask_missing_mask_file(temp_assets_dir):
     assert masked.mode == "RGBA"
 
 
-def test_create_circular_mask(temp_assets_dir):
-    generator = MeetupImageGenerator(temp_assets_dir)
-
-    test_image = Image.new("RGBA", (100, 100), (255, 0, 0, 255))
-    masked = generator._create_circular_mask(test_image)
-
-    assert masked.size == test_image.size
-    assert masked.mode == "RGBA"
-
-
-def test_generate_featured_image_polish_language(temp_assets_dir, sample_meetup):
+def test_generate_featured_image_polish_language(
+    temp_assets_dir, sample_meetup, sample_speaker
+):
     """Test generating featured image in Polish language."""
     generator = MeetupImageGenerator(temp_assets_dir)
     output_path = temp_assets_dir / "featured-pl.png"
 
     # Generate image in Polish
-    result = generator.generate_featured_image(
-        sample_meetup, [], output_path, Language.PL
-    )
+    with patch.object(generator, "_avatar") as mock_avatar:
+        mock_avatar.return_value = Image.new("RGBA", (300, 300), (255, 0, 0, 255))
+        result = generator.generate_featured_image(
+            sample_meetup, [sample_speaker], output_path, Language.PL
+        )
 
     assert result == output_path
     assert output_path.exists()
     assert output_path.suffix == ".png"
 
 
-def test_generate_featured_image_english_language(temp_assets_dir, sample_meetup):
+def test_generate_featured_image_english_language(
+    temp_assets_dir, sample_meetup, sample_speaker
+):
     """Test generating featured image in English language."""
     generator = MeetupImageGenerator(temp_assets_dir)
     output_path = temp_assets_dir / "featured-en.png"
 
     # Generate image in English
-    result = generator.generate_featured_image(
-        sample_meetup, [], output_path, Language.EN
-    )
+    with patch.object(generator, "_avatar") as mock_avatar:
+        mock_avatar.return_value = Image.new("RGBA", (300, 300), (255, 0, 0, 255))
+        result = generator.generate_featured_image(
+            sample_meetup, [sample_speaker], output_path, Language.EN
+        )
 
     assert result == output_path
     assert output_path.exists()
     assert output_path.suffix == ".png"
 
 
-def test_generate_featured_image_both_languages(temp_assets_dir, sample_meetup):
+def test_generate_featured_image_both_languages(
+    temp_assets_dir, sample_meetup, sample_speaker
+):
     """Test generating featured images in both languages."""
     generator = MeetupImageGenerator(temp_assets_dir)
     pl_path = temp_assets_dir / "featured-pl.png"
     en_path = temp_assets_dir / "featured-en.png"
 
     # Generate both versions
-    pl_result = generator.generate_featured_image(
-        sample_meetup, [], pl_path, Language.PL
-    )
-    en_result = generator.generate_featured_image(
-        sample_meetup, [], en_path, Language.EN
-    )
+    with patch.object(generator, "_avatar") as mock_avatar:
+        mock_avatar.return_value = Image.new("RGBA", (300, 300), (255, 0, 0, 255))
+        pl_result = generator.generate_featured_image(
+            sample_meetup, [sample_speaker], pl_path, Language.PL
+        )
+        en_result = generator.generate_featured_image(
+            sample_meetup, [sample_speaker], en_path, Language.EN
+        )
 
     assert pl_result.exists()
     assert en_result.exists()
