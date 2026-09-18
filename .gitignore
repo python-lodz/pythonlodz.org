@@ -55,3 +55,9 @@ docs/superpowers/reviews/
 
 # Rejected graphic variants / intermediate renders (gk-sm-3)
 page/content/spotkania/*/social/images/archive/
+
+# WSL "downloaded from the internet" metadata
+*:Zone.Identifier
+
+# Local task tracking (Claude workflow)
+tasks/
