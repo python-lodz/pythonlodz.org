@@ -164,3 +164,46 @@ class TestImageGeneratorFaceCentering:
         # Processed avatar should exist
         processed_cache = generator.cache_dir / f"{speaker.id}.png"
         assert processed_cache.exists()
+
+
+def test_dominant_face_wins_over_small_false_positives(monkeypatch):
+    """Detektor łapie wzory z tła i ubrania jako twarze — są o rząd wielkości mniejsze.
+
+    Realny przypadek: kadr z YouTube'a, gdzie leniwce na koszulce dostały wyższą
+    pewność (0.95–0.99) niż prawdziwa twarz (0.91). Decyduje wielkość, nie pewność.
+    """
+    from pyldz import face_centering
+
+    image = Image.new("RGB", (3041, 1719), (120, 180, 200))
+    monkeypatch.setattr(
+        face_centering,
+        "_deepface_extract_faces",
+        lambda img: [
+            _fake_face({"x": 1033, "y": 329, "w": 748, "h": 748}),
+            _fake_face({"x": 1002, "y": 1194, "w": 52, "h": 52}),
+            _fake_face({"x": 1910, "y": 1649, "w": 56, "h": 56}),
+        ],
+    )
+
+    squared = face_centering.detect_and_center_square(image)
+
+    assert squared.width == squared.height
+    # Kadr musi obejmować środek prawdziwej twarzy (1407, 703), a nie całe zdjęcie.
+    assert squared.width < image.width
+    assert squared.width <= 748 * 2
+
+
+def test_two_comparable_faces_still_refuse_to_guess(monkeypatch, sample_rect_image):
+    from pyldz import face_centering
+
+    monkeypatch.setattr(
+        face_centering,
+        "_deepface_extract_faces",
+        lambda img: [
+            _fake_face({"x": 10, "y": 10, "w": 40, "h": 40}),
+            _fake_face({"x": 120, "y": 10, "w": 30, "h": 30}),
+        ],
+    )
+
+    with pytest.raises(face_centering.FaceDetectionError, match="More than one face"):
+        face_centering.detect_and_center_square(sample_rect_image)

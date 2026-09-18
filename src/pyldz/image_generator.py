@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import math
 from datetime import date as date_cls
@@ -6,11 +7,14 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal, Optional, Tuple
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps, PngImagePlugin
 
-from pyldz.models import Language, Meetup, Speaker
+from pyldz.models import NO_PHOTO_NAME, Language, Meetup, Speaker
 
 log = logging.getLogger(__name__)
+
+# Odcisk pliku źródłowego zapisywany w metadanych avatara — patrz _cached_avatar.
+AVATAR_SOURCE_KEY = "pyldz-source-sha256"
 
 
 class ImageGenerationError(Exception):
@@ -1066,27 +1070,19 @@ class MeetupImageGenerator:
 
     def _avatar(self, speaker: Speaker, size: tuple[int, int]) -> Image.Image:
         try:
-            raw = self.cache_dir / f"{speaker.id}_original.png"
             processed = self.cache_dir / f"{speaker.id}.png"
-            if processed.exists():
-                img = Image.open(processed).convert("RGBA")
-            else:
-                if raw.exists():
-                    original = Image.open(raw).convert("RGBA")
-                else:
-                    original = Image.open(BytesIO(speaker.avatar.content)).convert(
-                        "RGBA"
-                    )
-                    original.save(raw, "PNG")
-                from pyldz import face_centering
+            # Zgłoszenie bez zdjęcia nie ma czym wyprzeć kadru, który już mamy.
+            submitted = (
+                None if speaker.avatar.name == NO_PHOTO_NAME else speaker.avatar.content
+            )
+            fingerprint = (
+                hashlib.sha256(submitted).hexdigest() if submitted is not None else None
+            )
 
-                try:
-                    centered = face_centering.detect_and_center_square(original)
-                    centered.save(processed, "PNG")
-                    img = centered
-                except face_centering.FaceDetectionError:
-                    original.save(processed, "PNG")
-                    img = original
+            img = self._cached_avatar(processed, fingerprint)
+            if img is None:
+                img = self._process_avatar(speaker, processed, fingerprint)
+
             return ImageOps.fit(
                 img,
                 size,
@@ -1096,6 +1092,55 @@ class MeetupImageGenerator:
             raise ImageGenerationError(
                 f"Failed to load avatar for {speaker.name}: {e}"
             ) from e
+
+    def _cached_avatar(
+        self, processed: Path, fingerprint: str | None
+    ) -> Image.Image | None:
+        """Cache jest ważny tylko dla tego samego pliku źródłowego.
+
+        Nowe zdjęcie wgrane w formularzu ma inny odcisk niż ten zapisany w metadanych
+        avatara, więc wygrywa. Kadry sprzed wprowadzenia odcisku nie mają go wcale —
+        też są odświeżane. Brak zdjęcia w zgłoszeniu (fingerprint=None) zostawia cache
+        w spokoju.
+        """
+        if not processed.exists():
+            return None
+
+        img = Image.open(processed)
+        if fingerprint is not None and img.info.get(AVATAR_SOURCE_KEY) != fingerprint:
+            return None
+
+        return img.convert("RGBA")
+
+    def _process_avatar(
+        self, speaker: Speaker, processed: Path, fingerprint: str | None
+    ) -> Image.Image:
+        raw = self.cache_dir / f"{speaker.id}_original.png"
+
+        if fingerprint is None and raw.exists():
+            original = Image.open(raw).convert("RGBA")
+        else:
+            original = Image.open(BytesIO(speaker.avatar.content)).convert("RGBA")
+            self._save_avatar(original, raw, fingerprint)
+
+        from pyldz import face_centering
+
+        try:
+            img = face_centering.detect_and_center_square(original)
+        except face_centering.FaceDetectionError:
+            img = original
+
+        self._save_avatar(img, processed, fingerprint)
+        return img
+
+    def _save_avatar(
+        self, img: Image.Image, path: Path, fingerprint: str | None
+    ) -> None:
+        metadata = None
+        if fingerprint is not None:
+            metadata = PngImagePlugin.PngInfo()
+            metadata.add_text(AVATAR_SOURCE_KEY, fingerprint)
+        img.save(path, "PNG", pnginfo=metadata)
 
     def _apply_circular_mask(self, img: Image.Image) -> Image.Image:
         if not self.avatar_mask.exists():

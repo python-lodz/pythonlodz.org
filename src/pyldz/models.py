@@ -19,13 +19,15 @@ from pyldz.config import GoogleSheetsConfig
 
 log = logging.getLogger(__name__)
 
+NO_PHOTO_NAME = "no_photo.png"
+
 FALLBACK_PHOTO_PATH = (
     Path(__file__).parent.parent.parent
     / "page"
     / "assets"
     / "images"
     / "avatars"
-    / "no_photo.png"
+    / NO_PHOTO_NAME
 )
 
 
@@ -75,7 +77,7 @@ class File(BaseModel):
     @classmethod
     def no_photo(cls) -> Self:
         return cls(
-            name="no_photo.png",
+            name=NO_PHOTO_NAME,
             content=FALLBACK_PHOTO_PATH.read_bytes(),
         )
 
