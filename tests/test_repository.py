@@ -138,7 +138,7 @@ def repository(fake_meetups, fake_talks):
     return GoogleSheetsRepository(api, location_repo)
 
 
-def test_repository_fetch_meetups_data(repository: GoogleSheetsRepository):
+def test_repositoryfetch_meetup_rows(repository: GoogleSheetsRepository):
     result: list[Meetup] = repository.get_all_enabled_meetups()
     assert result == [
         Meetup(
@@ -231,7 +231,7 @@ def test_get_meetup_by_id_nonexistent_meetup(repository: GoogleSheetsRepository)
 
 def test_get_speakers_for_meetup_with_speakers(repository: GoogleSheetsRepository):
     # We need to get the talks data first to pass to the method
-    talks_data = repository._fetch_talks_data()
+    talks_data = repository.fetch_talk_rows()
     result = repository.get_speakers_for_meetup("58", talks_data)
 
     expected = [
@@ -264,13 +264,13 @@ def test_get_speakers_for_meetup_with_speakers(repository: GoogleSheetsRepositor
 
 
 def test_get_speakers_for_meetup_no_speakers(repository: GoogleSheetsRepository):
-    talks_data = repository._fetch_talks_data()
+    talks_data = repository.fetch_talk_rows()
     result = repository.get_speakers_for_meetup("999", talks_data)
     assert result == []
 
 
 def test_get_speakers_for_meetup_different_meetup(repository: GoogleSheetsRepository):
-    talks_data = repository._fetch_talks_data()
+    talks_data = repository.fetch_talk_rows()
     result = repository.get_speakers_for_meetup("60", talks_data)
 
     expected = [

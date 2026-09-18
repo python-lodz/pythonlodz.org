@@ -5,10 +5,25 @@ from pathlib import Path
 from pyldz.descriptions.generators import MeetupDescriptionGenerator
 from pyldz.descriptions.repository import DescriptionRepository
 from pyldz.image_generator import MeetupImageGenerator
-from pyldz.models import GoogleSheetsRepository, Language, Meetup, Speaker
+from pyldz.models import (
+    GoogleSheetsRepository,
+    Language,
+    Meetup,
+    MeetupType,
+    Speaker,
+)
 from pyldz.speaker_yaml import write_speakers_yaml
 
 log = logging.getLogger(__name__)
+
+MANUAL_PAGE_HINT = (
+    "to edycja letnia — jej index.md pisze się ręcznie "
+    "(wzór #59/#65, patrz tasks/lessons.md); generator jej nie tyka"
+)
+
+
+class MeetupGenerationError(Exception):
+    """Generacja nie ma sensu dla tego spotkania — komunikat jest dla człowieka."""
 
 
 class HugoMeetupGenerator:
@@ -287,10 +302,16 @@ class HugoMeetupGenerator:
         self, meetup_id: str, repository: GoogleSheetsRepository
     ) -> Path:
         meetup = repository.get_meetup_by_id(meetup_id)
-        assert meetup is not None
+        if meetup is None:
+            raise MeetupGenerationError(
+                f"Spotkania #{meetup_id} nie ma w arkuszu (zakładka meetups) "
+                f"albo ma enabled=FALSE."
+            )
+        if meetup.type is MeetupType.SUMMER_EDITION:
+            raise MeetupGenerationError(f"Spotkanie #{meetup_id}: {MANUAL_PAGE_HINT}.")
 
         speakers = repository.get_speakers_for_meetup(
-            meetup.meetup_id, repository._fetch_talks_data()
+            meetup.meetup_id, repository.fetch_talk_rows()
         )
         write_speakers_yaml(speakers, self.output_dir)
         return self.create_meetup_file(meetup, speakers)
@@ -300,8 +321,12 @@ class HugoMeetupGenerator:
         generated_files = []
 
         for meetup in meetups:
+            if meetup.type is MeetupType.SUMMER_EDITION:
+                log.warning(f"Pomijam #{meetup.meetup_id}: {MANUAL_PAGE_HINT}")
+                continue
+
             speakers = repository.get_speakers_for_meetup(
-                meetup.meetup_id, repository._fetch_talks_data()
+                meetup.meetup_id, repository.fetch_talk_rows()
             )
             file_path = self.create_meetup_file(meetup, speakers)
             generated_files.append(file_path)

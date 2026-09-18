@@ -10,10 +10,10 @@ from pyldz.models import (
     GoogleSheetsRepository,
     Language,
     LocationRepository,
+    MeetupRow,
     MeetupStatus,
     MultiLanguage,
-    _MeetupRow,
-    _TalkRow,
+    TalkRow,
 )
 
 
@@ -174,8 +174,8 @@ def complete_mock_data():
     return meetups_data, talks_data
 
 
-@patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
-@patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
+@patch("pyldz.models.GoogleSheetsRepository.fetch_meetup_rows")
+@patch("pyldz.models.GoogleSheetsRepository.fetch_talk_rows")
 def test_complete_data_flow_single_meetup(
     mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
 ):
@@ -184,7 +184,7 @@ def test_complete_data_flow_single_meetup(
 
     # Setup mocks - return typed rows expected by repository
     mock_fetch_meetups.return_value = [
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "58",
                 "type": "talks",
@@ -199,7 +199,7 @@ def test_complete_data_flow_single_meetup(
                 "language": "PL",
             }
         ),
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "59",
                 "type": "talks",
@@ -214,7 +214,7 @@ def test_complete_data_flow_single_meetup(
                 "language": "PL",
             }
         ),
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "60",
                 "type": "talks",
@@ -232,7 +232,7 @@ def test_complete_data_flow_single_meetup(
     ]
 
     mock_fetch_talks.return_value = [
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "58",
                 "first_name": "Grzegorz",
@@ -250,7 +250,7 @@ def test_complete_data_flow_single_meetup(
                 "other_urls": "",
             }
         ),
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "58",
                 "first_name": "Sebastian",
@@ -268,7 +268,7 @@ def test_complete_data_flow_single_meetup(
                 "other_urls": "",
             }
         ),
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "59",
                 "first_name": "Łukasz",
@@ -342,8 +342,8 @@ def test_complete_data_flow_single_meetup(
     assert meetup.talk_count == 2
 
 
-@patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
-@patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
+@patch("pyldz.models.GoogleSheetsRepository.fetch_meetup_rows")
+@patch("pyldz.models.GoogleSheetsRepository.fetch_talk_rows")
 def test_complete_data_flow_all_enabled_meetups(
     mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
 ):
@@ -351,7 +351,7 @@ def test_complete_data_flow_all_enabled_meetups(
 
     # Setup mocks - return typed rows expected by repository
     mock_fetch_meetups.return_value = [
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "58",
                 "type": "talks",
@@ -366,7 +366,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "language": "PL",
             }
         ),
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "59",
                 "type": "talks",
@@ -381,7 +381,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "language": "PL",
             }
         ),
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "60",
                 "type": "talks",
@@ -399,7 +399,7 @@ def test_complete_data_flow_all_enabled_meetups(
     ]
 
     mock_fetch_talks.return_value = [
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "58",
                 "first_name": "Grzegorz",
@@ -417,7 +417,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "other_urls": "",
             }
         ),
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "58",
                 "first_name": "Sebastian",
@@ -435,7 +435,7 @@ def test_complete_data_flow_all_enabled_meetups(
                 "other_urls": "",
             }
         ),
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "59",
                 "first_name": "Łukasz",
@@ -471,8 +471,8 @@ def test_complete_data_flow_all_enabled_meetups(
     assert meetup_59.talks[0].speaker_id == "lukasz-langa"
 
 
-@patch("pyldz.models.GoogleSheetsRepository._fetch_meetups_data")
-@patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data")
+@patch("pyldz.models.GoogleSheetsRepository.fetch_meetup_rows")
+@patch("pyldz.models.GoogleSheetsRepository.fetch_talk_rows")
 def test_disabled_meetup_filtering(
     mock_fetch_talks, mock_fetch_meetups, repository, complete_mock_data
 ):
@@ -482,7 +482,7 @@ def test_disabled_meetup_filtering(
     # Setup mocks - convert raw data to dict format
     # Setup mocks - return typed rows expected by repository
     mock_fetch_meetups.return_value = [
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "58",
                 "type": "talks",
@@ -497,7 +497,7 @@ def test_disabled_meetup_filtering(
                 "language": "PL",
             }
         ),
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "59",
                 "type": "talks",
@@ -512,7 +512,7 @@ def test_disabled_meetup_filtering(
                 "language": "PL",
             }
         ),
-        _MeetupRow.model_validate(
+        MeetupRow.model_validate(
             {
                 "meetup_id": "60",
                 "type": "talks",
@@ -530,7 +530,7 @@ def test_disabled_meetup_filtering(
     ]
 
     mock_fetch_talks.return_value = [
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "58",
                 "first_name": "Grzegorz",
@@ -548,7 +548,7 @@ def test_disabled_meetup_filtering(
                 "other_urls": "",
             }
         ),
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "58",
                 "first_name": "Sebastian",
@@ -566,7 +566,7 @@ def test_disabled_meetup_filtering(
                 "other_urls": "https://twitter.com/sebabuczynski",
             }
         ),
-        _TalkRow.model_validate(
+        TalkRow.model_validate(
             {
                 "meetup_id": "59",
                 "first_name": "Łukasz",
@@ -621,8 +621,8 @@ def test_error_handling_and_resilience(mock_build, repository):
 
     # Test empty sheet handling by patching repository fetchers to return empty
     with patch(
-        "pyldz.models.GoogleSheetsRepository._fetch_meetups_data", return_value=[]
-    ), patch("pyldz.models.GoogleSheetsRepository._fetch_talks_data", return_value=[]):
+        "pyldz.models.GoogleSheetsRepository.fetch_meetup_rows", return_value=[]
+    ), patch("pyldz.models.GoogleSheetsRepository.fetch_talk_rows", return_value=[]):
         meetups = repository.get_all_enabled_meetups()
         assert meetups == []
 
@@ -647,7 +647,7 @@ def test_model_integration_and_validation():
         "language": "EN",
     }
 
-    talk_row = _TalkRow.model_validate(talk_data)
+    talk_row = TalkRow.model_validate(talk_data)
 
     # Avoid network by stubbing downloader
     from pyldz.models import File
@@ -681,7 +681,7 @@ def test_model_integration_and_validation():
         name=MultiLanguage(pl="Test Venue PL", en="Test Venue EN")
     )
 
-    meetup_row = _MeetupRow.model_validate(meetup_data)
+    meetup_row = MeetupRow.model_validate(meetup_data)
     meetup = meetup_row.to_meetup([talk], location_repo)
 
     # Verify integration
@@ -711,7 +711,7 @@ def test_speaker_with_missing_photo_url_uses_fallback():
         "other_urls": "",
     }
 
-    talk_row_none = _TalkRow.model_validate(talk_data_none)
+    talk_row_none = TalkRow.model_validate(talk_data_none)
     speaker_none = talk_row_none.to_speaker(
         lambda _: File(name="avatar.png", content=b"")
     )
@@ -737,7 +737,7 @@ def test_speaker_with_missing_photo_url_uses_fallback():
         "other_urls": "",
     }
 
-    talk_row_empty = _TalkRow.model_validate(talk_data_empty)
+    talk_row_empty = TalkRow.model_validate(talk_data_empty)
     speaker_empty = talk_row_empty.to_speaker(
         lambda _: File(name="avatar.png", content=b"")
     )

@@ -69,9 +69,7 @@ class Publisher:
         self.adapters = adapters
         self.site_base_url = site_base_url
 
-    def plan(
-        self, meetup_id: str, now: datetime.datetime
-    ) -> list[PlannedPublication]:
+    def plan(self, meetup_id: str, now: datetime.datetime) -> list[PlannedPublication]:
         posts = self.repository.load_posts(meetup_id)
         schedule = self.repository.load_schedule(meetup_id)
         status = self.repository.load_status(meetup_id)

@@ -7,13 +7,18 @@ gk-sm-4-harmonogram → (po meetupie) gk-sm-retro.
 
 | Skill | Wersja |
 |---|---|
-| gk-sm-1-brief | 1.1.0 |
+| gk-sm-1-brief | 1.2.0 |
 | gk-sm-2-seria | 1.1.0 |
 | gk-sm-3-grafiki | 1.1.0 |
 | gk-sm-4-harmonogram | 1.1.0 |
 | gk-sm-retro | 1.1.0 |
 
 ## CHANGELOG
+
+### 1.2.0 — 2026-09-18 (gk-sm-1-brief)
+- Krok 0: dane spotkania pochodzą z arkusza (`uv run pyldz show <nr> --json`), a brak
+  strony spotkania rozwiązuje `uv run pyldz generate -m <nr>`. User jest pytany tylko
+  o pozycje z listy braków — koniec pytań o datę, format i prelegentów.
 
 ### 1.1.0 — 2026-07-10
 - Feedback loop: każda faza czyta `tasks/feedback.md` na starcie i dopisuje wpis

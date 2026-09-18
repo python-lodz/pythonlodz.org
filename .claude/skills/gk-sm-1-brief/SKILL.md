@@ -13,9 +13,10 @@ description: >
 Ustala CO promujemy, JAKIM presetem i na JAKICH kanałach — zanim powstanie
 jakikolwiek tekst. Wyjście to krótki dokument decyzji, nie treści.
 
-**Kontrakt z procesem:** faza 1. Wejście: `page/content/spotkania/<nr>/index.md`
-(+ `page/data/speakers/*.yaml`, dane sponsora). Wyjście:
-`page/content/spotkania/<nr>/social/brief.md`. Następny: **gk-sm-2-seria**.
+**Kontrakt z procesem:** faza 1. Wejście: arkusz spotkań (`uv run pyldz show <nr>`)
+oraz `page/content/spotkania/<nr>/index.md` (+ `page/data/speakers/*.yaml`, dane
+sponsora). Wyjście: `page/content/spotkania/<nr>/social/brief.md`.
+Następny: **gk-sm-2-seria**.
 
 ## Presety
 
@@ -30,6 +31,12 @@ jakikolwiek tekst. Wyjście to krótki dokument decyzji, nie treści.
 
 ## Proces
 
+0. **Dane spotkania bierz z arkusza, nie od usera.** `uv run pyldz show <nr> --json`
+   zwraca datę, godzinę, miejsce, język, sponsorów, prelekcje z opisami oraz listę
+   braków. Jeśli `page/content/spotkania/<nr>/index.md` nie istnieje, odpal
+   `uv run pyldz generate -m <nr>` i zacommituj wynik — dopiero wtedy jest co
+   promować. Usera pytaj **wyłącznie** o pozycje z sekcji „Braki" (typowo: link do
+   zapisów meetup.com) i o decyzje promocyjne; nigdy o datę, format ani prelegentów.
 1. Przeczytaj `index.md` spotkania: format, data, godzina, miejsce,
    prelekcje/LT, sponsor. Edycja letnia ⇒ P2 (patrz `tasks/lessons.md`).
 2. Zbierz prelegentów: `page/data/speakers/<id>.yaml` — w tym pole

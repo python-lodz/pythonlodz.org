@@ -1,7 +1,13 @@
 from pathlib import Path
 from typing import Iterable
 
+from ruamel.yaml import YAML
+
 from pyldz.models import Speaker
+
+# Platforms a speaker has exactly one of — a new submission replaces the old URL.
+# Everything else (generic `link`) accumulates.
+_SINGLE_ENTRY_PLATFORMS = frozenset({"facebook", "linkedin", "youtube"})
 
 
 def _escape_yaml_string(value: str) -> str:
@@ -25,38 +31,90 @@ def _map_platform(platform: str) -> str:
     return platform.lower()
 
 
-def _build_social_section(speaker: Speaker) -> str:
-    if not speaker.social_links:
-        return "social: []\n"
+def _existing_social_pairs(existing: dict | None) -> list[list[str]]:
+    pairs: list[list[str]] = []
+    for entry in (existing or {}).get("social") or []:
+        if isinstance(entry, dict):
+            pairs.extend([key, str(url)] for key, url in entry.items())
+    return pairs
 
-    lines: list[str] = ["social:"]
+
+def _merge_social_pairs(speaker: Speaker, existing: dict | None) -> list[list[str]]:
+    """Keep links already curated in the repo, apply what the submission brings."""
+    pairs = _existing_social_pairs(existing)
+
     for link in speaker.social_links:
         key = _map_platform(link.platform)
-        lines.append(f"  - {key}: {link.url}")
-    return "\n".join(lines) + "\n"
+        url = str(link.url)
+
+        if [key, url] in pairs:
+            continue
+
+        known = next((pair for pair in pairs if pair[0] == key), None)
+        if known is not None and key in _SINGLE_ENTRY_PLATFORMS:
+            known[1] = url
+        else:
+            pairs.append([key, url])
+
+    return pairs
 
 
-def build_speaker_yaml_content(speaker: Speaker, avatar_rel_path: Path) -> str:
+def _build_social_section(pairs: list[list[str]]) -> str:
+    if not pairs:
+        return "social: []"
+
+    lines = ["social:"]
+    lines.extend(f"  - {key}: {url}" for key, url in pairs)
+    return "\n".join(lines)
+
+
+def build_speaker_yaml_content(
+    speaker: Speaker,
+    avatar_rel_path: Path,
+    existing: dict | None = None,
+) -> str:
     """Build YAML content for a Speaker matching Hugo's data schema.
 
     avatar_rel_path must be the path relative to the Hugo `assets` root used by data files,
     e.g. Path("images/avatars/jane-doe.png").
+
+    `existing` is the profile already stored in the repo, if any. A form submission only
+    ever carries part of a speaker's data, so anything it does not bring is preserved.
     """
-    parts: list[str] = []
-    parts.append(f"name: {_escape_yaml_string(speaker.name)}")
-    parts.append(f"avatar: {_escape_yaml_string(str(avatar_rel_path))}")
-    parts.append(f"bio: {_escape_yaml_string(speaker.bio)}")
-    if speaker.instagram:
-        parts.append(f"instagram: {_escape_yaml_string(speaker.instagram)}")
-    parts.append(_build_social_section(speaker).rstrip())
+    existing = existing or {}
+
+    bio = speaker.bio.strip() or str(existing.get("bio", ""))
+    instagram = speaker.instagram or existing.get("instagram")
+
+    parts = [
+        f"name: {_escape_yaml_string(speaker.name)}",
+        f"avatar: {_escape_yaml_string(str(avatar_rel_path))}",
+        f"bio: {_escape_yaml_string(bio)}",
+    ]
+    if instagram:
+        parts.append(f"instagram: {_escape_yaml_string(str(instagram))}")
+    parts.append(_build_social_section(_merge_social_pairs(speaker, existing)))
+
+    handled = {"name", "avatar", "bio", "instagram", "social"}
+    for key, value in existing.items():
+        if key not in handled:
+            parts.append(f"{key}: {_escape_yaml_string(str(value))}")
+
     parts.append("")  # trailing newline
     return "\n".join(parts)
 
 
-def write_speaker_yaml(speaker: Speaker, page_dir: Path = Path("page")) -> Path:
-    """Write speaker avatar and YAML file under the Hugo page directory.
+def _read_existing_profile(yaml_path: Path) -> dict | None:
+    if not yaml_path.exists():
+        return None
+    data = YAML().load(yaml_path.read_text(encoding="utf-8"))
+    return dict(data) if data else None
 
-    - Avatar: page/assets/images/avatars/{speaker.id}.png
+
+def write_speaker_yaml(speaker: Speaker, page_dir: Path = Path("page")) -> Path:
+    """Write the speaker's Hugo data file, merged with the profile already in the repo.
+
+    - Avatar: page/assets/images/avatars/{speaker.id}.png (persisted by MeetupImageGenerator)
     - YAML:   page/data/speakers/{speaker.id}.yaml
 
     Returns the path to the written YAML file.
@@ -64,21 +122,15 @@ def write_speaker_yaml(speaker: Speaker, page_dir: Path = Path("page")) -> Path:
     data_speakers_dir = page_dir / "data" / "speakers"
     data_speakers_dir.mkdir(parents=True, exist_ok=True)
 
+    yaml_path = data_speakers_dir / f"{speaker.id}.yaml"
+
     # Hugo data files point at the processed avatar asset produced by
     # MeetupImageGenerator, which always persists speaker avatars as PNG.
-    avatar_filename = f"{speaker.id}.png"
+    avatar_rel = Path("images") / "avatars" / f"{speaker.id}.png"
+    yaml_content = build_speaker_yaml_content(
+        speaker, avatar_rel, _read_existing_profile(yaml_path)
+    )
 
-    # TODO: should I generate images here or only when meetup page is generated?
-    # avatars_dir = page_dir / "assets" / "images" / "avatars"
-    # avatars_dir.mkdir(parents=True, exist_ok=True)
-    # avatar_path = avatars_dir / avatar_filename
-    # avatar_path.write_bytes(speaker.avatar.content)
-
-    # Build YAML content and write
-    avatar_rel = Path("images") / "avatars" / avatar_filename
-    yaml_content = build_speaker_yaml_content(speaker, avatar_rel)
-
-    yaml_path = data_speakers_dir / f"{speaker.id}.yaml"
     yaml_path.write_text(yaml_content, encoding="utf-8")
     return yaml_path
 

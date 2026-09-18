@@ -1,2 +1,1 @@
 """Meetup descriptions generation module."""
-

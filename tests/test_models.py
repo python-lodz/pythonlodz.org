@@ -7,10 +7,10 @@ from pyldz.models import (
     Talk,
 )
 from pyldz.models import (
-    _MeetupRow as _MeetupSheetRow,
+    MeetupRow as _MeetupSheetRow,
 )
 from pyldz.models import (
-    _TalkRow as _TalkSheetRow,
+    TalkRow as _TalkSheetRow,
 )
 
 
@@ -219,3 +219,84 @@ def test_meetup_formatted_date_english():
 
     # Stempel jest niezależny od języka — patrz test powyżej.
     assert meetup.formatted_date(Language.EN) == "2024.06.27 18:00"
+
+
+def _talk_data(**overrides) -> dict:
+    data = {
+        "meetup_id": "42",
+        "first_name": "John",
+        "last_name": "Doe",
+        "bio": "A Python developer",
+        "photo_url": "https://example.com/photo.jpg",
+        "talk_title": "Introduction to Python",
+        "talk_description": "Learn Python basics",
+        "language": "PL",
+        "talk_title_en": "",
+        "facebook_url": "",
+        "linkedin_url": "",
+        "youtube_url": "",
+        "other_urls": "",
+    }
+    return {**data, **overrides}
+
+
+def test_other_urls_without_scheme_get_https():
+    # Zgłoszenia z formularza mają URL-e wpisywane ręcznie, często bez schematu.
+    row = _TalkSheetRow.model_validate(
+        _talk_data(other_urls="breadcrumbscollector.tech/\nwww.example.com")
+    )
+
+    assert [str(url) for url in row.other_urls] == [
+        "https://breadcrumbscollector.tech/",
+        "https://www.example.com/",
+    ]
+
+
+def test_social_urls_without_scheme_get_https():
+    row = _TalkSheetRow.model_validate(
+        _talk_data(
+            facebook_url="facebook.com/johndoe",
+            linkedin_url="www.linkedin.com/in/johndoe",
+            youtube_url="youtube.com/@johndoe",
+        )
+    )
+
+    assert str(row.facebook_url) == "https://facebook.com/johndoe"
+    assert str(row.linkedin_url) == "https://www.linkedin.com/in/johndoe"
+    assert str(row.youtube_url) == "https://youtube.com/@johndoe"
+
+
+def test_existing_http_scheme_is_preserved():
+    row = _TalkSheetRow.model_validate(
+        _talk_data(linkedin_url="http://linkedin.com/in/johndoe")
+    )
+
+    assert str(row.linkedin_url) == "http://linkedin.com/in/johndoe"
+
+
+def test_empty_social_urls_stay_none():
+    row = _TalkSheetRow.model_validate(_talk_data(linkedin_url="  "))
+
+    assert row.linkedin_url is None
+    assert row.other_urls == []
+
+
+def test_meetup_urls_without_scheme_get_https():
+    row = _MeetupSheetRow.model_validate(
+        {
+            "meetup_id": "42",
+            "type": "talks",
+            "date": "2024-06-27",
+            "location": "Test Venue",
+            "enabled": "TRUE",
+            "meetup_url": "www.meetup.com/python-lodz/events/123",
+            "feedback_url": "forms.gle/123",
+            "livestream_id": "",
+            "sponsors": "",
+            "language": "PL",
+        }
+    )
+
+    assert str(row.meetup_url) == "https://www.meetup.com/python-lodz/events/123"
+    assert str(row.feedback_url) == "https://forms.gle/123"
+    assert row.livestream_id is None

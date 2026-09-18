@@ -1,5 +1,17 @@
 # pythonlodz.org — instrukcje projektu
 
+## Nowy meetup ze zgłoszeń w arkuszu (pyldz)
+
+Źródłem prawdy dla spotkań i prelekcji jest Google Sheet (zakładki `meetups`, `talks`);
+zgłoszenia prelegentów wpadają tam z formularza. **Nigdy nie pytaj usera o dane, które
+są w arkuszu** — najpierw je przeczytaj:
+
+1. `uv run pyldz show <nr>` — dane spotkania + lista braków (read-only, `--json` dla skilli)
+2. `uv run pyldz generate -m <nr>` — `index.md`, grafiki, `descriptions/`, profile
+   prelegentów. Odmawia pracy, gdy preflight ma pozycje `✖` (np. `enabled=FALSE`,
+   nieznana lokalizacja, edycja letnia — tę pisze się ręcznie, patrz `tasks/lessons.md`)
+3. commit jawnymi ścieżkami → dalej `gk-sm-1-brief`
+
 ## Social media — promocja meetupów (gk-sm-*)
 
 Frazy typu „promocja meetupu", „posty na social media", „seria postów",

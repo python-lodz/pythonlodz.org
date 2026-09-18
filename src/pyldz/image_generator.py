@@ -1007,8 +1007,7 @@ class MeetupImageGenerator:
         last_line = " ".join(lines[max_lines - 1 :]).strip()
 
         while (
-            last_line
-            and draw.textbbox((0, 0), f"{last_line}…", font=font)[2] > max_w
+            last_line and draw.textbbox((0, 0), f"{last_line}…", font=font)[2] > max_w
         ):
             if " " in last_line:
                 last_line = last_line.rsplit(" ", 1)[0]

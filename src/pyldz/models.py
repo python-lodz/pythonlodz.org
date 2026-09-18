@@ -29,6 +29,23 @@ FALLBACK_PHOTO_PATH = (
 )
 
 
+def _ensure_scheme(url: str) -> str:
+    """Sheet/form URLs are typed by hand, often without a scheme."""
+    if url.startswith(("http://", "https://")):
+        return url
+    return f"https://{url}"
+
+
+def _normalize_optional_url(value):
+    """Empty cell means "no link", a scheme-less one is assumed https."""
+    if not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return _ensure_scheme(stripped)
+
+
 class Language(str, Enum):
     PL = "PL"
     EN = "EN"
@@ -96,9 +113,15 @@ class Location(BaseModel):
     name: MultiLanguage
 
 
+class MeetupType(StrEnum):
+    TALKS = "talks"
+    SUMMER_EDITION = "summer_edition"
+
+
 class Meetup(BaseModel):
     meetup_id: str
     title: str
+    type: MeetupType = MeetupType.TALKS
     date: datetime.date
     time: str
     location: MultiLanguage
@@ -133,12 +156,7 @@ class Meetup(BaseModel):
         return f"{self.date.strftime('%Y.%m.%d')} {self.time}"
 
 
-class MeetupType(StrEnum):
-    TALKS = "talks"
-    SUMMER_EDITION = "summer_edition"
-
-
-class _MeetupRow(BaseModel):
+class MeetupRow(BaseModel):
     meetup_id: str
     type: MeetupType
     date: datetime.date
@@ -162,12 +180,17 @@ class _MeetupRow(BaseModel):
             return [item.strip() for item in v.split(",") if item.strip()]
         return []
 
-    @field_validator("meetup_url", "feedback_url", "livestream_id", mode="before")
+    @field_validator("livestream_id", mode="before")
     @classmethod
     def convert_empty_string_to_none(cls, v) -> str | None:
         if isinstance(v, str) and v.strip() == "":
             return None
         return v
+
+    @field_validator("meetup_url", "feedback_url", mode="before")
+    @classmethod
+    def normalize_url(cls, v) -> str | None:
+        return _normalize_optional_url(v)
 
     def to_meetup(
         self, talks: list[Talk], location_repo: "LocationRepository"
@@ -179,6 +202,7 @@ class _MeetupRow(BaseModel):
         return Meetup(
             meetup_id=self.meetup_id,
             title=self.title,
+            type=self.type,
             date=self.date,
             time=self.time,
             location=location.name,
@@ -192,7 +216,7 @@ class _MeetupRow(BaseModel):
         )
 
 
-class _TalkRow(BaseModel):
+class TalkRow(BaseModel):
     meetup_id: str
     first_name: str
     last_name: str
@@ -215,18 +239,22 @@ class _TalkRow(BaseModel):
             return None
         return v
 
+    @field_validator("talk_title_en", mode="before")
+    @classmethod
+    def convert_empty_title_to_none(cls, v) -> str | None:
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
+
     @field_validator(
         "facebook_url",
         "linkedin_url",
         "youtube_url",
-        "talk_title_en",
         mode="before",
     )
     @classmethod
-    def convert_empty_url_to_none(cls, v) -> str | None:
-        if isinstance(v, str) and v.strip() == "":
-            return None
-        return v
+    def normalize_social_url(cls, v) -> str | None:
+        return _normalize_optional_url(v)
 
     @field_validator(
         "first_name",
@@ -254,7 +282,9 @@ class _TalkRow(BaseModel):
     @classmethod
     def split_new_line_separated_values(cls, v) -> list[str]:
         if isinstance(v, str) and v.strip():
-            return [item.strip() for item in v.split("\n") if item.strip()]
+            return [
+                _ensure_scheme(item.strip()) for item in v.split("\n") if item.strip()
+            ]
         return []
 
     @property
@@ -405,16 +435,16 @@ class GoogleSheetsRepository:
         self.api = api
         self.location_repo = location_repo
 
-    def _fetch_meetups_data(self) -> list[_MeetupRow]:
+    def fetch_meetup_rows(self) -> list[MeetupRow]:
         rows = self.api.fetch_data(Tables.MEETUPS)
-        return [_MeetupRow.model_validate(row) for row in rows]
+        return [MeetupRow.model_validate(row) for row in rows]
 
-    def _fetch_talks_data(self) -> list[_TalkRow]:
+    def fetch_talk_rows(self) -> list[TalkRow]:
         rows = self.api.fetch_data(Tables.TALKS)
-        return [_TalkRow.model_validate(row) for row in rows]
+        return [TalkRow.model_validate(row) for row in rows]
 
     def _get_talks_for_meetup(
-        self, meetup_id: str, talks_data: list[_TalkRow]
+        self, meetup_id: str, talks_data: list[TalkRow]
     ) -> list[Talk]:
         # Filter talks for this meetup and preserve original order with enumeration
         meetup_talks = [
@@ -440,7 +470,7 @@ class GoogleSheetsRepository:
         return [talk_row.to_talk() for _, talk_row in sorted_talks]
 
     def get_speakers_for_meetup(
-        self, meetup_id: str, talks_data: list[_TalkRow]
+        self, meetup_id: str, talks_data: list[TalkRow]
     ) -> list[Speaker]:
         speakers = []
         seen_speaker_ids = set()
@@ -457,23 +487,23 @@ class GoogleSheetsRepository:
         return speakers
 
     def get_meetup_by_id(self, meetup_id: str) -> Meetup | None:
-        meetups_data: list[_MeetupRow] = self._fetch_meetups_data()
+        meetups_data: list[MeetupRow] = self.fetch_meetup_rows()
 
-        meetup: _MeetupRow | None = next(
+        meetup: MeetupRow | None = next(
             filter(lambda m: m.meetup_id == meetup_id, meetups_data), None
         )
         if not meetup or not meetup.enabled:
             return None
 
-        talks_data: list[_TalkRow] = self._fetch_talks_data()
+        talks_data: list[TalkRow] = self.fetch_talk_rows()
 
         talks = self._get_talks_for_meetup(meetup_id, talks_data)
 
         return meetup.to_meetup(talks, self.location_repo)
 
     def get_all_enabled_meetups(self) -> list[Meetup]:
-        meetups_data: list[_MeetupRow] = self._fetch_meetups_data()
-        talks_data: list[_TalkRow] = self._fetch_talks_data()
+        meetups_data: list[MeetupRow] = self.fetch_meetup_rows()
+        talks_data: list[TalkRow] = self.fetch_talk_rows()
 
         meetups = []
         for meetup_row in meetups_data:
