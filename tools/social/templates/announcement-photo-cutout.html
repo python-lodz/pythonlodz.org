@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "OpenSans"; src: url("{{FONT_REGULAR}}"); font-weight: 400; }
+  @font-face { font-family: "OpenSans"; src: url("{{FONT_BOLD}}"); font-weight: 800; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: {{WIDTH}}px; height: {{HEIGHT}}px; }
+  body { font-family: "OpenSans", sans-serif; color: #ffffff; }
+  #canvas {
+    position: relative; width: 100%; height: 100%;
+    background: #001F3F; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 6%;
+  }
+  .bg {
+    position: absolute; inset: 0; z-index: 0;
+    background-image: url("{{BACKGROUND}}");
+    background-size: cover; background-position: center;
+  }
+  /* Wycinanka (kolaż): budynek "wyrasta" z tła. Warstwa sterowana CUTOUT_Z:
+     1 = pod scrimem (wtapia się w scenę), 3 = nad scrimem (mocny sticker). */
+  .cutout {
+    position: absolute; z-index: {{CUTOUT_Z}};
+    top: {{CUTOUT_TOP}}; right: {{CUTOUT_RIGHT}}; width: {{CUTOUT_W}};
+    transform: rotate({{CUTOUT_ROT}});
+    filter: {{CUTOUT_FILTER}};
+    -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 99%);
+    mask-image: linear-gradient(to bottom, #000 82%, transparent 99%);
+  }
+  /* Scrim: photo czysty u góry, granatowy i czytelny u dołu pod tekstem */
+  .scrim {
+    position: absolute; inset: 0; z-index: 2;
+    background:
+      linear-gradient(to bottom,
+        rgba(0,31,63,0.10) 0%,
+        rgba(0,31,63,0.35) 42%,
+        rgba(0,31,63,0.86) 74%,
+        rgba(0,31,63,0.95) 100%);
+  }
+  .logo {
+    position: relative; z-index: 4; width: 18%;
+    filter: drop-shadow(0 2px 12px rgba(0,0,0,0.55));
+  }
+  .main { position: relative; z-index: 4; }
+  .kicker {
+    font-weight: 800; color: #FFD700; font-size: 44px;
+    letter-spacing: 2px; text-transform: uppercase;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  }
+  .title {
+    font-weight: 800; font-size: 112px; line-height: 1.05; margin-top: 16px;
+    text-shadow: 0 3px 18px rgba(0,0,0,0.55);
+  }
+  .subtitle {
+    font-size: 48px; margin-top: 28px; line-height: 1.3;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.55);
+  }
+  .meta {
+    position: relative; background: #FFD700; color: #001F3F;
+    font-weight: 800; font-size: 46px; padding: 24px 36px;
+    border-radius: 12px; width: fit-content; margin-top: 40px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  }
+  .fmt-16x9 .title { font-size: 96px; }
+  .fmt-16x9 .subtitle { font-size: 40px; margin-top: 20px; }
+  .fmt-16x9 #canvas { padding: 5%; }
+</style>
+</head>
+<body class="fmt-{{FORMAT}}">
+<div id="canvas">
+  <div class="bg"></div>
+  <img class="cutout" src="{{CUTOUT}}">
+  <div class="scrim"></div>
+  <img class="logo" src="{{LOGO}}">
+  <div class="main">
+    <div class="kicker">{{KICKER}}</div>
+    <div class="title">{{TITLE}}</div>
+    <div class="subtitle">{{SUBTITLE}}</div>
+    <div class="meta">{{DATE}} · {{PLACE}}</div>
+  </div>
+</div>
+</body>
+</html>

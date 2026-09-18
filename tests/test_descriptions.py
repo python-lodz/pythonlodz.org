@@ -171,19 +171,26 @@ def test_generate_meetup_com(sample_meetup_two_talks, sample_speaker, tmp_path):
     assert "24 września 2025" in description
     assert "18:00" in description
     assert "IndieBI" in description
-    assert "🗓️ Jak wygląda ten wieczór?" in description
-    assert "👋 Dla kogo jest to spotkanie?" in description
+    assert "📅" in description
+    assert "📍" in description
+    assert "🗓️ Jak to wygląda" in description
+    assert "👋 Dla kogo" in description
     assert "🎤 Prelekcje" in description
     assert "🕒 Agenda" in description
-    assert "🔗 Gdzie nas znaleźć?" in description
-    assert "przerwie" in description
-    assert "po części oficjalnej" in description
+    assert "🔗 Python Łódź w sieci" in description
     assert "Clean Architecture" in description
     assert "Learn clean architecture." in description
     assert SocialMediaLinks.DISCORD in description
     assert "Cześć!" not in description
     assert "Podczas spotkania odbędą się niezwykle ciekawe prezentacje:" not in description
     assert "Zaproś innych!" not in description
+    # Talks unified format: no numbering, em-dash separator
+    assert "Clean Architecture — John Doe" in description
+    assert "1. Clean Architecture" not in description
+    # Section headers stick directly to content (no blank line between)
+    assert "🎤 Prelekcje\nClean Architecture — John Doe" in description
+    # Links footer is the one exception: blank line between header and list
+    assert "🔗 Python Łódź w sieci\n\n➡️" in description
 
 
 def test_generate_meetup_com_to_be_announced(
@@ -194,11 +201,11 @@ def test_generate_meetup_com_to_be_announced(
 
     description = generator.generate_meetup_com()
 
-    assert "👋 Dla kogo jest to spotkanie?" in description
+    assert "👋 Dla kogo" in description
     assert "🎤 Prelekcje" in description
     assert "Prezentacje będą wkrótce ogłoszone!" in description
     assert "🕒 Agenda" in description
-    assert "🔗 Gdzie nas znaleźć?" in description
+    assert "🔗 Python Łódź w sieci" in description
 
 
 def test_generate_youtube_live(sample_meetup_two_talks, sample_speaker, tmp_path):
@@ -209,27 +216,26 @@ def test_generate_youtube_live(sample_meetup_two_talks, sample_speaker, tmp_path
 
     description = generator.generate_youtube_live()
 
-    assert "🔴 LIVE" in description
-    assert "Meetup #59" in description
+    assert "🔴 LIVE — Python Łódź #59" in description
     assert "24 września 2025" in description
-    assert "Agenda:" in description
-    assert "18:00 - Rozpoczęcie" in description
+    assert "🎤 Prelekcje" in description
+    assert "🕒 Agenda" in description
+    assert "🔗 Python Łódź w sieci" in description
+    # Agenda uses concrete talk titles in presentation slots
+    assert "18:15 — Clean Architecture" in description
+    assert "19:30 — Python Visualization" in description
+    assert "Prezentacja 1" not in description
+    assert "Prezentacja 2" not in description
     assert SocialMediaLinks.OFFICIAL_WEBSITE in description
-    assert SocialMediaLinks.MEETUP in description
 
 
-def test_generate_youtube_recording(sample_meetup_two_talks, sample_speaker, tmp_path):
-    """Test YouTube recording description generation."""
-    generator = MeetupDescriptionGenerator(
-        sample_meetup_two_talks, [sample_speaker], tmp_path
-    )
+def test_youtube_live_agenda_tba_meetup(sample_meetup_tba, sample_speaker, tmp_path):
+    """TBA meetups keep generic agenda slots in YouTube live description."""
+    generator = MeetupDescriptionGenerator(sample_meetup_tba, [sample_speaker], tmp_path)
 
-    description = generator.generate_youtube_recording()
+    description = generator.generate_youtube_live()
 
-    assert "Python Łódź Meetup #59" in description
-    assert "24 września 2025" in description
-    assert "Prezentacje:" in description
-    assert SocialMediaLinks.OFFICIAL_WEBSITE in description
+    assert "Prezentacja 1" in description or "Prezentacja" in description
 
 
 def test_generate_youtube_recording_talks(
@@ -243,29 +249,14 @@ def test_generate_youtube_recording_talks(
     talks = generator.generate_youtube_recording_talks()
 
     assert len(talks) == 2
-    assert talks[0].title == "Python Łódź #59 - Clean Architecture"
-    assert talks[1].title == "Python Łódź #59 - Python Visualization"
-    assert "Agenda:" in talks[0].description
-    assert "Linki do społeczności:" in talks[0].description
-    assert "John Doe" in talks[0].description
-
-
-def test_generate_chatgpt_prompt(sample_meetup_two_talks, sample_speaker, tmp_path):
-    """Test ChatGPT prompt generation."""
-    generator = MeetupDescriptionGenerator(
-        sample_meetup_two_talks, [sample_speaker], tmp_path
-    )
-
-    prompt = generator.generate_chatgpt_prompt()
-
-    assert "Super Prompt do Generowania Postów" in prompt
-    assert "Meetup #59" in prompt
-    assert "24 września 2025" in prompt
-    assert "Instrukcje do Generowania Postów" in prompt
-    assert "Posty o Prelegentach" in prompt
-    assert "Posty o Sponsorach" in prompt
-    assert "Posty Informacyjne" in prompt
-    assert SocialMediaLinks.OFFICIAL_WEBSITE in prompt
+    assert talks[0].title == "Python Łódź #59 — Clean Architecture"
+    assert talks[1].title == "Python Łódź #59 — Python Visualization"
+    # Per-talk: speaker, talk description, metadata, links — no agenda, no other talks
+    assert "🎤 Prelegent: John Doe" in talks[0].description
+    assert "Learn clean architecture." in talks[0].description
+    assert "🔗 Python Łódź w sieci" in talks[0].description
+    assert "🕒 Agenda" not in talks[0].description
+    assert "Python Visualization" not in talks[0].description
 
 
 def test_generate_all(sample_meetup_two_talks, sample_speaker, tmp_path):
@@ -280,9 +271,7 @@ def test_generate_all(sample_meetup_two_talks, sample_speaker, tmp_path):
     assert descriptions.meetup_id == "59"
     assert len(descriptions.meetup_com) > 0
     assert len(descriptions.youtube_live) > 0
-    assert len(descriptions.youtube_recording) > 0
     assert len(descriptions.youtube_recording_talks) == 2
-    assert len(descriptions.chatgpt_prompt) > 0
 
 
 def test_description_repository_save_all(
@@ -297,15 +286,17 @@ def test_description_repository_save_all(
     repo = DescriptionRepository(tmp_path)
     created_files = repo.save_all("59", descriptions)
 
-    # 4 main files + 2 talk files = 6 files
-    assert len(created_files) == 6
+    # 2 main files + 2 talk files = 4 files
+    assert len(created_files) == 4
     assert all(f.exists() for f in created_files)
 
     descriptions_dir = tmp_path / "59" / "descriptions"
     assert (descriptions_dir / "meetup-com.md").exists()
     assert (descriptions_dir / "youtube-live.md").exists()
-    assert (descriptions_dir / "youtube-recording.md").exists()
-    assert (descriptions_dir / "chatgpt-prompt.md").exists()
+    # ChatGPT prompt zastąpiony przez system gk-sm (social/)
+    assert not (descriptions_dir / "chatgpt-prompt.md").exists()
+    # Old zbiorczy recording removed — per-talk videos cover this need
+    assert not (descriptions_dir / "youtube-recording.md").exists()
 
     # Check talk files
     talks_dir = descriptions_dir / "youtube-talks"
@@ -315,4 +306,4 @@ def test_description_repository_save_all(
 
     # Verify content
     meetup_com_content = (descriptions_dir / "meetup-com.md").read_text()
-    assert "👋 Dla kogo jest to spotkanie?" in meetup_com_content
+    assert "👋 Dla kogo" in meetup_com_content

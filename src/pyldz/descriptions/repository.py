@@ -48,14 +48,6 @@ class DescriptionRepository:
         log.info(f"Saved YouTube live description: {youtube_live_file}")
         created_files.append(youtube_live_file)
 
-        # Save YouTube recording description
-        youtube_recording_file = descriptions_dir / "youtube-recording.md"
-        youtube_recording_file.write_text(
-            descriptions.youtube_recording, encoding="utf-8"
-        )
-        log.info(f"Saved YouTube recording description: {youtube_recording_file}")
-        created_files.append(youtube_recording_file)
-
         # Save YouTube recording descriptions for each talk
         talks_dir = descriptions_dir / "youtube-talks"
         talks_dir.mkdir(parents=True, exist_ok=True)
@@ -65,11 +57,5 @@ class DescriptionRepository:
             talk_file.write_text(content, encoding="utf-8")
             log.info(f"Saved YouTube talk {i} description: {talk_file}")
             created_files.append(talk_file)
-
-        # Save ChatGPT prompt
-        chatgpt_prompt_file = descriptions_dir / "chatgpt-prompt.md"
-        chatgpt_prompt_file.write_text(descriptions.chatgpt_prompt, encoding="utf-8")
-        log.info(f"Saved ChatGPT prompt: {chatgpt_prompt_file}")
-        created_files.append(chatgpt_prompt_file)
 
         return created_files

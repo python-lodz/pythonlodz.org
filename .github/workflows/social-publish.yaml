@@ -1,0 +1,54 @@
+# .github/workflows/social-publish.yaml
+name: Social publish
+
+on:
+  schedule:
+    # Sloty 9:00 i 17:00 Europe/Warsaw. Pary wpisów UTC pokrywają CET (UTC+1)
+    # i CEST (UTC+2); o tym co jest due decyduje skrypt w strefie Europe/Warsaw,
+    # a status.json gwarantuje brak podwójnych publikacji przy nadmiarowym runie.
+    - cron: "0 7,8,15,16 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: social-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    # Bezpiecznik ze specu: publikacja wyłącznie z main (akceptacja = commit/merge).
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --frozen --no-dev
+
+      - name: Publish due posts
+        run: uv run pyldz social publish
+        env:
+          META_PAGE_ID: ${{ secrets.META_PAGE_ID }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Commit publish status
+        # always(): częściowy sukces też musi wylądować w status.json,
+        # inaczej kolejny run opublikowałby posty drugi raz.
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add page/content/spotkania/*/social/status.json
+          if ! git diff --cached --quiet; then
+            git commit -m "social: update publish status [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+          fi

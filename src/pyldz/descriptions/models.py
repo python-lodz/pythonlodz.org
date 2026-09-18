@@ -23,6 +23,4 @@ class MeetupDescriptions(BaseModel):
     meetup_id: str
     meetup_com: str
     youtube_live: str
-    youtube_recording: str
     youtube_recording_talks: list[YouTubeRecordingDescription]
-    chatgpt_prompt: str

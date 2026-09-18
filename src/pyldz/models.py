@@ -78,6 +78,7 @@ class Speaker(BaseModel):
     bio: str
     avatar: File
     social_links: list[SocialLink]
+    instagram: str | None = None  # IG handle without @, used by gk-sm tagging
 
 
 class Talk(BaseModel):
@@ -226,6 +227,19 @@ class _TalkRow(BaseModel):
         if isinstance(v, str) and v.strip() == "":
             return None
         return v
+
+    @field_validator(
+        "first_name",
+        "last_name",
+        "bio",
+        "talk_title",
+        "talk_description",
+        "talk_title_en",
+        mode="after",
+    )
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        return v.strip() if isinstance(v, str) else v
 
     @field_validator("order", mode="before")
     @classmethod

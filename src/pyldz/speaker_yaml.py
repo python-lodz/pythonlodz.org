@@ -46,6 +46,8 @@ def build_speaker_yaml_content(speaker: Speaker, avatar_rel_path: Path) -> str:
     parts.append(f"name: {_escape_yaml_string(speaker.name)}")
     parts.append(f"avatar: {_escape_yaml_string(str(avatar_rel_path))}")
     parts.append(f"bio: {_escape_yaml_string(speaker.bio)}")
+    if speaker.instagram:
+        parts.append(f"instagram: {_escape_yaml_string(speaker.instagram)}")
     parts.append(_build_social_section(speaker).rstrip())
     parts.append("")  # trailing newline
     return "\n".join(parts)
