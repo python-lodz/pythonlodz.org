@@ -16,7 +16,7 @@ from pyldz.social.config import SocialSettings
 from pyldz.social.models import Channel
 from pyldz.social.publisher import Publisher
 from pyldz.social.repository import SocialRepository
-from pyldz.social.youtube import YouTubeLive
+from pyldz.social.youtube import WrongYouTubeChannelError, YouTubeLive
 
 log = logging.getLogger(__name__)
 
@@ -138,7 +138,12 @@ def yt_create_live(
     description = (
         description_file.read_text(encoding="utf-8") if description_file else ""
     )
-    url = YouTubeLive().create_live(
-        title=title, start=start_dt, description=description
-    )
+    try:
+        url = YouTubeLive().create_live(
+            title=title, start=start_dt, description=description
+        )
+    except WrongYouTubeChannelError as error:
+        typer.echo(str(error))
+        raise typer.Exit(code=1) from error
+
     typer.echo(url)
