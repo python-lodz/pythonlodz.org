@@ -31,6 +31,9 @@
     font-weight: 800; font-size: 46px; padding: 24px 36px;
     border-radius: 12px; width: fit-content;
   }
+  /* Data i miejsce w osobnych liniach, każda z własnym emoji (decyzja GK 21.09) */
+  .meta-line { display: flex; align-items: baseline; gap: 14px; }
+  .meta-line + .meta-line { margin-top: 10px; }
   /* Format 16:9 — mniej pionowego miejsca */
   .fmt-16x9 .title { font-size: 96px; }
   .fmt-16x9 .subtitle { font-size: 40px; margin-top: 20px; }
@@ -46,7 +49,10 @@
     <div class="title">{{TITLE}}</div>
     <div class="subtitle">{{SUBTITLE}}</div>
   </div>
-  <div class="meta">{{DATE}} · {{PLACE}}</div>
+  <div class="meta">
+      <div class="meta-line">⏰ {{DATE}}</div>
+      <div class="meta-line">📍 {{PLACE}}</div>
+    </div>
 </div>
 </body>
 </html>

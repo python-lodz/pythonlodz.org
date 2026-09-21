@@ -63,6 +63,9 @@
     border-radius: 12px; width: fit-content; margin-top: 40px;
     box-shadow: 0 6px 24px rgba(0,0,0,0.35);
   }
+  /* Data i miejsce w osobnych liniach, każda z własnym emoji (decyzja GK 21.09) */
+  .meta-line { display: flex; align-items: baseline; gap: 14px; }
+  .meta-line + .meta-line { margin-top: 10px; }
   .fmt-16x9 .title { font-size: 96px; }
   .fmt-16x9 .subtitle { font-size: 40px; margin-top: 20px; }
   .fmt-16x9 #canvas { padding: 5%; }
@@ -78,7 +81,10 @@
     <div class="kicker">{{KICKER}}</div>
     <div class="title">{{TITLE}}</div>
     <div class="subtitle">{{SUBTITLE}}</div>
-    <div class="meta">{{DATE}} · {{PLACE}}</div>
+    <div class="meta">
+      <div class="meta-line">⏰ {{DATE}}</div>
+      <div class="meta-line">📍 {{PLACE}}</div>
+    </div>
   </div>
 </div>
 </body>
