@@ -49,7 +49,8 @@ class SocialMediaLinks:
 
     OFFICIAL_WEBSITE = "https://pythonlodz.org"
     MEETUP = "https://www.meetup.com/python-lodz"
-    DISCORD = "https://discord.gg/jbvWBMufEf"
+    # Kanoniczny zaproszeniowy z page/config/_default/languages.pl.toml (decyzja GK 10.07.2026)
+    DISCORD = "https://discord.gg/e4XpHMnPfJ"
     FACEBOOK = "https://www.facebook.com/pythonlodz"
     LINKEDIN = "https://www.linkedin.com/company/python-lodz"
     INSTAGRAM = "https://www.instagram.com/pythonlodz"

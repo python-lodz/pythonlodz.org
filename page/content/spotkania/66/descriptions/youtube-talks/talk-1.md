@@ -11,7 +11,7 @@ Wysyłanie wiadomości na kolejkę po zatwierdzeniu transakcji jest ok. Jak wiad
 
 ➡️ Oficjalna strona: https://pythonlodz.org
 ➡️ Meetup: https://www.meetup.com/python-lodz
-➡️ Discord: https://discord.gg/jbvWBMufEf
+➡️ Discord: https://discord.gg/e4XpHMnPfJ
 ➡️ Facebook: https://www.facebook.com/pythonlodz
 ➡️ LinkedIn: https://www.linkedin.com/company/python-lodz
 ➡️ Instagram: https://www.instagram.com/pythonlodz

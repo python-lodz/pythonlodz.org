@@ -12,6 +12,10 @@ place: "IndieBI, Piotrkowska 157A, Hi Piotrkowska"
 **🕕 godzina:** 18:00</br>
 **📍 miejsce:** IndieBI, Piotrkowska 157A, Hi Piotrkowska</br>
 
+{{< button href="https://www.meetup.com/python-lodz/events/316651427" target="_blank" >}}
+➡️ LINK DO ZAPISÓW
+{{< /button >}}
+
 ## Prelekcje
 
 ### Największe mity w pracy z kolejkami

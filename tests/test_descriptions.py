@@ -132,7 +132,7 @@ def test_agenda_one_talk():
 def test_social_media_links():
     """Test social media links are defined."""
     assert SocialMediaLinks.OFFICIAL_WEBSITE == "https://pythonlodz.org"
-    assert SocialMediaLinks.DISCORD == "https://discord.gg/jbvWBMufEf"
+    assert SocialMediaLinks.DISCORD == "https://discord.gg/e4XpHMnPfJ"
     assert SocialMediaLinks.FACEBOOK == "https://www.facebook.com/pythonlodz"
 
 
