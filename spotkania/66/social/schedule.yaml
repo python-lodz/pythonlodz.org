@@ -1,0 +1,69 @@
+meetup: "66"
+timezone: Europe/Warsaw
+posts:
+  # Etap 1 — ogłoszenie agendy.
+  # Discord wyjątkowo dziś (decyzja GK 21.09): slot w przeszłości = publikacja
+  # w najbliższym runie, odpalanym ręcznie przez workflow_dispatch.
+  - post: ogloszenie
+    channels: [discord]
+    scheduled: 2026-09-21 17:00:00
+    image: images/final/ogloszenie-4x5.png
+  - post: ogloszenie
+    channels: [facebook, linkedin]
+    scheduled: 2026-09-22 09:00:00
+    image: images/final/ogloszenie-4x5.png
+  - post: ogloszenie
+    channels: [instagram]
+    scheduled: 2026-09-22 17:00:00
+    image: images/final/ogloszenie-4x5.png
+
+  # Etap 2 — prelekcja Sebastiana.
+  - post: prelekcja-kolejki
+    channels: [facebook, linkedin]
+    scheduled: 2026-09-24 09:00:00
+    image: images/final/prelekcja-kolejki-4x5.png
+  - post: prelekcja-kolejki
+    channels: [discord, instagram]
+    scheduled: 2026-09-24 17:00:00
+    image: images/final/prelekcja-kolejki-4x5.png
+
+  # Etap 3 — prelekcja Grzegorza.
+  - post: prelekcja-pytest
+    channels: [facebook, linkedin]
+    scheduled: 2026-09-25 09:00:00
+    image: images/final/prelekcja-pytest-4x5.png
+  - post: prelekcja-pytest
+    channels: [discord, instagram]
+    scheduled: 2026-09-25 17:00:00
+    image: images/final/prelekcja-pytest-4x5.png
+    ig_tagged: [grzegorz.kocjan]
+
+  # Etap 4 — reminder z planem wieczoru.
+  - post: reminder-agenda
+    channels: [facebook, linkedin]
+    scheduled: 2026-09-28 09:00:00
+    image: images/final/reminder-agenda-4x5.png
+  - post: reminder-agenda
+    channels: [discord, instagram]
+    scheduled: 2026-09-28 17:00:00
+    image: images/final/reminder-agenda-4x5.png
+
+  # Etap 5 — last call, dzień przed spotkaniem.
+  - post: last-call
+    channels: [facebook, linkedin]
+    scheduled: 2026-09-29 09:00:00
+    image: images/final/last-call-4x5.png
+  - post: last-call
+    channels: [discord, instagram]
+    scheduled: 2026-09-29 17:00:00
+    image: images/final/last-call-4x5.png
+
+  # Etap 6 — dzień spotkania (start 18:00, więc slot 17:00 to ostatnie wołanie).
+  - post: dzien-spotkania
+    channels: [facebook, linkedin]
+    scheduled: 2026-09-30 09:00:00
+    image: images/final/dzien-spotkania-4x5.png
+  - post: dzien-spotkania
+    channels: [discord, instagram]
+    scheduled: 2026-09-30 17:00:00
+    image: images/final/dzien-spotkania-4x5.png
