@@ -20,13 +20,24 @@ class FakeResponse:
 
 
 @pytest.fixture
-def posted(monkeypatch):
+def graph_trace():
+    """Kolejność wywołań do Graph API — pokazuje, czy publikacja czekała na kontener."""
+    return []
+
+
+@pytest.fixture
+def posted(monkeypatch, graph_trace):
     """Capture requests.post calls; return canned ids."""
     calls: list[dict] = []
 
     def fake_post(url, **kwargs):
         calls.append({"url": url, **kwargs})
+        graph_trace.append(("POST", url))
         return FakeResponse({"id": f"msg-{len(calls)}", "post_id": f"fb-{len(calls)}"})
+
+    def fake_get(url, **kwargs):
+        graph_trace.append(("GET", url))
+        return FakeResponse({"status_code": "FINISHED", "status": "Finished"})
 
     import pyldz.social.adapters.discord as discord_module
     import pyldz.social.adapters.facebook as facebook_module
@@ -35,7 +46,27 @@ def posted(monkeypatch):
     monkeypatch.setattr(discord_module.requests, "post", fake_post)
     monkeypatch.setattr(facebook_module.requests, "post", fake_post)
     monkeypatch.setattr(instagram_module.requests, "post", fake_post)
+    monkeypatch.setattr(instagram_module.requests, "get", fake_get)
     return calls
+
+
+@pytest.fixture
+def container_statuses(monkeypatch, graph_trace):
+    """Podstaw kolejkę stanów kontenera IG (ostatni powtarza się w nieskończoność)."""
+
+    def install(statuses: list[str]) -> None:
+        queue = list(statuses)
+
+        def fake_get(url, **kwargs):
+            graph_trace.append(("GET", url))
+            code = queue.pop(0) if len(queue) > 1 else queue[0]
+            return FakeResponse({"status_code": code, "status": f"stan: {code}"})
+
+        import pyldz.social.adapters.instagram as instagram_module
+
+        monkeypatch.setattr(instagram_module.requests, "get", fake_get)
+
+    return install
 
 
 def test_split_content_short_text_is_single_chunk():
@@ -209,3 +240,73 @@ def test_graph_error_survives_a_body_that_is_not_json(graph_error):
         assert "403" in str(error.value)
     finally:
         monkeypatch_target.post = original
+
+
+def test_instagram_waits_for_container_before_publishing(
+    posted, container_statuses, graph_trace
+):
+    """Kontener wraca z ID, zanim media są gotowe — publikacja musi poczekać.
+
+    Bez czekania Graph odrzuca media_publish błędem 9007/2207027
+    „Media ID is not available" (incydent #66, 22.09.2026).
+    """
+    from pyldz.social.adapters.instagram import InstagramAdapter
+
+    container_statuses(["IN_PROGRESS", "IN_PROGRESS", "FINISHED"])
+    adapter = InstagramAdapter("222", "token", poll_interval=0)
+
+    media_id = adapter.publish("caption", image_url="https://pythonlodz.org/g.png")
+
+    assert media_id == "msg-2"
+    assert [method for method, _ in graph_trace] == [
+        "POST",
+        "GET",
+        "GET",
+        "GET",
+        "POST",
+    ]
+    assert graph_trace[-1][1].endswith("/media_publish")
+
+
+def test_instagram_polls_the_container_not_the_user(posted, graph_trace):
+    from pyldz.social.adapters.instagram import InstagramAdapter
+
+    InstagramAdapter("222", "token", poll_interval=0).publish(
+        "caption", image_url="https://pythonlodz.org/g.png"
+    )
+
+    gets = [url for method, url in graph_trace if method == "GET"]
+    assert gets == ["https://graph.facebook.com/v23.0/msg-1"]
+
+
+def test_instagram_container_in_error_state_never_publishes(
+    posted, container_statuses, graph_trace
+):
+    from pyldz.social.adapters.facebook import MetaGraphError
+    from pyldz.social.adapters.instagram import InstagramAdapter
+
+    container_statuses(["ERROR"])
+    adapter = InstagramAdapter("222", "token", poll_interval=0)
+
+    with pytest.raises(MetaGraphError) as error:
+        adapter.publish("caption", image_url="https://pythonlodz.org/g.png")
+
+    assert "ERROR" in str(error.value)
+    assert "stan: ERROR" in str(error.value), "powód od Mety musi trafić do logu"
+    assert [method for method, _ in graph_trace] == ["POST", "GET"]
+
+
+def test_instagram_gives_up_when_container_never_finishes(
+    posted, container_statuses, graph_trace
+):
+    from pyldz.social.adapters.facebook import MetaGraphError
+    from pyldz.social.adapters.instagram import InstagramAdapter
+
+    container_statuses(["IN_PROGRESS"])
+    adapter = InstagramAdapter("222", "token", poll_interval=0, poll_timeout=0)
+
+    with pytest.raises(MetaGraphError) as error:
+        adapter.publish("caption", image_url="https://pythonlodz.org/g.png")
+
+    assert "IN_PROGRESS" in str(error.value)
+    assert not [url for method, url in graph_trace if url.endswith("/media_publish")]
