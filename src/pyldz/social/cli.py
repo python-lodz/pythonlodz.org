@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from pyldz.logging_config import setup_logging
 from pyldz.social.adapters.discord import DiscordAdapter
-from pyldz.social.adapters.facebook import FacebookAdapter
+from pyldz.social.adapters.facebook import FacebookAdapter, page_access_token
 from pyldz.social.adapters.instagram import InstagramAdapter
 from pyldz.social.config import SocialSettings
 from pyldz.social.meta_check import format_report, run_meta_checks
@@ -36,14 +36,18 @@ DEFAULT_CONTENT_DIR = Path("page/content/spotkania")
 
 def _build_adapters(settings: SocialSettings) -> dict[Channel, object]:
     adapters: dict[Channel, object] = {}
-    if settings.meta_page_id and settings.meta_access_token:
-        adapters[Channel.FACEBOOK] = FacebookAdapter(
-            settings.meta_page_id, settings.meta_access_token
-        )
-    if settings.ig_user_id and settings.meta_access_token:
-        adapters[Channel.INSTAGRAM] = InstagramAdapter(
-            settings.ig_user_id, settings.meta_access_token
-        )
+
+    # Jedna wymiana na token strony obsługuje oba kanały Meta — patrz page_access_token.
+    meta_token = (
+        page_access_token(settings.meta_page_id, settings.meta_access_token)
+        if settings.meta_page_id and settings.meta_access_token
+        else settings.meta_access_token
+    )
+
+    if settings.meta_page_id and meta_token:
+        adapters[Channel.FACEBOOK] = FacebookAdapter(settings.meta_page_id, meta_token)
+    if settings.ig_user_id and meta_token:
+        adapters[Channel.INSTAGRAM] = InstagramAdapter(settings.ig_user_id, meta_token)
     if settings.discord_webhook_url:
         adapters[Channel.DISCORD] = DiscordAdapter(settings.discord_webhook_url)
     return adapters

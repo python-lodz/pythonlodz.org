@@ -46,6 +46,39 @@ def raise_for_graph_error(response) -> None:
         raise MetaGraphError(" | ".join(parts)) from http_error
 
 
+def page_access_token(page_id: str, token: str) -> str:
+    """Zamień token System Usera na token STRONY.
+
+    Graph odmawia publikacji tokenem System Usera nawet z pełnym zestawem zakresów
+    i zwraca mylące „(#200) The permission(s) publish_actions are not available"
+    (uprawnienie skasowane w 2018). Publikować wolno tokenem strony, który Graph
+    oddaje w polu `access_token` samej strony. Gdy się nie da — zwracamy token
+    wejściowy, żeby zachowanie degradowało się do poprzedniego zamiast wybuchać.
+    """
+    try:
+        response = requests.get(
+            f"{GRAPH_API}/{page_id}",
+            params={"fields": "access_token", "access_token": token},
+            timeout=30,
+        )
+        payload = response.json()
+    except (requests.RequestException, ValueError) as error:  # pragma: no cover — sieć
+        log.warning(f"Nie udało się pobrać tokena strony: {type(error).__name__}")
+        return token
+
+    page_token = payload.get("access_token")
+    if not page_token:
+        error = payload.get("error", {})
+        log.warning(
+            "Strona nie oddała tokena publikacyjnego"
+            + (f": code {error.get('code')} {error.get('message')}" if error else "")
+            + " — publikuję tokenem z konfiguracji."
+        )
+        return token
+
+    return page_token
+
+
 class FacebookAdapter:
     def __init__(self, page_id: str, access_token: str):
         self.page_id = page_id

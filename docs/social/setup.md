@@ -83,6 +83,21 @@ Objawy i przyczyny:
 | `instagram_business_account` puste na stronie | token bez `instagram_basic` |
 | `code 190`, `subcode 463` | token wygasł lub został unieważniony |
 | `code 100`, `subcode 33` na `IG_USER_ID` | złe ID albo brak dostępu do konta IG |
+| `(#200) The permission(s) publish_actions are not available` | publikacja tokenem System Usera zamiast tokenem strony |
+
+**Token System Usera nie publikuje.** Nawet z kompletem zakresów Graph odmawia
+publikacji na stronie i zwraca błąd o `publish_actions` — uprawnieniu skasowanym
+w 2018 roku, które z realną przyczyną nie ma nic wspólnego. Pisać wolno tokenem
+**strony**, który Graph oddaje w polu `access_token` samej strony:
+
+```bash
+curl "https://graph.facebook.com/v23.0/<META_PAGE_ID>?fields=access_token&access_token=<META_ACCESS_TOKEN>"
+```
+
+Publisher robi tę wymianę sam przy budowaniu adapterów (`page_access_token`
+w `src/pyldz/social/adapters/facebook.py`), więc w sekretach trzymamy dalej token
+System Usera — nie podmieniaj go na token strony, bo ten drugi jest związany
+z konkretną stroną i trudniej go odtworzyć.
 
 **Znane ryzyko (spec §8, ryzyko #1):** appka w trybie Development może
 ograniczać publikację/widoczność postów — możliwy App Review / weryfikacja
