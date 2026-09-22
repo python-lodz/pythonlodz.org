@@ -9,3 +9,5 @@ szablonu jako base64 i przeglądarka nie wyrabia się w limicie renderu.
 |------|--------|--------|
 | meetup-57-prelekcja.jpg | page/assets/images/meetups/57/7.jpg | post `last-call` |
 | meetup-57-publicznosc.jpg | page/assets/images/meetups/57/6.jpg | post `dzien-spotkania` |
+| meetup-57-sala.jpg | page/assets/images/meetups/57/1.jpg | post `reminder-agenda` |
+| meetup-57-prelekcja-ekran.jpg | page/assets/images/meetups/57/5.jpg | post `live-stream` |

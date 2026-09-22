@@ -46,6 +46,20 @@ Analiza wideo w czasie rzeczywistym, detekcje na poziomie 80-90% i testy, które
 
 ➡️ Szczegóły i zapisy: https://pythonlodz.org/spotkania/66/
 
+## post: live-stream
+
+🔴 Nie dojedziesz do Łodzi? Python Łódź #66 puszczamy na żywo.
+
+Obie prelekcje lecą na naszym kanale YouTube - kolejki bez mitów u Sebastiana Buczyńskiego i case study z pytest u Grzegorza Kocjana. Włącz przypomnienie na YouTube, żeby nie przegapić startu.
+
+📅 Środa 30 września, 18:00
+
+🔴 Transmisja: https://youtube.com/live/dDS8l_D9oIk
+
+Na miejscu jest jednak inaczej: po prelekcjach zostajemy na rozmowy, a tego żaden stream nie odda. Jeśli możesz wpaść na Piotrkowską - wpadnij.
+
+➡️ Szczegóły i zapisy: https://pythonlodz.org/spotkania/66/
+
 ## post: prelekcja-kolejki
 
 ⚡ "Ponowienia wystarczą, w końcu się przetworzy."

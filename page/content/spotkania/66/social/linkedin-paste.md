@@ -46,7 +46,33 @@ Analiza wideo w czasie rzeczywistym, detekcje na poziomie 80-90% i testy, które
 
 ---
 
-## 2. `prelekcja-kolejki` — czw 24.09.2026, 09:00
+## 2. `live-stream` — śr 23.09.2026, 09:00
+
+**Grafika do załączenia:** `social/images/final/live-stream-4x5.png`
+
+**Do oznaczenia:**
+- Sebastian Buczyński — https://www.linkedin.com/in/sebastianbuczynski/
+- Grzegorz Kocjan — https://www.linkedin.com/in/grzegorzkocjan/
+
+**Tekst:**
+
+```
+🔴 Nie dojedziesz do Łodzi? Python Łódź #66 puszczamy na żywo.
+
+Obie prelekcje lecą na naszym kanale YouTube - kolejki bez mitów u Sebastiana Buczyńskiego i case study z pytest u Grzegorza Kocjana. Włącz przypomnienie na YouTube, żeby nie przegapić startu.
+
+📅 Środa 30 września, 18:00
+
+🔴 Transmisja: https://youtube.com/live/dDS8l_D9oIk
+
+Na miejscu jest jednak inaczej: po prelekcjach zostajemy na rozmowy, a tego żaden stream nie odda. Jeśli możesz wpaść na Piotrkowską - wpadnij.
+
+➡️ Szczegóły i zapisy: https://pythonlodz.org/spotkania/66/
+```
+
+---
+
+## 3. `prelekcja-kolejki` — czw 24.09.2026, 09:00
 
 **Grafika do załączenia:** `social/images/final/prelekcja-kolejki-4x5.png`
 
@@ -81,7 +107,7 @@ Sebastian jest Software Engineerem w Revolut, wcześniej trenerem, architektem i
 
 ---
 
-## 3. `prelekcja-pytest` — pt 25.09.2026, 09:00
+## 4. `prelekcja-pytest` — pt 25.09.2026, 09:00
 
 **Grafika do załączenia:** `social/images/final/prelekcja-pytest-4x5.png`
 
@@ -118,7 +144,7 @@ Case study z pytest, które wychodzi daleko poza klasyczne unit testy.
 
 ---
 
-## 4. `reminder-agenda` — pon 28.09.2026, 09:00
+## 5. `reminder-agenda` — pon 28.09.2026, 09:00
 
 **Grafika do załączenia:** `social/images/final/reminder-agenda-4x5.png`
 
@@ -146,7 +172,7 @@ Gospodarzem spotkania jest IndieBI. Jeśli jeszcze się nie zapisałeś, teraz j
 
 ---
 
-## 5. `last-call` — wt 29.09.2026, 09:00
+## 6. `last-call` — wt 29.09.2026, 09:00
 
 **Grafika do załączenia:** `social/images/final/last-call-4x5.png`
 
@@ -172,7 +198,7 @@ Nie dasz rady dojechać? Będzie transmisja na YouTube. Ale jeśli możesz wpaś
 
 ---
 
-## 6. `dzien-spotkania` — śr 30.09.2026, 09:00
+## 7. `dzien-spotkania` — śr 30.09.2026, 09:00
 
 **Grafika do załączenia:** `social/images/final/dzien-spotkania-4x5.png`
 

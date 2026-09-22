@@ -3,10 +3,16 @@ name: Social publish
 
 on:
   schedule:
-    # Sloty 9:00 i 17:00 Europe/Warsaw. Pary wpisów UTC pokrywają CET (UTC+1)
-    # i CEST (UTC+2); o tym co jest due decyduje skrypt w strefie Europe/Warsaw,
+    # Dwa slotów publikacji: 9:00 i 17:00 Europe/Warsaw — każdy dostaje OKNO,
+    # nie jeden punkt. Dwa wpisy pokrywają CET (UTC+1) i CEST (UTC+2), trzeci jest
+    # zapasem, bo GitHub traktuje `schedule` najniższym priorytetem: pomiary
+    # 18-21.09.2026 dały opóźnienia +1h43 do +5h34 i tylko 2 z 4 zaplanowanych
+    # zdarzeń. O tym, co jest due, decyduje skrypt w strefie Europe/Warsaw,
     # a status.json gwarantuje brak podwójnych publikacji przy nadmiarowym runie.
-    - cron: "0 7,8,15,16 * * *"
+    # Żaden wpis nie wypada PRZED slotem — run przed czasem nie ma nic do zrobienia
+    # i przesunąłby post na kolejne okno.
+    - cron: "0 7,8,9 * * *"
+    - cron: "0 15,16,17 * * *"
   workflow_dispatch:
 
 concurrency:

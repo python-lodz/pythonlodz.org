@@ -16,6 +16,9 @@ place: "IndieBI, Piotrkowska 157A, Hi Piotrkowska"
 ➡️ LINK DO ZAPISÓW
 {{< /button >}}
 
+## Live Stream
+{{< youtubeLite id="dDS8l_D9oIk" label="Label" >}}
+
 ## Prelekcje
 
 ### Największe mity w pracy z kolejkami

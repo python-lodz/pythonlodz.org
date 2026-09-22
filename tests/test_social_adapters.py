@@ -112,3 +112,100 @@ def test_instagram_without_tags_omits_user_tags(posted):
     adapter = InstagramAdapter("222", "token")
     adapter.publish("caption", image_url="https://pythonlodz.org/g.png")
     assert "user_tags" not in posted[0]["data"]
+
+
+class FakeErrorResponse:
+    """Odpowiedź Graph API z błędem — status 403 i szczegóły w ciele."""
+
+    status_code = 403
+
+    def __init__(self, payload: dict):
+        self._payload = payload
+
+    def raise_for_status(self) -> None:
+        import requests
+
+        raise requests.HTTPError(f"{self.status_code} Client Error: Forbidden")
+
+    def json(self) -> dict:
+        return self._payload
+
+
+@pytest.fixture
+def graph_error(monkeypatch):
+    """Podstaw odpowiedź błędu Graph API pod oba adaptery Meta."""
+
+    def install(payload: dict) -> None:
+        def fake_post(url, **kwargs):
+            return FakeErrorResponse(payload)
+
+        import pyldz.social.adapters.facebook as facebook_module
+        import pyldz.social.adapters.instagram as instagram_module
+
+        monkeypatch.setattr(facebook_module.requests, "post", fake_post)
+        monkeypatch.setattr(instagram_module.requests, "post", fake_post)
+
+    return install
+
+
+GRAPH_403 = {
+    "error": {
+        "message": "(#200) If posting to a group, requires app being installed in the group",
+        "type": "OAuthException",
+        "code": 200,
+        "fbtrace_id": "AbCdEf123",
+    }
+}
+
+
+def test_facebook_error_carries_graph_details(graph_error):
+    from pyldz.social.adapters.facebook import FacebookAdapter, MetaGraphError
+
+    graph_error(GRAPH_403)
+    adapter = FacebookAdapter("123", "token")
+
+    with pytest.raises(MetaGraphError) as error:
+        adapter.publish("tekst", image_url="https://example.com/a.png")
+
+    message = str(error.value)
+    assert "403" in message
+    assert "code 200" in message
+    assert "OAuthException" in message
+    assert "AbCdEf123" in message
+    assert "token" not in message, "token nigdy nie może wyciec do logów"
+
+
+def test_instagram_error_carries_graph_details(graph_error):
+    from pyldz.social.adapters.facebook import MetaGraphError
+    from pyldz.social.adapters.instagram import InstagramAdapter
+
+    graph_error(GRAPH_403)
+    adapter = InstagramAdapter("999", "token")
+
+    with pytest.raises(MetaGraphError) as error:
+        adapter.publish("podpis", image_url="https://example.com/a.png")
+
+    assert "code 200" in str(error.value)
+
+
+def test_graph_error_survives_a_body_that_is_not_json(graph_error):
+    from pyldz.social.adapters.facebook import FacebookAdapter, MetaGraphError
+
+    class NotJson(FakeErrorResponse):
+        def json(self):
+            raise ValueError("no json")
+
+    def fake_post(url, **kwargs):
+        return NotJson({})
+
+    import pyldz.social.adapters.facebook as facebook_module
+
+    monkeypatch_target = facebook_module.requests
+    original = monkeypatch_target.post
+    monkeypatch_target.post = fake_post
+    try:
+        with pytest.raises(MetaGraphError) as error:
+            FacebookAdapter("123", "token").publish("tekst")
+        assert "403" in str(error.value)
+    finally:
+        monkeypatch_target.post = original

@@ -17,6 +17,16 @@ posts:
     scheduled: 2026-09-22 17:00:00
     image: images/final/ogloszenie-4x5.png
 
+  # Etap 1b — transmisja live (dodany 21.09 na życzenie GK).
+  - post: live-stream
+    channels: [facebook, linkedin]
+    scheduled: 2026-09-23 09:00:00
+    image: images/final/live-stream-4x5.png
+  - post: live-stream
+    channels: [discord, instagram]
+    scheduled: 2026-09-23 17:00:00
+    image: images/final/live-stream-4x5.png
+
   # Etap 2 — prelekcja Sebastiana.
   - post: prelekcja-kolejki
     channels: [facebook, linkedin]

@@ -5,6 +5,8 @@ import logging
 
 import requests
 
+from pyldz.social.adapters.facebook import raise_for_graph_error
+
 log = logging.getLogger(__name__)
 
 GRAPH_API = "https://graph.facebook.com/v23.0"
@@ -30,7 +32,7 @@ class InstagramAdapter:
         container = requests.post(
             f"{GRAPH_API}/{self.ig_user_id}/media", data=payload, timeout=60
         )
-        container.raise_for_status()
+        raise_for_graph_error(container)
         creation_id = container.json()["id"]
 
         published = requests.post(
@@ -38,7 +40,7 @@ class InstagramAdapter:
             data={"creation_id": creation_id, "access_token": self.access_token},
             timeout=60,
         )
-        published.raise_for_status()
+        raise_for_graph_error(published)
         media_id = published.json()["id"]
         log.info(f"Instagram published: {media_id}")
         return media_id

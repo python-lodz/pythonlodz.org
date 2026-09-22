@@ -1,0 +1,27 @@
+# .github/workflows/social-check.yaml
+# Diagnostyka tokena Meta — odpalana ręcznie, gdy publikacja zwraca błąd.
+# Same odczyty GET: niczego nie publikuje i nie pokazuje tokena w logach.
+name: Social check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-meta:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --frozen --no-dev
+
+      - name: Check Meta token
+        run: uv run pyldz social check-meta
+        env:
+          META_PAGE_ID: ${{ secrets.META_PAGE_ID }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}

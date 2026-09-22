@@ -39,9 +39,15 @@ Manager) Python Łódź.
    (pełna kontrola), **konto IG**, **aplikacja** z pkt. 2.
 4. **Token System User** — przy użytkowniku „Generuj token": wybierz aplikację,
    zakresy (scopes): `pages_manage_posts`, `pages_read_engagement`,
-   `instagram_content_publish`, `business_management`;
+   `instagram_basic`, `instagram_content_publish`, `business_management`;
    wygaśnięcie: **„Nigdy"**. Skopiuj token (pokazywany raz) → to jest
    `META_ACCESS_TOKEN`.
+
+   Uwaga na pułapkę z 22.09.2026: przypisanie zasobów (pkt. 3) i zakresy tokena
+   to **dwie niezależne rzeczy**. System User może mieć na stronie pełne zadania
+   (`MANAGE`, `CREATE_CONTENT`) i nadal nie móc nic opublikować, jeśli token
+   powstał bez `pages_manage_posts`. Bez `instagram_basic` pole
+   `instagram_business_account` na stronie wraca puste, więc krok 6 nie zadziała.
 5. **`META_PAGE_ID`** — Business Settings → Konta → Strony → ID strony
    (albo: strona FB → Informacje → ID strony).
 6. **`IG_USER_ID`** — mając token i Page ID:
@@ -53,10 +59,30 @@ Manager) Python Łódź.
 **Weryfikacja tokena:**
 
 ```bash
-# strona widoczna i token żywy:
-curl "https://graph.facebook.com/v23.0/<META_PAGE_ID>?fields=name&access_token=<META_ACCESS_TOKEN>"
-# oczekiwane: {"name":"Python Łódź","id":"<META_PAGE_ID>"}
+uv run pyldz social check-meta
 ```
+
+Komenda robi same odczyty (nic nie publikuje, nie pokazuje tokena) i mówi, czy
+token widzi stronę oraz czy `IG_USER_ID` zgadza się z kontem podpiętym do strony.
+Ten sam sprawdzian z sekretami z CI odpala workflow **Social check**
+(`.github/workflows/social-check.yaml`, ręczny `workflow_dispatch`) — przydatne,
+gdy lokalny `.env` może mieć inny token niż GitHub Secrets.
+
+Gdy publikacja zwraca błąd, a `check-meta` świeci na zielono, sprawdź nadane
+zakresy tokena:
+
+```bash
+curl "https://graph.facebook.com/v23.0/me/permissions?access_token=<META_ACCESS_TOKEN>"
+```
+
+Objawy i przyczyny:
+
+| objaw | przyczyna |
+|---|---|
+| `403` na `POST /<page>/photos`, odczyty działają | token bez `pages_manage_posts` |
+| `instagram_business_account` puste na stronie | token bez `instagram_basic` |
+| `code 190`, `subcode 463` | token wygasł lub został unieważniony |
+| `code 100`, `subcode 33` na `IG_USER_ID` | złe ID albo brak dostępu do konta IG |
 
 **Znane ryzyko (spec §8, ryzyko #1):** appka w trybie Development może
 ograniczać publikację/widoczność postów — możliwy App Review / weryfikacja

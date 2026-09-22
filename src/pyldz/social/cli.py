@@ -13,6 +13,7 @@ from pyldz.social.adapters.discord import DiscordAdapter
 from pyldz.social.adapters.facebook import FacebookAdapter
 from pyldz.social.adapters.instagram import InstagramAdapter
 from pyldz.social.config import SocialSettings
+from pyldz.social.meta_check import format_report, run_meta_checks
 from pyldz.social.models import Channel
 from pyldz.social.publisher import Publisher
 from pyldz.social.repository import SocialRepository
@@ -147,3 +148,15 @@ def yt_create_live(
         raise typer.Exit(code=1) from error
 
     typer.echo(url)
+
+
+@social_app.command("check-meta")
+def check_meta() -> None:
+    """Sprawdź, co widzi token Meta — diagnostyka błędów publikacji (same odczyty)."""
+    setup_logging(level="INFO")
+
+    checks = run_meta_checks(SocialSettings())
+    typer.echo(format_report(checks))
+
+    if not all(check.ok for check in checks):
+        raise typer.Exit(code=1)
