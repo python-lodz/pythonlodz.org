@@ -39,6 +39,14 @@
     "prelekcja-pytest:facebook": {
       "at": "2026-09-25T14:25:39.794312+02:00",
       "external_id": "302831246866857_1617574080156093"
+    },
+    "prelekcja-pytest:discord": {
+      "at": "2026-09-25T21:12:48.488110+02:00",
+      "external_id": "1553122119280361483"
+    },
+    "prelekcja-pytest:instagram": {
+      "at": "2026-09-25T21:12:48.488110+02:00",
+      "external_id": "18084971864704326"
     }
   }
 }
